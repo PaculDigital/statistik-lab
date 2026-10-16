@@ -1,0 +1,1315 @@
+{% extends 'dasar.html' %}
+{% block isi %}
+
+<div style="max-width:760px">
+  <span class="eyebrow amber">{{ ikon('flask-conical', 13) }} BUAT DATA</span>
+  <h1>Rancang data, lihat hasilnya lebih dulu.</h1>
+  <p class="besar">
+    Setel koefisien setiap jalur, dan alat ini memberi tahu <strong>apakah
+    hasilnya akan signifikan</strong> — sebelum kamu buka SPSS.
+  </p>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   BAR "MODEL KAMU SEKARANG" — TAHAP 1.4 (ACC Bos 19Sep26, opsi 2A)
+
+   ⚠️ MENGAPA BARU (bukan memakai spanduk lama): spanduk versi lama ditempel
+   di dalam kartu #catatan-kelayakan lewat JavaScript. TERUKUR 19Sep26 ada
+   3 cacat: (1) kartu itu BERUBAH ISI (VIF/R²) → spanduk bisa TERTIMPA;
+   (2) gayanya ditulis INLINE di JS → spesifisitas KALAH oleh `.catatan`
+   bawaan (inilah akar cacat lama "spanduk krem padahal minta hijau");
+   (3) tidak bisa diuji gerbang karena tidak ada di DOM awal.
+   Bar ini: ditulis di HTML (bukan JS) + gayanya di gaya.css.
+
+   ⚠️ SENGAJA `hidden` SEJAK AWAL: kalau user membuka /buat-data TANPA
+   memilih model, bar TIDAK muncul — justru user diarahkan balik ke
+   /kuantitatif (keputusan Bos 19Sep26: opsi 1B). ═══════════════════════ #}
+<div class="bar-model" id="bar-model" hidden>
+  <span class="bar-model-ikon" aria-hidden="true">{{ ikon('compass', 18) }}</span>
+  <div class="bar-model-teks">
+    <span class="bar-model-label">Model kamu sekarang</span>
+    <strong class="bar-model-nama" id="bar-model-nama">—</strong>
+  </div>
+  <a href="/kuantitatif" class="tb tb-sekunder bar-model-ganti">
+    {{ ikon('refresh-cw', 14) }} Ganti model
+  </a>
+</div>
+
+<div class="langkah renggang">
+  <div class="langkah-item aktif"><span class="langkah-nomor">1</span><span class="langkah-teks">Model</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">2</span><span class="langkah-teks">Responden</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">3</span><span class="langkah-teks">Koefisien</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">4</span><span class="langkah-teks">Mode hasil</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">5</span><span class="langkah-teks">Buat &amp; unduh</span></div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;align-items:start">
+
+  <!-- ══ PANEL SETELAN ══ -->
+  <div class="kartu">
+    <span class="eyebrow">{{ ikon('sliders-horizontal', 13) }} Setelan</span>
+
+    <div class="medan">
+      <label>{{ ikon('users', 14) }} Jumlah responden
+        <span class="petunjuk" id="n-samar"></span></label>
+      <input type="number" id="n" min="30" max="2000" value="150" step="1">
+      <input type="range" id="n-slider" min="30" max="2000" value="150">
+      <!-- ⚠️ Sama seperti slider X: label ujung jangan menempel di garis.
+           🚨 BUG (18Sep26 — Bos melihat "302.000"): dulu ditulis "30" dan
+           "2.000". Karena tak ada pemisah dan label kanan tidak menempel
+           tepi, kedua angka TERBACA MENYATU jadi "302.000". Sekarang ada
+           titik pemisah di tengah supaya tidak mungkin terbaca menyatu. -->
+      <div class="skala-slider">
+        <span class="samar">30</span><span aria-hidden="true">·</span><span class="samar">2.000</span>
+      </div>
+    </div>
+
+    <div class="medan">
+      <label>{{ ikon('boxes', 14) }} Jumlah variabel bebas (X)
+        <span class="petunjuk">geser untuk mengubah, 1 – 8</span></label>
+
+      <div class="hitung-var">
+        <button class="tb tb-kecil" id="x-kurang" type="button"
+                aria-label="Kurangi variabel">−</button>
+        <div class="hitung-var-tengah">
+          <input type="range" id="x-slider" min="1" max="8" value="3">
+          <!-- ⚠️ Teks "N variabel X" JANGAN ditaruh menempel di bawah slider
+               (dulu `margin-top:2px` + baris-antara) — ketiga teks jadi
+               bertumpuk di garis slider. Sekarang tiap teks punya barisnya
+               sendiri: label angka di ATAS slider, keterangan di BAWAH. -->
+          <div class="skala-slider">
+            <span class="samar">1</span><span aria-hidden="true">·</span><span class="samar">8</span>
+          </div>
+          <div class="nilai-slider"><strong id="x-nilai">3</strong> variabel X</div>
+        </div>
+        <button class="tb tb-kecil" id="x-tambah" type="button"
+                aria-label="Tambah variabel">+</button>
+      </div>
+
+      <!-- Preset cepat untuk jenis model yang sering dipakai pengajar.
+           ⚠️ Tombol preset = pintasan memilih JUMLAH X. Karena itu ia ikut
+           di dalam panel yang sama, tepat di bawah slider. -->
+      <div class="pilih-row">
+        <button class="pilih pilih-kecil" data-x="1" type="button">1</button>
+        <button class="pilih pilih-kecil" data-x="2" type="button">2</button>
+        <button class="pilih pilih-kecil" data-x="3" type="button">3</button>
+        <button class="pilih pilih-kecil" data-x="4" type="button">4</button>
+        <button class="pilih pilih-kecil" data-x="6" type="button">6</button>
+        <button class="pilih pilih-kecil" data-x="8" type="button">8</button>
+      </div>
+      <div class="samar" id="x-nama"></div>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           CARA MENGUJI — TERPISAH dari jumlah X (ACC Bos 18Sep26).
+           🚨 BUG YANG DITUTUP: dulu halaman ini MENGUNCI jenis analisis
+           dari jumlah X ("1 X = sederhana, banyak X = berganda"). Itu
+           salah — Bos benar: 3 X BOLEH diuji sendiri-sendiri (3 uji
+           sederhana) ATAU bersama-sama (1 uji berganda). Datanya sama,
+           yang beda cara menghitungnya.
+           ═══════════════════════════════════════════════════════════════ -->
+      <div id="blok-cara" style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--garis)">
+        <label>{{ ikon('git-branch', 14) }} Bagaimana X diuji ke Y?
+          <span class="petunjuk">pilih satu — ini menentukan cara menghitungnya</span></label>
+
+        <div class="pilih-kisi" id="cara-kisi" style="margin-top:9px">
+          <!-- Seluruh kartu bisa DIKETUK (permintaan Bos 18Sep26): radio
+               disembunyikan, keterpilihan ditandai warna + centang. -->
+          <label class="pilih-cara" data-cara="sederhana">
+            <input type="radio" name="cara" value="sederhana" checked>
+            <span class="cara-teks">
+              <span class="cara-judul">Parsial (Sederhana)</span>
+              <span class="cara-ket">Tiap X diuji <strong>sendiri-sendiri</strong> ke Y —
+                X lain <strong>tidak</strong> ikut dihitung. Bisa banyak X.<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+          <label class="pilih-cara" data-cara="berganda">
+            <input type="radio" name="cara" value="berganda">
+            <span class="cara-teks">
+              <span class="cara-judul">Berganda (Parsial + Simultan)</span>
+              <span class="cara-ket">Semua X diuji <strong>bersama-sama</strong> ke Y
+                — <strong>lengkap</strong>: ada parsial (uji t) <em>dan</em>
+                simultan (uji F).<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+          <!-- ── "BERGANDA-BERANTAI" DIARSIPKAN (ACC Bos 21Sep26, Opsi R1) ──
+               Kode mesin cara='berantai' TETAP ADA & tetap jalan (gerbang_s3.py
+               33 uji tetap sah) — yang dihentikan hanya PENAMPILANNYA di pintu.
+               Sebab diarsipkan (kata Bos sendiri): "berantai itu tidak ada,
+               karena saya kebingungan nyari parsialnya kok ga ada".
+               ⚠️ JANGAN HAPUS — cukup tambah 'sembunyi' supaya bisa dibuka
+               lagi kapan saja tanpa membangun ulang.
+               Dijaga otomatis oleh sot.py::_periksa_kartu_regresi(). -->
+          <label class="pilih-cara sembunyi" data-cara="berantai" id="cara-berantai-kartu">
+            <input type="radio" name="cara" value="berantai">
+            <span class="cara-teks">
+              <span class="cara-judul">Berganda-berantai</span>
+              <span class="cara-ket">DIARSIPKAN — lihat catatan di atas.<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+        </div>
+
+        <label class="centang-keduanya">
+          <input type="checkbox" id="cara-keduanya">
+          <span>Tampilkan <strong>dua-duanya</strong> di hasil — supaya bisa dibandingkan</span>
+        </label>
+
+        <p class="samar" id="cara-ringkas" style="margin:8px 0 0"></p>
+      </div>
+    </div>
+
+    <div class="medan">
+      <!-- ⚠️ DIKSI (ACC Bos 18Sep26): "Keandalan (alpha)" → "Konsistensi
+           jawaban". Nama lama bikin Bos tanya "ini apa maksudnya". Yang
+           dibaca user HARUS bahasa sehari-hari; istilah teknis (Cronbach's
+           alpha) cukup di halaman BELAJAR. -->
+      <label>{{ ikon('gauge', 14) }} Konsistensi jawaban
+        <span class="petunjuk">semakin kecil = jawaban semakin tidak seirama</span></label>
+      <select id="alpha">
+        <option value="0.78">0,78 — khas kuesioner mahasiswa</option>
+        <option value="0.85" selected>0,85 — jawaban seirama (bagus)</option>
+        <option value="0.92">0,92 — sangat seirama</option>
+      </select>
+    </div>
+
+    <div class="medan">
+      <label>{{ ikon('ruler', 14) }} Skala jawaban</label>
+      <select id="skala">
+        <option value="5" selected>Likert 1 – 5</option>
+        <option value="7">Likert 1 – 7</option>
+      </select>
+    </div>
+
+    <div class="medan" style="margin-bottom:0">
+      <label>{{ ikon('target', 14) }} Mode hasil</label>
+      <div class="pilih-kisi" style="grid-template-columns:1fr">
+        <button class="pilih terpilih" data-mode="presisi">
+          <strong>🎯 Presisi</strong>
+          <span>Koefisien persis setelan. Cocok untuk kunci jawaban & soal ujian.</span>
+        </button>
+        <button class="pilih" data-mode="natural">
+          <strong>🌿 Natural</strong>
+          <span>Hasil bervariasi seperti data lapangan — untuk belajar galat pensampelan.</span>
+        </button>
+        <button class="pilih" data-mode="presisi_variasi">
+          <strong>⚖️ Presisi, p bervariasi</strong>
+          <span>Koefisien tetap persis, tapi p bergerak — supaya tidak hafal angka.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL HASIL ══ -->
+  <div>
+    <div class="kartu">
+      <span class="eyebrow">{{ ikon('table', 13) }} Koefisien per jalur</span>
+      <p style="font-size:13.5px">
+        Isi nama variabel dan besar pengaruhnya (β). Kolom paling kanan
+        langsung memberi tahu pengaruh itu nanti <strong>signifikan atau tidak</strong>
+        pada jumlah responden yang kamu pilih.
+      </p>
+      <div id="tabel-jalur"></div>
+
+      <div class="baris-antara renggang" style="padding-top:15px;border-top:1px solid var(--garis)">
+        <!-- ⚠️ DIKSI (ACC Bos 18Sep26): simbol R² DIPERBESAR + DIPERTEBAL,
+             dan diberi keterangan awam "Seberapa besar X menerangkan Y".
+             Label "Prediksi R²" tetap ada sebagai nama resminya. -->
+        <div class="kotak-r2">
+          <div class="samar">Prediksi R² <span class="r2-tanya" title="R² itu angka 0 sampai 1. Contoh: 0,144 berarti X menerangkan 14,4% dari perbedaan Y; sisanya 85,6% karena hal lain di luar model.">?</span></div>
+          <div class="r2-baris">
+            <span class="r2-simbol">R²</span>
+            <span class="r2-angka" id="r2">0.00</span>
+          </div>
+          <div class="r2-arti">Seberapa besar X menerangkan Y</div>
+        </div>
+        <div style="text-align:right;max-width:290px">
+          <span class="pita pita-hijau" id="r2-pita">—</span>
+          <p class="samar" id="r2-pesan" style="margin:8px 0 0;text-align:left"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="catatan renggang" id="catatan-kelayakan">
+      {{ ikon('info', 16) }}<div id="catatan-isi"></div>
+    </div>
+
+    <div class="baris renggang">
+      <button class="tb tb-utama" id="tombol-buat">
+        {{ ikon('wand-2', 16) }} Buatkan data
+      </button>
+      <button class="tb tb-sekunder" id="tombol-acak">
+        {{ ikon('refresh-cw', 15) }} Setel angka wajar
+      </button>
+    </div>
+
+    <div id="hasil" class="sembunyi"></div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block skrip %}
+<script>
+// ⚠️ BATAS TOTAL β untuk cara 'berantai' — dikirim SERVER (satu sumber,
+//    ACC Bos 18Sep26 Opsi C). JANGAN tulis angkanya di sini.
+window.BATAS_BETA_RANTAI = {{ batas_beta_rantai | default(1.2) }};
+const el = id => document.getElementById(id);
+let JUMLAH_X = 3, MODE = 'presisi';
+
+// Nama variabel: bisa diubah user. Bawaan X1..X8, tapi BOS bisa menulis
+// "Tingkat Edukasi" dsb. Nama ini dipakai di tabel, hasil, dan berkas unduhan.
+const NAMA = ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8'];
+const BETA = [0.30, 0.22, 0.15, 0.12, 0.10, 0.09, 0.08, 0.07];
+
+// Saran nama yang sering dipakai di penelitian (klik = langsung terisi)
+const SARAN = [
+  'Tingkat Edukasi', 'Motivasi Belajar', 'Kualitas Layanan', 'Kepuasan Kerja',
+  'Lingkungan Kerja', 'Kompetensi Guru', 'Gaya Kepemimpinan', 'Budaya Organisasi',
+  'Literasi Digital', 'Disiplin Kerja', 'Kepercayaan', 'Kinerja',
+  'Sikap', 'Norma Subjektif', 'Kontrol Perilaku', 'Minat',
+];
+
+/* ── ambang signifikansi: β minimum agar p < 0,05 ───────────────────── */
+function betaMinimum(n) {
+  // pendekatan: baku ≈ 2,0/√n untuk α=0,05 (dua sisi), koreksi alpha 0,85
+  // ditambah sedikit margin untuk korelasi antar-X yang mengurangi t
+  const koreksi = 1 / Math.sqrt(0.85);
+  const tambah = 1 + 0.06 * Math.max(0, JUMLAH_X - 1);   // makin banyak X, ambang naik
+  return 1.96 / Math.sqrt(Math.max(30, n)) * koreksi * 1.25 * tambah;
+}
+
+function ramalKelas(beta, n, koreksiKe) {
+  const amb = betaMinimum(n) * (koreksiKe || 1);
+  if (beta < amb * 0.75) return ['pita-merah', 'Tidak signifikan', 'tidak_sig'];
+  if (beta < amb * 1.10) return ['pita-amber', 'Marginal', 'marginal'];
+  if (beta >= amb * 2.5) return ['pita-hijau', 'Sangat signifikan', 'sangat_sig'];
+  return ['pita-hijau', 'Signifikan', 'sig'];
+}
+
+function bangunTabel() {
+  const n = parseInt(el('n').value, 10) || 150;
+  const amb = betaMinimum(n);
+  let html = `<table class="data"><thead><tr>
+      <th>Variabel (bisa diganti)<\/th><th style="width:104px">Pengaruh (β)<\/th><th>Prediksi hasil uji<\/th>
+    <\/tr><\/thead><tbody>`;
+
+  for (let i = 0; i < JUMLAH_X; i++) {
+    const saran = SARAN.slice(i * 2, i * 2 + 2).map(s =>
+      `<option value="${s}">${s}<\/option>`).join('');
+    html += `<tr>
+      <td>
+        <span class="cek-nama" style="display:flex;align-items:center;gap:8px">
+          <input type="text" class="nama-var" data-i="${i}" value="${aman(NAMA[i])}"
+                 list="saran-var" maxlength="26" inputmode="text"
+                 aria-label="Nama variabel X${i + 1}"
+                 placeholder="mis. Tingkat Edukasi"
+                 style="flex:1;min-width:0;padding:7px 9px;font-size:15px;min-height:44px">
+          <span class="samar" style="flex:0 0 auto">→ Y<\/span>
+        <\/span>
+        <span class="samar" style="font-size:13px">X${i + 1}<\/span>
+      <\/td>
+      <td class="angka" data-label="Koefisien β">
+        <input type="number" class="nilai-beta" data-i="${i}" value="${BETA[i].toFixed(2)}"
+               min="0" max="0.9" step="0.01" inputmode="decimal"
+               aria-label="Koefisien beta ${aman(NAMA[i])}"
+               style="padding:5px 8px;font-size:15px;text-align:center;min-height:44px">
+      <\/td>
+      <td id="pagar-${i}" data-label="Perkiraan hasil"><\/td>
+    <\/tr>`;
+  }
+  html += '<\/tbody><\/table>';
+  html += `<datalist id="saran-var">${SARAN.map(s => `<option value="${s}">`).join('')}<\/datalist>`;
+  html += `<p class="samar" style="margin:11px 0 0" id="tabel-n">
+    Ambang signifikan pada n=<strong>${n}<\/strong>${JUMLAH_X > 1 ? ` dengan ${JUMLAH_X} prediktor` : ''}:
+    β sekitar <strong>${amb.toFixed(3)}<\/strong>. Makin banyak responden, makin kecil
+    β yang bisa signifikan; makin banyak prediktor, ambangnya naik sedikit.<\/p>`;
+  el('tabel-jalur').innerHTML = html;
+
+  document.querySelectorAll('.nilai-beta').forEach(inp => {
+    inp.addEventListener('input', () => {
+      BETA[parseInt(inp.dataset.i, 10)] = parseFloat(inp.value) || 0;
+      segarkan();
+    });
+  });
+
+  // Nama variabel: begitu user mengetik, langsung dipakai di seluruh halaman
+  document.querySelectorAll('.nama-var').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const i = parseInt(inp.dataset.i, 10);
+      NAMA[i] = inp.value.trim() || ('X' + (i + 1));
+      segarkan();
+    });
+    // Kalau user mengosongkan nama lalu pindah, kembalikan nama baku X#
+    inp.addEventListener('blur', () => {
+      const i = parseInt(inp.dataset.i, 10);
+      if (!inp.value.trim()) {
+        inp.value = 'X' + (i + 1);
+        NAMA[i] = inp.value;
+        segarkan();
+      }
+    });
+  });
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🚨 JANGAN panggil segarkan() di sini!
+  //
+  // BUG MEMATIKAN (17Sep26): dulu baris terakhir fungsi ini `segarkan();`
+  // sedangkan segarkan() MEMANGGIL bangunTabel() di awal. Jadinya:
+  //     segarkan() → bangunTabel() → segarkan() → bangunTabel() → ...
+  // LINGKARAN TAK BERUJUNG. Setiap geseran slider membangun ulang seluruh
+  // tabel puluhan kali + memasang ulang semua pendengar event.
+  // Di HP efeknya: geser slider LAMBAT SEKALI, klik + terasa berat/macet.
+  //
+  // Yang memanggil bangunTabel() WAJIB yang mengurus segarkan() sesudahnya.
+  // Pendengar event di bawah ini sudah memanggil keduanya dengan benar.
+  // ═══════════════════════════════════════════════════════════════════════
+}
+
+function segarkan() {
+  const n = parseInt(el('n').value, 10) || 150;
+  const amb = betaMinimum(n);
+  const koreksiKe = [1, 1.15, 1.30];
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🚨 JANGAN panggil bangunTabel() di sini!
+  //
+  // BUG MEMATIKAN (17Sep26): dulu di sini ada `bangunTabel();` sedangkan
+  // bangunTabel() di akhirnya memanggil `segarkan();` → LINGKARAN TAK
+  // BERUJUNG. Setiap geseran slider = puluhan kali bangun ulang tabel +
+  // pasang ulang pendengar event → di HP slider LAMBAT, tombol + berat.
+  //
+  // Aturan sekarang (PISAH TANGGUNG JAWAB):
+  //   • setJumlahX()  → yang MEMBANGUN tabel (karena jumlah barisnya berubah)
+  //   • segarkan()    → HANYA memperbarui angka/teks yang sudah ada
+  //
+  // Teks "n=" di dalam tabel kini diperbarui lewat ID khusus (#tabel-n),
+  // jadi tidak perlu membangun ulang seluruh tabel hanya untuk ganti angka.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let totalKuadrat = 0;
+  for (let i = 0; i < JUMLAH_X; i++) {
+    const b = BETA[i] || 0;
+    totalKuadrat += (b / koreksiKe[i]) ** 2;
+    const [kelas, label] = ramalKelas(b / koreksiKe[i], n, 1);
+    // ⚠️ WAJIB pakai backtick: `pagar-${i}` — getElementById tidak
+    // mengevaluasi ${i} kalau ditulis dengan kutip biasa ('pagar-${i}')
+    // → elemen null → "Cannot set properties of null" → skrip mati.
+    const sel = el(`pagar-${i}`);
+    if (sel) sel.innerHTML =
+      `<span class="pita ${kelas}">${label}<\/span>
+       <span class="samar" style="margin-left:7px">β min ≈ ${(amb * koreksiKe[i]).toFixed(3)}<\/span>`;
+  }
+
+  // R² = korelasi antar-X diasumsikan kecil (0,10)
+  const r2 = Math.min(0.99, totalKuadrat + 0.10 * (JUMLAH_X - 1) * 0.5);
+  el('r2').textContent = r2.toFixed(3);
+
+  // ── Perbarui teks "n=" di bawah tabel TANPA membangun ulang tabelnya ────
+  //    (dulu ini dilakukan dengan bangunTabel() → lingkaran tak berujung)
+  const ktabelN = el('tabel-n');
+  if (ktabelN) {
+    ktabelN.innerHTML =
+      `Ambang signifikan pada n=<strong>${n}<\/strong>` +
+      (JUMLAH_X > 1 ? ` dengan ${JUMLAH_X} prediktor` : '') +
+      `: β sekitar <strong>${amb.toFixed(3)}<\/strong>. Makin banyak responden, ` +
+      `makin kecil β yang bisa signifikan; makin banyak prediktor, ambangnya naik sedikit.`;
+  }
+
+  const pita = el('r2-pita'), pesan = el('r2-pesan');
+  if (r2 > 0.90) {
+    pita.className = 'pita pita-merah'; pita.textContent = 'Terlalu tinggi';
+    pesan.textContent = 'R² di atas 0,90 pada data kuesioner sangat jarang. Kecilkan beberapa koefisien.';
+  } else if (r2 >= 0.60) {
+    pita.className = 'pita pita-hijau'; pita.textContent = 'Tinggi';
+    pesan.textContent = 'Model yang kuat. Tetap masuk akal, tapi periksa apakah beberapa X sebenarnya mengukur hal yang sama.';
+  } else if (r2 >= 0.22) {
+    pita.className = 'pita pita-hijau'; pita.textContent = 'Wajar';
+    pesan.textContent = 'Daerah paling wajar untuk penelitian sosial. Ini yang biasanya lolos di penguji.';
+  } else if (r2 >= 0.10) {
+    pita.className = 'pita pita-amber'; pita.textContent = 'Rendah';
+    pesan.textContent = 'Masih sah, tapi modelnya belum banyak menjelaskan. Pertimbangkan menambah variabel.';
+  } else {
+    pita.className = 'pita pita-merah'; pita.textContent = 'Sangat rendah';
+    pesan.textContent = 'Hampir tidak menjelaskan apa pun. Naikkan beberapa koefisien.';
+  }
+
+  // R² tidak boleh > 1
+  const isi = el('catatan-isi'), kotak = el('catatan-kelayakan');
+  // Batas wajar: dengan banyak prediktor, total β yang terlalu besar membuat
+  // koefisien mentok (tidak bisa dinaikkan lagi) → hasil tidak lagi persis.
+  // 0,55 dipilih dari pengukuran: Σβ² = 0,55 → R² > 0,70 (terlalu bersih).
+  const batasBerat = 0.55;
+  // ⚠️ Nama ini TIDAK boleh sama dengan `totalKuadrat` di atas (itu variabel
+  // terpisah yang dipakai menghitung R²). Dulu keduanya bernama totalKuadrat
+  // → "SyntaxError: Identifier already declared" → SELURUH skrip mati.
+  const totalKuat = BETA.slice(0, JUMLAH_X).reduce((s, b) => s + b * b, 0);
+
+  if (r2 > 0.95) {
+    kotak.className = 'catatan merah renggang';
+    isi.innerHTML = '<strong>Setelan ini tidak bisa dibuat.<\/strong> ' +
+      'Jumlah kuadrat koefisienmu terlalu besar — R² tidak boleh lebih dari 1,0. ' +
+      'Ini bukan batasan alat, tapi aturan matematika. Tekan <em>Setel angka wajar<\/em> untuk perbaikan otomatis.';
+  } else if (totalKuat > batasBerat) {
+    kotak.className = 'catatan amber renggang';
+    isi.innerHTML = '<strong>Koefisiennya terlalu berisi untuk ' + JUMLAH_X +
+      ' variabel.<\/strong> Total kekuatan koefisienmu sudah ' + totalKuat.toFixed(2) +
+      ', sedangkan batas wajar sekitar ' + batasBerat.toFixed(2) + '. ' +
+      'Kalau tetap dibuat, mesin tidak sanggup mencapai angka itu persis — ' +
+      'beberapa koefisien akan mentok. Tekan <em>Setel angka wajar<\/em> untuk menyesuaikan otomatis.';
+  } else {
+    kotak.className = 'catatan renggang';
+    isi.innerHTML = 'Setelan ini <strong>bisa dibuat<\/strong>. Klik <em>Buatkan data<\/em> untuk melihat hasilnya.';
+  }
+
+  // R² tidak boleh > 1
+  el('tombol-buat').disabled = r2 > 0.95;
+}
+
+/* ══ MODE UJI MANDIRI ═══════════════════════════════════════════════════
+   Dipanggil hanya kalau URL punya ?uji=<skenario>.
+   Halaman mengklik dirinya sendiri seperti user, lalu menuliskan hasilnya
+   ke <div id="jejak"> supaya bisa dibaca alat uji headless.
+   ⚠️ Ini TIDAK berpengaruh untuk pengunjung biasa (tanpa ?uji=).
+   ═══════════════════════════════════════════════════════════════════════ */
+function jalankanUjiOtomatis() {
+  const P = new URLSearchParams(location.search);
+  const skenario = P.get('uji');
+
+  // ── Alat ukur: suntikkan skrip pengukur dari luar (dipakai uji otomatis).
+  //    Dipakai supaya pengukuran dilakukan DI DALAM halaman ini sendiri,
+  //    bukan lewat iframe. Iframe menipu: punya scroll sendiri sehingga
+  //    halaman tampak tidak melebar padahal aslinya meluber.
+  const suntik = P.get('suntik');
+  if (suntik) {
+    const s = document.createElement('script');
+    s.src = suntik;
+    document.body.appendChild(s);
+  }
+
+  if (!skenario) return;
+  const jejak = [];
+  const Ev = t => new Event(t, { bubbles: true });
+  const kotak = () => el('catatan-isi').textContent.trim();
+
+  setTimeout(() => {
+    try {
+      // 1. slider 1 -> 8
+      el('x-slider').value = '8';
+      el('x-slider').dispatchEvent(Ev('input'));
+      jejak.push(`slider ke 8: ${document.querySelectorAll('.nama-var').length} baris`);
+
+      // 2. isi nama variabel
+      const nama = ['Tingkat Edukasi', 'Motivasi Belajar', 'Kualitas Layanan',
+        'Literasi Digital', 'Lingkungan Kerja', 'Kompetensi Guru',
+        'Gaya Kepemimpinan', 'Budaya Organisasi'];
+      document.querySelectorAll('.nama-var').forEach((inp, i) => {
+        inp.value = nama[i];
+        inp.dispatchEvent(Ev('input'));
+      });
+      jejak.push(`nama terisi: ${NAMA.slice(0, 8).join(', ')}`);
+
+      // 3. beta berat -> pagar harus memberi tahu
+      document.querySelectorAll('.nilai-beta').forEach(inp => {
+        inp.value = '0.30';
+        inp.dispatchEvent(Ev('input'));
+      });
+      jejak.push(`beta 0,30 pada 8 X -> ${kotak().slice(0, 70)}`);
+
+      // 4. turunkan lewat tombol kurang (6x) -> jadi 2 variabel
+      for (let i = 0; i < 6; i++) el('x-kurang').click();
+      jejak.push(`kurang 6x: ${document.querySelectorAll('.nama-var').length} baris, ` +
+        `label "${el('x-nama').textContent}"`);
+
+      // 5. tombol tambah -> jadi 3
+      el('x-tambah').click();
+      jejak.push(`tambah 1x: ${document.querySelectorAll('.nama-var').length} baris`);
+
+      // 6. setel angka wajar -> pagar hijau lagi
+      el('tombol-acak').click();
+      jejak.push(`setel wajar -> ${kotak().slice(0, 60)}`);
+
+      // 7. n besar
+      el('n-slider').value = '1500';
+      el('n-slider').dispatchEvent(Ev('input'));
+      jejak.push(`n=1500: field menunjukkan ${el('n').value}`);
+
+      // 8. preset cepat 8 X (bukan 5 — 5 tidak ada tombolnya)
+      document.querySelectorAll('.pilih-kecil').forEach(b => {
+        if (b.dataset.x === '8') b.click();
+      });
+      jejak.push(`preset 8 X: ${document.querySelectorAll('.nama-var').length} baris`);
+
+      // 9. SKENARIO 'x8': tinggalkan halaman pada keadaan 8 variabel bernama
+      //    supaya bisa di-screenshot sebagai bukti. Skenario lain (mis. 'buat')
+      //    melanjutkan ke pembuatan data.
+      if (skenario === 'x8') {
+        el('n').value = '300';
+        el('n').dispatchEvent(Ev('input'));
+        const namaAkhir = ['Tingkat Edukasi', 'Motivasi Belajar',
+          'Kualitas Layanan', 'Literasi Digital', 'Lingkungan Kerja',
+          'Kompetensi Guru', 'Gaya Kepemimpinan', 'Budaya Organisasi'];
+        document.querySelectorAll('.nama-var').forEach((inp, i) => {
+          inp.value = namaAkhir[i];
+          inp.dispatchEvent(Ev('input'));
+        });
+        jejak.push(`SIAP SCREENSHOT: ${document.querySelectorAll('.nama-var').length} variabel bernama, n=${el('n').value}`);
+        return;   // jangan lanjut — biarkan halaman pada keadaan ini
+      }
+    } catch (e) {
+      jejak.push('GALAT: ' + e.message);
+    }
+    const d = document.createElement('div');
+    d.id = 'jejak';
+    d.style.display = 'none';
+    d.textContent = jejak.join(' | ');
+    document.body.appendChild(d);
+    // Tulis juga ke <title> — paling andal dibaca alat uji headless
+    document.title = 'JEJAK:: ' + jejak.join(' || ');
+  }, 900);
+}
+if (document.readyState === 'complete') jalankanUjiOtomatis();
+else window.addEventListener('load', jalankanUjiOtomatis);
+
+function angkaWajar() {
+  // ⚠️ Batas nyata: Σβ² tidak boleh melebihi R² maksimum yang masuk akal.
+  // Dengan 8 prediktor, total β yang terlalu besar membuat koefisien mentok
+  // (tidak bisa dinaikkan lagi) → galat besar. Pola di bawah ini TERUJI:
+  // tiap pola punya galat < 0,04 pada n=120.
+  const pola = {
+    1: [0.38],
+    2: [0.34, 0.24],
+    3: [0.30, 0.22, 0.15],
+    4: [0.28, 0.21, 0.15, 0.11],
+    5: [0.27, 0.21, 0.16, 0.12, 0.10],
+    6: [0.26, 0.20, 0.16, 0.12, 0.10, 0.08],
+    7: [0.25, 0.20, 0.16, 0.13, 0.10, 0.08, 0.07],
+    8: [0.24, 0.20, 0.16, 0.13, 0.11, 0.09, 0.08, 0.07],
+  };
+  const target = pola[JUMLAH_X] || pola[8].slice(0, JUMLAH_X);
+  BETA.length = 0;
+  target.forEach(v => BETA.push(v));
+  while (BETA.length < 8) BETA.push(0.06);
+  // ⚠️ Tidak memanggil bangunTabel()/segarkan() di sini — pemanggil yang
+  // mengurusnya. Kalau dipanggil dari dalam, bisa lahir lingkaran tak berujung.
+}
+
+/* ── CARA MENGUJI: sederhana / berganda / dua-duanya (ACC Bos 18Sep26) ──
+   Pilihan ini TERPISAH dari jumlah X. Disimpan supaya bisa dibaca saat
+   mengirim setelan ke server. */
+let CARA = 'sederhana';
+
+function caraTerpilih() {
+  if (el('cara-keduanya').checked) return 'keduanya';
+  const r = document.querySelector('input[name="cara"]:checked');
+  return r ? r.value : 'sederhana';
+}
+
+function perbaruiCara() {
+  const n = JUMLAH_X, ringkas = el('cara-ringkas');
+
+  // 1 prediktor: sederhana & berganda hasilnya SAMA (rumus identik) →
+  // sembunyikan pilihan supaya user tidak bingung memilih yang tak berbeda.
+  if (n === 1) {
+    el('blok-cara').style.display = 'none';
+    CARA = 'sederhana';
+    return;
+  }
+  el('blok-cara').style.display = '';
+
+  // kotak centang "dua-duanya" hanya masuk akal kalau berganda tersedia
+  CARA = caraTerpilih();
+  const dasar = (CARA === 'keduanya')
+    ? document.querySelector('input[name="cara"]:checked').value
+    : CARA;
+
+  if (CARA === 'keduanya') {
+    ringkas.textContent = `Hasil akan menampilkan DUA tabel: ${n} uji `
+      + `sendiri-sendiri + 1 uji bersama (${n} X sekaligus). Cocok untuk `
+      + `mengajar perbedaan kedua cara.`;
+  } else if (dasar === 'berantai') {
+    // ⚠️ BATAS TOTAL β (ACC Bos 18Sep26, Opsi C) — SUMBER ANGKA = server.
+    // JANGAN hardcode batas di JS (pelajaran EduAi 15Sep26: batas bisnis
+    // yang ditulis dua tempat menyebabkan gerbang tak pernah tersentuh).
+    // Server kirim BATAS_BETA_RANTAI lewat template; di sini hanya dibaca.
+    const batas = (window.BATAS_BETA_RANTAI || 1.2);
+    const totalMinta = (JUMLAH_X * 0.25);          // saran bawaan tiap X
+    ringkas.textContent = `${n} X diuji BERSAMA-SAMA ke Y, dan X juga saling `
+      + `berhubungan berantai (X1→X2→…→X${n}). Dua hasil ditampilkan: `
+      + `pengaruh tiap X ke Y, dan hubungan antar-X. `
+      + `Agar hasilnya persis, jumlah koefisien semua X maksimal `
+      + `${batas.toFixed(2)} — jadi sekitar ${(batas / n).toFixed(2)} per X.`;
+    void totalMinta;
+  } else if (dasar === 'berganda') {
+    ringkas.textContent = `${n} X diuji BERSAMA-SAMA ke Y — satu tabel, `
+      + `${n} baris. Tiap koefisien = pengaruh X itu SETELAH memperhitungkan `
+      + `X yang lain.`;
+  } else {
+    ringkas.textContent = `Tiap X diuji SENDIRI-SENDIRI ke Y — ${n} tabel, `
+      + `masing-masing 1 prediktor. Koefisiennya tidak memperhitungkan X lain.`;
+  }
+
+  // tandai kartu yang terpilih
+  document.querySelectorAll('.pilih-cara').forEach(k => {
+    const isi = k.querySelector('input');
+    k.classList.toggle('aktif', isi.checked && CARA !== 'keduanya');
+  });
+
+  // isi angka pada kartu: "N X → N uji terpisah" / "N X → 1 uji".
+  // 🚨 Dulu teks ini HARD-CODE "3 X" di HTML sehingga tetap bilang 3
+  //    walau slider dipindah ke 8 (temuan pemeriksaan 18Sep26).
+  const isiKartu = (pilih, teks) => {
+    const t = document.querySelector(pilih);
+    if (t) t.textContent = teks;
+  };
+  isiKartu('.pilih-cara[data-cara="sederhana"] .cara-hitung',
+           `${n} X → ${n} uji terpisah (parsial).`);
+  isiKartu('.pilih-cara[data-cara="berganda"] .cara-hitung',
+           `${n} X → 1 uji simultan + ${n} uji parsial.`);
+  // ── Kartu BERGANDA-BERANTAI: DIARSIPKAN (ACC Bos 21Sep26, Opsi R1) ──
+  // ⚠️ JANGAN dikembalikan ke logika "muncul kalau n >= 2" (kode lama) —
+  //    itu MENAMPILKAN kembali kartu yang sudah Bos putuskan diarsipkan.
+  //    Kartu & kode mesinnya TETAP ADA (bisa dibuka lagi kapan saja lewat
+  //    class 'sembunyi'), hanya TIDAK ditampilkan.
+  //    Dijaga otomatis oleh sot.py::_periksa_kartu_regresi().
+  const kartuRantai = el('cara-berantai-kartu');
+  if (kartuRantai) {
+    const ARSIP_RANTAI = true;   // ← satu saklar; false = tampilkan lagi
+    kartuRantai.style.display = ARSIP_RANTAI ? 'none'
+                                             : (n >= 2 ? '' : 'none');
+    if (ARSIP_RANTAI && kartuRantai.querySelector('input').checked) {
+      // kalau terarsip saat terpilih → pindah ke berganda
+      document.querySelector('input[name="cara"][value="berganda"]').checked = true;
+      CARA = 'berganda';
+    }
+    isiKartu('.pilih-cara[data-cara="berantai"] .cara-hitung',
+             `${n} X → ${n} pengaruh + ${n - 1} hubungan antar-X.`);
+  }
+}
+
+el('cara-kisi').addEventListener('change', () => {
+  el('cara-keduanya').checked = false;   // pilih salah satu → matikan "dua-duanya"
+  perbaruiCara();
+});
+el('cara-keduanya').addEventListener('change', () => {
+  if (el('cara-keduanya').checked) {
+    el('cara-keduanya').checked = true;
+  }
+  perbaruiCara();
+});
+
+/* ── ubah jumlah X: slider, tombol −/+, dan preset ───────────────────── */
+/* ⚠️ setJumlahX() adalah SATU-SATUNYA tempat yang membangun ulang tabel,
+   karena jumlah barisnya memang berubah. Segala perubahan lain (geser n,
+   ganti mode, ketik nama) cukup memanggil segarkan(). */
+function setJumlahX(baru, paksaWajar) {
+  const lama = JUMLAH_X;
+  JUMLAH_X = Math.max(1, Math.min(8, baru));
+  el('x-slider').value = JUMLAH_X;
+  el('x-nilai').textContent = JUMLAH_X;
+  // 🚨 JANGAN mengunci jenis analisis dari jumlah X (bug yang ditutup
+  // 18Sep26). Jumlah X cuma bilang BERAPA prediktor; cara mengujinya
+  // ditentukan pilihan user di blok "Bagaimana X diuji ke Y?".
+  el('x-nama').textContent = JUMLAH_X === 1
+    ? '1 prediktor'
+    : `${JUMLAH_X} prediktor`;
+  perbaruiCara();
+  // tombol −/+ ikut menyesuaikan
+  el('x-kurang').disabled = JUMLAH_X <= 1;
+  el('x-tambah').disabled = JUMLAH_X >= 8;
+  // tandai preset yang cocok
+  document.querySelectorAll('.pilih-kecil').forEach(o =>
+    o.classList.toggle('terpilih', parseInt(o.dataset.x, 10) === JUMLAH_X));
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🚨 JANGAN panggil angkaWajar() tanpa syarat di sini!
+  //
+  // BUG (17Sep26): dulu baris ini `angkaWajar();` tanpa syarat, sedangkan
+  // angkaWajar() MENGGANTI SEMUA nilai β dengan pola bawaan. Akibatnya
+  // setiap geseran slider MENIMPA koefisien yang sudah diisi user — user
+  // merasa "angka yang saya isi hilang sendiri".
+  //
+  // Aturan sekarang:
+  //   • β diisi otomatis HANYA kalau user menekan "Setel angka wajar"
+  //     (paksaWajar = true), atau
+  //   • jumlah X BERTAMBAH sehingga kolom β baru butuh nilai awal.
+  //   • Kalau user menggeser tanpa menambah X → β dibiarkan apa adanya.
+  // ═══════════════════════════════════════════════════════════════════════
+  if (paksaWajar || JUMLAH_X > lama) angkaWajar();
+  bangunTabel();   // jumlah baris berubah → tabel WAJIB dibangun ulang
+  segarkan();      // lalu perbarui angka & teks di dalamnya
+}
+
+el('x-slider').addEventListener('input', e => setJumlahX(parseInt(e.target.value, 10)));
+el('x-kurang').addEventListener('click', () => setJumlahX(JUMLAH_X - 1));
+el('x-tambah').addEventListener('click', () => setJumlahX(JUMLAH_X + 1));
+document.querySelectorAll('.pilih-kecil').forEach(b =>
+  b.addEventListener('click', () => setJumlahX(parseInt(b.dataset.x, 10))));
+
+/* ── pilih mode ── */
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-mode]').forEach(o => o.classList.remove('terpilih'));
+  b.classList.add('terpilih');
+  MODE = b.dataset.mode;
+}));
+
+/* ── responden ── */
+el('n-slider').addEventListener('input', e => { el('n').value = e.target.value; segarkan(); });
+el('n').addEventListener('input', e => {
+  const v = Math.max(30, Math.min(2000, parseInt(e.target.value, 10) || 150));
+  el('n-slider').value = v;
+  const s = el('n-samar');
+  s.textContent = v < 100
+    ? '— masih kecil, koefisien bisa bergeser ±0,06'
+    : v < 150 ? '— cukup, tapi tambah kalau ingin lebih presisi' : '— memadai';
+  segarkan();
+});
+el('n').dispatchEvent(new Event('input'));
+
+el('skala').addEventListener('change', segarkan);
+el('alpha').addEventListener('change', segarkan);
+// "Setel angka wajar" = user SENGAJA minta β diganti pola wajar.
+// Karena itu WAJIB membangun ulang tabel (β di kotak ikut berubah) +
+// segarkan. Tanpa ini, kotak β tidak menampilkan nilai barunya.
+el('tombol-acak').addEventListener('click', () => {
+  angkaWajar();
+  bangunTabel();
+  segarkan();
+});
+
+/* ── BUAT DATA ── */
+el('tombol-buat').addEventListener('click', async () => {
+  const btn = el('tombol-buat');
+  btn.disabled = true;
+  btn.innerHTML = ikonKecil('refresh-cw', 16) + ' Menghitung…';
+  try {
+    const r = await fetch('/api/buat-data', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        n: parseInt(el('n').value, 10),
+        x: JUMLAH_X,
+        beta: BETA.slice(0, JUMLAH_X),
+        nama_x: NAMA.slice(0, JUMLAH_X),
+        skala: parseInt(el('skala').value, 10),
+        alpha: parseFloat(el('alpha').value),
+        mode: MODE,
+        cara: caraTerpilih()
+      })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    tampilkanHasil(d);
+  } catch (e) {
+    console.error('buat data gagal:', JSON.stringify(e));
+    el('hasil').classList.remove('sembunyi');
+    el('hasil').innerHTML = '<div class="catatan merah renggang">' + ikonKecil('alert-circle', 16) +
+      '<div>Tidak bisa membuat data sekarang. Coba lagi sebentar.<\/div><\/div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = ikonKecil('wand-2', 16) + ' Buatkan data';
+  }
+});
+
+/* Tabel RANTAI antar-X — KHUSUS S3 berganda-berantai (ACC Bos 18Sep26).
+   Ini bagian KEDUA dari S3: hubungan X satu ke X berikutnya.
+   ⚠️ JANGAN digabung dengan tabel X→Y: artinya beda. Tabel X→Y = pengaruh
+   ke Y; tabel ini = hubungan antar-X. Digabung = user salah paham. */
+function tabelRantai(d) {
+  const blok = d.rantai || [];
+  if (!blok.length) return '';
+  let baris = '';
+  blok.forEach(j => {
+    baris += `<tr>
+      <td data-label="Hubungan"><strong>${aman(j.dari)}<\/strong> → ${aman(j.ke)}<\/td>
+      <td class="angka" data-label="β">${Number(j.terbaca).toFixed(3)}<\/td>
+      <td class="angka" data-label="t">${Number(j.t).toFixed(2)}<\/td>
+      <td class="angka" data-label="p">${Number(j.p).toFixed(4)}<\/td>
+      <td data-label="Keterangan"><span class="pita ${j.kelas}">${aman(j.label)}<\/span><\/td>
+    <\/tr>`;
+  });
+  const setel = d.ranta_setel;
+  const ket = (setel !== null && setel !== undefined)
+    ? ` Hubungan antar-X dirancang sebesar ${Number(setel).toFixed(2)}.`
+    : '';
+  return `<h3 style="margin:16px 0 6px">Bagian 2 — hubungan antar-X
+      (berantai: X1→X2→…→X${blok.length + 1})<\/h3>
+    <table class="data">
+      <thead><tr>
+        <th>Hubungan<\/th><th>β<\/th><th>t<\/th><th>p<\/th><th>Keterangan<\/th>
+      <\/tr><\/thead>
+      <tbody>${baris}<\/tbody>
+    <\/table>
+    <p class="samar" style="margin:8px 0 0">Angka ini menunjukkan
+      <strong>keterkaitan antar-X<\/strong> — bukan pengaruh ke Y.${ket}<\/p>`;
+}
+
+/* Tabel hasil uji — dipakai untuk kedua cara (terpisah & bersama).
+   `cara` menentukan judul kolom β, karena artinya BEDA:
+     terpisah → pengaruh X itu SENDIRI (tak memperhitungkan X lain)
+     bersama  → pengaruh X itu SETELAH memperhitungkan X lain          */
+function tabelUji(d, blok, judulKecil, betaLabel) {
+  let baris = '';
+  blok.forEach(j => {
+    baris += `<tr>
+      <td data-label="Variabel"><strong>${aman(j.nama)}<\/strong> → Y<\/td>
+      <td class="angka" data-label="β diminta">${Number(j.diminta).toFixed(3)}<\/td>
+      <td class="angka" data-label="${aman(betaLabel)}">${Number(j.terbaca).toFixed(3)}<\/td>
+      <td class="angka" data-label="t">${Number(j.t).toFixed(2)}<\/td>
+      <td class="angka" data-label="p">${Number(j.p).toFixed(4)}<\/td>
+      <td data-label="Hasil uji"><span class="pita ${j.kelas}">${aman(j.label)}<\/span><\/td>
+    <\/tr>`;
+  });
+  return `<h3 style="margin:16px 0 6px">${judulKecil}<\/h3>
+    <table class="data">
+      <thead><tr>
+        <th>Jalur<\/th><th>β diminta<\/th><th>${aman(betaLabel)}<\/th>
+        <th>t<\/th><th>p<\/th><th>Hasil uji<\/th>
+      <\/tr><\/thead>
+      <tbody>${baris}<\/tbody>
+    <\/table>`;
+}
+
+function tabelAnova(f, judul) {
+  // ── TABEL ANOVA — UJI F / SIMULTAN (ACC Bos 21Sep26, Langkah 2) ──────
+  // Bentuknya SAMA dengan tabel ANOVA di SPSS: sumber · SS · df · MS · F · p.
+  // Ditaruh supaya mahasiswa mengenali tabelnya waktu buka SPSS.
+  if (!f || !f.bisa) {
+    return `<h3 style="margin:16px 0 6px">${aman(judul)}<\/h3>
+      <p class="samar">Uji F belum bisa dihitung${f && f.sebab ? ': ' + aman(f.sebab) : ''}.<\/p>`;
+  }
+  let baris = '';
+  (f.tabel || []).forEach(b => {
+    const ang = (v, d) => (v === null || v === undefined) ? '—' : Number(v).toFixed(d);
+    baris += `<tr>
+      <td data-label="Sumber">${aman(b.sumber)}<\/td>
+      <td class="angka" data-label="SS">${ang(b.ss, 3)}<\/td>
+      <td class="angka" data-label="df">${b.df}<\/td>
+      <td class="angka" data-label="MS">${ang(b.ms, 3)}<\/td>
+      <td class="angka" data-label="F">${ang(b.F, 3)}<\/td>
+      <td class="angka" data-label="p">${ang(b.p, 4)}<\/td>
+    <\/tr>`;
+  });
+  return `<h3 style="margin:16px 0 6px">${aman(judul)}<\/h3>
+    <p class="samar" style="margin:0 0 6px">Uji ini menjawab:
+       <strong>secara bersama-sama, apakah semua X ini berpengaruh ke Y?<\/strong>
+       Ini yang di SPSS namanya tabel <em>ANOVA<\/em>.<\/p>
+    <table class="data">
+      <thead><tr>
+        <th>Sumber<\/th><th>SS<\/th><th>df<\/th><th>MS<\/th><th>F<\/th><th>p<\/th>
+      <\/tr><\/thead>
+      <tbody>${baris}<\/tbody>
+    <\/table>
+    <p style="margin:8px 0 0"><span class="pita ${f.kelas}">${aman(f.label)}<\/span>
+      <strong style="margin-left:6px">${aman(f.kalimat)}<\/strong><\/p>`;
+}
+
+function tampilkanHasil(d) {
+  const kotak = el('hasil');
+  kotak.classList.remove('sembunyi');
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DUA CARA MENGUJI (ACC Bos 18Sep26, opsi 1+3 digabung):
+  //   'sederhana' → tampilkan tabel uji TERPISAH saja
+  //   'berganda'  → tampilkan tabel uji BERSAMA saja
+  //   'keduanya'  → tampilkan KEDUANYA supaya bisa dibandingkan
+  // Tabel yang tidak diminta tetap dihitung server (biaya kecil) tapi
+  // disembunyikan, supaya user tidak bingung.
+  // ═══════════════════════════════════════════════════════════════════════
+  const nX = (d.nama_x || []).length;
+  let blokTabel = '';
+  // ── TABEL ANOVA (UJI F / SIMULTAN) — ACC Bos 21Sep26, Langkah 2 ──────
+  // Kartu ② (berganda) = parsial (uji t) + simultan (uji F) = LENGKAP.
+  // ⚠️ Murni MENAMBAH: tidak mengubah tabel uji t yang sudah ada.
+  const anovaSemua = tabelAnova(d.f,
+    `Uji SERENTAK — ${nX} X bersama-sama ke Y (uji F / tabel ANOVA)`);
+  const anovaPerX = (d.f_terpisah || []).map((f, i) =>
+    tabelAnova(f, `Uji serentak ${aman((d.nama_x || [])[i] || 'X' + (i + 1))} saja → Y (uji F)`));
+  if (d.cara === 'berganda') {
+    // Kartu ② BERGANDA = PARSIAL + SIMULTAN (ACC Bos 21Sep26, N1).
+    // Tampilkan DUA-DUANYA supaya mahasiswa melihat lengkap: uji t (parsial)
+    // dan uji F (simultan) dari SATU regresi yang sama.
+    blokTabel = tabelUji(d, d.bersama,
+      `PARSIAL — pengaruh tiap X setelah X lain diperhitungkan (uji t)`,
+      'β (bersama)')
+      + anovaSemua
+      + `<p class="samar" style="margin:10px 0 0">Perhatikan: ini <strong>satu<\/strong>
+         regresi yang menghasilkan <strong>dua<\/strong> uji. Tabel di atas
+         (uji t) menjawab <em>"X mana yang berpengaruh?"<\/em>; tabel ANOVA
+         (uji F) menjawab <em>"apakah semuanya bersama-sama berpengaruh?"<\/em>.<\/p>`;
+  } else if (d.cara === 'berantai') {
+    // ── S3 BERGANDA-BERANTAI (ACC Bos 18Sep26) ──
+    // Dua bagian ditampilkan berurutan: (1) pengaruh tiap X ke Y,
+    // (2) hubungan antar-X (rantai). Jangan digabung supaya user paham
+    // bahwa ini DUA proses, bukan satu.
+    blokTabel = tabelUji(d, d.bersama,
+      `Bagian 1 — ${nX} X diuji BERSAMA-SAMA ke Y (regresi berganda)`,
+      'β (bersama)')
+      + tabelRantai(d)
+      + `<p class="samar" style="margin:10px 0 0">Ini DUA proses sekaligus:
+         <strong>(1)<\/strong> tiap X bersama-sama menerangkan Y, dan
+         <strong>(2)<\/strong> X saling berhubungan berantai
+         (X1→X2→…→X${nX}). Hubungan antar-X itulah yang membuat hasil
+         berganda berbeda bila rantainya diubah.<\/p>`;
+  } else if (d.cara === 'keduanya') {
+    blokTabel = tabelUji(d, d.terpisah,
+      `Cara 1 — tiap X diuji SENDIRI-SENDIRI ke Y (${nX} uji terpisah)`,
+      'β (sendiri)')
+      + tabelUji(d, d.bersama,
+        `Cara 2 — ${nX} X diuji BERSAMA-SAMA ke Y (1 uji, regresi berganda)`,
+        'β (bersama)')
+      + `<p class="samar" style="margin:10px 0 0">Perhatikan: angka β di dua tabel
+         itu <strong>berbeda<\/strong>. Di Cara 1, β menunjukkan pengaruh X itu
+         <em>sendiri-sendiri<\/em>. Di Cara 2, β menunjukkan pengaruh X itu
+         <em>setelah<\/em> X lain ikut diperhitungkan — inilah sebabnya hasil
+         regresi berganda bisa berbeda dari regresi sederhana.<\/p>`;
+  } else {
+    // Kartu ① SEDERHANA/PARSIAL (ACC Bos 21Sep26, N1) — banyak X, tapi
+    // diuji SATU-SATU. Tiap X punya uji t DAN uji F-nya sendiri.
+    blokTabel = tabelUji(d, d.terpisah,
+      nX === 1
+        ? 'PARSIAL — 1 prediktor ke Y (regresi sederhana)'
+        : `PARSIAL — ${nX} X diuji SATU-SATU ke Y (${nX} uji terpisah)`,
+      'β terbaca')
+      + (nX === 1
+          ? anovaSemua
+          : anovaPerX.join(''))
+      + (nX > 1
+          ? `<p class="samar" style="margin:10px 0 0">Tiap X diuji
+             <strong>sendiri-sendiri<\/strong> — X lain tidak ikut dihitung.
+             Inilah arti <em>parsial<\/em>: pengaruh X itu apa adanya, tanpa
+             dipengaruhi kehadiran X lain. Di SPSS, uji F di atas muncul di
+             tabel <em>ANOVA<\/em> tiap regresi sederhana.<\/p>`
+          : '');
+  }
+
+  kotak.innerHTML = `
+  <div class="kartu renggang">
+    <div class="baris-antara">
+      <span class="eyebrow" style="margin:0">${ikonKecil('check-circle-2', 13)} Data siap<\/span>
+      <span class="pita pita-teal">${aman(d.mode_label)}<\/span>
+    <\/div>
+    <h3>${aman(d.n)} responden · ${aman(d.jumlah_item)} kolom<\/h3>
+    <p class="samar" style="margin:0 0 4px">${aman(d.cara_label || '')}<\/p>
+
+    ${blokTabel}
+
+    <div class="baris-antara renggang">
+      <div>
+        <div class="samar">R² terukur<\/div>
+        <div class="angka-besar">${Number(d.r2).toFixed(3)}<\/div>
+      <\/div>
+      <div style="text-align:right">
+        <div class="samar">Selisih terbesar<\/div>
+        <div class="angka-besar" style="color:${d.galat_maks <= 0.05 ? 'var(--hijau)' : 'var(--amber)'}">
+          ${Number(d.galat_maks).toFixed(4)}<\/div>
+      <\/div>
+    <\/div>
+
+    <div class="catatan">
+      ${ikonKecil('info', 16)}
+      <div>Kolom <strong>β terbaca<\/strong> adalah angka yang nanti muncul di SPSS —
+      inilah yang membuat kamu tahu target sebelum mengolah.<\/div>
+    <\/div>
+
+    <div class="catatan" style="background:#FBF8F3">
+      ${ikonKecil('help-circle', 16)}
+      <div>Mau diolah pakai apa? <strong>Nama kolomnya beda<\/strong> —
+      pilih alatmu, nanti berkasnya menyesuaikan sendiri.<\/div>
+    <\/div>
+
+    <div class="baris renggang">
+      <button class="tb tb-utama" onclick="unduh('csv','spss')"
+        title="Nama kolom panjang — mudah dibaca di SPSS: Harga_1, Kualitas_Produk_2">
+        ${ikonKecil('download', 16)} Unduh untuk SPSS<\/button>
+      <button class="tb tb-utama" onclick="unduh('xlsx','spss')"
+        title="Nama kolom panjang, format Excel">
+        ${ikonKecil('file-spreadsheet', 15)} SPSS (Excel)<\/button>
+    <\/div>
+    <div class="baris renggang">
+      <button class="tb tb-sekunder" onclick="unduh('csv','pls')"
+        title="Kode pendek konvensi SmartPLS: KP1, H1, Y1">
+        ${ikonKecil('download', 16)} Unduh untuk SmartPLS<\/button>
+      <button class="tb tb-sekunder" onclick="unduh('xlsx','pls')"
+        title="Kode pendek, format Excel">
+        ${ikonKecil('file-spreadsheet', 15)} SmartPLS (Excel)<\/button>
+    <\/div>
+
+    <div class="renggang" id="banding-nama" style="font-size:12.5px">
+      <div class="samar" style="margin-bottom:6px">Beda nama kolomnya:<\/div>
+      <div class="baris" style="gap:16px;flex-wrap:wrap">
+        <div><strong>SPSS<\/strong><br><span class="samar">${d.kolom.slice(0,3).map(c => aman(c)).join(', ')}…<\/span><\/div>
+        <div><strong>SmartPLS<\/strong><br><span class="samar" style="color:#2E7D6F">${(d.kolom_pls || d.kolom).slice(0,3).map(c => aman(c)).join(', ')}…<\/span><\/div>
+      <\/div>
+    <\/div>
+
+    <div class="renggang" style="overflow-x:auto">
+      <div class="samar" style="margin-bottom:7px">Pratinjau 6 baris pertama:<\/div>
+      <table class="data" style="font-size:12.5px">
+        <thead><tr>${d.kolom.map(c => `<th>${aman(c)}<\/th>`).join('')}<\/tr><\/thead>
+        <tbody>${d.pratinjau.map(r => '<tr>' + r.map(v => `<td class="angka">${aman(v)}<\/td>`).join('') + '<\/tr>').join('')}<\/tbody>
+      <\/table>
+    <\/div>
+  <\/div>`;
+  kotak.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+// ⚠️ ATURAN: 'untuk' = alat yang dipakai user (spss/pls), BUKAN format.
+// Format (csv/xlsx) dipisah supaya pilihan alat tidak tersembunyi di balik
+// tombol "Unduh Excel" — permintaan Bos: "Unduh untuk SPSS / Unduh untuk PLS".
+function unduh(bentuk, untuk) {
+  const bentukAman = bentuk === 'xlsx' ? 'xlsx' : 'csv';
+  const alatAman = untuk === 'pls' ? 'pls' : 'spss';
+  window.location.href =
+    '/api/unduh?bentuk=' + bentukAman + '&untuk=' + alatAman;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE JALUR MODEL (?model=...) — Tahap 1.2 (19Sep26)
+
+   KENAPA ADA: halaman ini dulu langsung menyodorkan slider + angka β ke
+   user. Bos: "kalau disajikan langsung form isian angka maka akan tidak
+   menarik dan orang awam tambah bingung." Maka kalau user datang dari
+   kartu di /kuantitatif (mis. "Ada perantara?"), formnya DISETEL OTOMATIS
+   ke jalur model itu — user tinggal isi nama variabel, tidak perlu tahu
+   berapa X atau cara apa.
+
+   ⚠️ ATURAN: mode ini MENYETEL saja (pakai fungsi yang SUDAH ADA), tidak
+   menyembunyikan apa pun. Kalau user mau ubah, semua kontrol tetap bisa
+   disentuh. Jangan sampai user terjebak di satu jalur.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const JALUR_MODEL = {
+  sederhana: {
+    x: 1, cara: 'sederhana',
+    judul: 'Pengaruh satu hal terhadap hal lain',
+    ingat: 'Kamu memilih <strong>Regresi Sederhana<\/strong> — satu X memengaruhi satu Y.',
+    saran: ['Harga', 'Kepuasan Pelanggan']
+  },
+  berganda: {
+    x: 3, cara: 'berganda',
+    judul: 'Beberapa hal bersama-sama memengaruhi satu hal',
+    ingat: 'Kamu memilih <strong>Regresi Berganda<\/strong> — beberapa X bersamaan memengaruhi satu Y.',
+    saran: ['Harga', 'Promosi', 'Kualitas Produk']
+  },
+  /* ⚠️ SUB-PILIHAN REGRESI KE-3 (TAHAP 1.3, 19Sep26) — bentuk TEMUAN Bos.
+     Terukur 19Sep26: bagan berantai galat 0,0185, rantai 0,55 terbaca
+     0,549 & 0,533. Sudah layak ditampilkan. */
+  berantai: {
+    x: 3, cara: 'berantai',
+    judul: 'Beberapa X yang saling berhubungan, lalu ke Y',
+    ingat: 'Kamu memilih <strong>Regresi Berganda-Berantai<\/strong> — X-nya '
+         + '<strong>saling berhubungan<\/strong> (X1 → X2 → X3), lalu bersama ke Y. '
+         + 'Hasilnya <strong>dua tabel<\/strong>: pengaruh ke Y, dan rantai antar-X.',
+    saran: ['Harga', 'Promosi', 'Kualitas Produk']
+  },
+  mediasi: {
+    x: 2, cara: 'berganda',
+    judul: 'Ada perantara (X → perantara → Y)',
+    ingat: 'Kamu memilih <strong>Mediasi Tunggal<\/strong>. Isi <strong>X dulu<\/strong> (penyebab), '
+         + 'lalu variabel yang <strong>jadi perantara (M)<\/strong>, terakhir Y (akibat).',
+    saran: ['Harga', 'Kepuasan Pelanggan']
+  },
+  /* ⚠️ 3 SUB-PILIHAN MEDIASI (TAHAP 1.3 LANGKAH B, 19Sep26).
+     Terukur 19Sep26 (kalibrasi_per_jalur, n=300): paralel galat 0,0138 ·
+     berjenjang 0,0161 · campuran 0,0231 — ketiganya tercapai=True. */
+  'mediasi-paralel': {
+    x: 3, cara: 'berganda',
+    judul: 'Perantara sejajar (X → M1 dan M2 → Y)',
+    ingat: 'Kamu memilih <strong>Mediasi Paralel<\/strong> — dua perantara (M) '
+         + 'atau lebih yang <strong>berdiri sejajar<\/strong>, tidak saling lewat.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kepercayaan']
+  },
+  'mediasi-berjenjang': {
+    x: 3, cara: 'berganda',
+    judul: 'Perantara bertingkat (X → M1 → M2 → Y)',
+    ingat: 'Kamu memilih <strong>Mediasi Berjenjang<\/strong> — perantaranya '
+         + '<strong>bertingkat<\/strong>: M1 dulu, baru M2. Isi berurutan dari kiri.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kepercayaan']
+  },
+  'mediasi-campuran': {
+    x: 3, cara: 'keduanya',
+    judul: 'Perantara campuran (sejajar + bertingkat)',
+    ingat: 'Kamu memilih <strong>Mediasi Campuran<\/strong> — ada perantara '
+         + 'yang <strong>sejajar<\/strong>, ada yang <strong>bertingkat<\/strong>.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kepercayaan']
+  },
+  moderasi: {
+    x: 2, cara: 'berganda',
+    judul: 'Ada yang memperkuat / melemahkan',
+    ingat: 'Kamu memilih <strong>Moderasi Tunggal<\/strong>. Variabel kedua adalah '
+         + '<strong>penguat/pelemah (Z)<\/strong> hubungan X ke Y.',
+    saran: ['Harga', 'Kualitas Produk']
+  },
+  /* ⚠️ 5 SUB-PILIHAN MODERASI (TAHAP 1.3 LANGKAH C, 19Sep26).
+     Terukur 19Sep26 (kalibrasi_per_jalur + interaksi, n=300, tol 0,04):
+     dual 0,0103 · jalur-a 0,0184 · jalur-b 0,0148 · keduanya 0,0062 · 3-jalur 0,0362.
+     ⚠️ 3-jalur galat PALING BESAR (0,0362) — masih dalam toleransi tapi dekat batas.
+     Bentuk ini PERNAH GAGAL (bug item_per 18Sep26), kini TERBUKTI jalan di mesin;
+     ⚠️ BELUM diuji lewat UI /buat-data — pintunya baru dibuka di sini. */
+  'moderasi-dual': {
+    x: 3, cara: 'berganda',
+    judul: 'Dua penguat di jalur yang sama',
+    ingat: 'Kamu memilih <strong>Dual Moderasi<\/strong> — <strong>dua penguat<\/strong> '
+         + '(Z1 dan Z2) menempel di jalur X → Y yang sama.',
+    saran: ['Harga', 'Kualitas Produk', 'Citra Merek']
+  },
+  'moderasi-jalur-a': {
+    x: 3, cara: 'berganda',
+    judul: 'Penguat di jalur pertama (X → perantara)',
+    ingat: 'Kamu memilih <strong>Moderasi Jalur A<\/strong> — penguat (Z) menempel '
+         + 'di jalur <strong>X → M<\/strong>. Isi: X, M (perantara), lalu Z.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kualitas Produk']
+  },
+  'moderasi-jalur-b': {
+    x: 3, cara: 'berganda',
+    judul: 'Penguat di jalur kedua (perantara → Y)',
+    ingat: 'Kamu memilih <strong>Moderasi Jalur B<\/strong> — penguat (Z) menempel '
+         + 'di jalur <strong>M → Y<\/strong>. Isi: X, M (perantara), lalu Z.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kualitas Produk']
+  },
+  'moderasi-keduanya': {
+    x: 3, cara: 'keduanya',
+    judul: 'Satu penguat di dua jalur',
+    ingat: 'Kamu memilih <strong>Moderasi Jalur A & B<\/strong> — <strong>satu penguat '
+         + 'yang sama<\/strong> menempel di dua jalur (X → M dan M → Y).',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kualitas Produk']
+  },
+  'moderasi-3jalur': {
+    x: 4, cara: 'keduanya',
+    judul: 'Dua penguat berbeda di dua jalur',
+    ingat: 'Kamu memilih <strong>Moderasi 3 Jalur<\/strong> — <strong>dua penguat '
+         + 'berbeda<\/strong>: Z1 di X → M, Z2 di M → Y. Bentuk paling lengkap.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kualitas Produk', 'Citra Merek']
+  },
+  gabungan: {
+    x: 4, cara: 'keduanya',
+    judul: 'Campuran (perantara + penguat + berantai)',
+    ingat: 'Kamu memilih <strong>Model Campuran<\/strong> — ini bentuk paling lengkap. '
+         + 'Isi nama tiap variabel sesuai peranmu.',
+    saran: ['Harga', 'Kepuasan Pelanggan', 'Kualitas Produk', 'Loyalitas']
+  }
+};
+
+function terapkanJalurModel() {
+  const slug = new URLSearchParams(location.search).get('model');
+
+  // ⚠️ KEPUTUSAN BOS 19Sep26 (opsi 1B): user yang membuka /buat-data TANPA
+  // memilih model TIDAK ditebak-tebak. Dia diarahkan balik ke /kuantitatif
+  // supaya memilih dulu.
+  //
+  // MENGAPA 1B, bukan "isi otomatis model terakhir": tanpa login, ingatan
+  // hanya per-BROWSER. Kalau mesin menebak model yang SALAH lalu user tidak
+  // sadar, datanya jadi tidak sesuai penelitiannya — bahaya yang lebih besar
+  // daripada repot memilih 1 kali. (Login direncanakan Tahap 7.)
+  //
+  // ⚠️ SENGAJA `location.replace` (bukan `href`): TIDAK menambah riwayat
+  // browser, jadi tombol "mundur" user tidak terjebak bolak-balik
+  // /buat-data ↔ /kuantitatif (lingkaran tak berujung).
+  if (!slug) {
+    location.replace('/kuantitatif');
+    return false;
+  }
+
+  const J = JALUR_MODEL[slug];
+  if (!J) return false;
+
+  // 1. Isi SARAN nama LEBIH DULU ke array NAMA — inilah cara yang BENAR.
+  //
+  // ⚠️ CACAT YANG DIPERBAIKI 19Sep26 (terukur di uji_jalur_tampilan.py):
+  // cara pertama Wulan adalah menulis langsung ke input.value setelah
+  // jeda 80ms. HASILNYA GAGAL — input tetap 'X1','X2'.
+  // AKAR: input dibuat ulang tiap bangunTabel() dijalankan, dan HTML-nya
+  // memuat value="${NAMA[i]}" → tulisan Wulan TERTIMPA nilai lama.
+  // CARA BENAR: ubah array NAMA (sumber data), lalu bangun ulang tabel.
+  //   Ini mengikuti alur yang MEMANG SUDAH ADA — bukan menambal DOM.
+  if (typeof NAMA !== 'undefined') {
+    J.saran.forEach((nm, i) => {
+      if (i < NAMA.length && (!NAMA[i] || /^X\d*$/i.test(NAMA[i]))) {
+        NAMA[i] = nm;
+      }
+    });
+  }
+
+  // 2. Setel jumlah X — pakai fungsi yang SUDAH ADA (setJumlahX lewat slider).
+  const sld = el('x-slider');
+  if (sld) {
+    sld.value = String(J.x);
+    sld.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // 3. Setel CARA menguji (pilih kartu 'cara' yang sesuai).
+  const kartu = document.querySelector('.pilih-cara[data-cara="' + J.cara + '"]');
+  if (kartu) {
+    kartu.checked = true;
+    kartu.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // 4. Bangun ulang tabel supaya NAMA baru benar-benar terpakai,
+  //    lalu segarkan angka-angkanya.
+  bangunTabel();
+  segarkan();
+
+  // 5. Isi nama Y kalau ada kolomnya (dilakukan SETELAH bangun ulang).
+  setTimeout(() => {
+    const namaY = document.querySelector('.nama-var-y') || el('nama-y');
+    if (namaY && !namaY.value.trim()) {
+      namaY.value = 'Keputusan Pembelian';
+      namaY.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, 60);
+
+  // 6. Tampilkan BAR "Model kamu sekarang" + tombol Ganti model.
+  //
+  // ⚠️ DIGANTI 19Sep26 (TAHAP 1.4, ACC Bos opsi 2A):
+  // versi LAMA membuat spanduk baru lewat createElement lalu ditempel ke
+  // dalam kartu #catatan-kelayakan, dengan gaya INLINE di JS.
+  // TERUKUR 3 cacat: (1) kartu kelayakan berubah isi (VIF/R²) → spanduk
+  // bisa tertimpa; (2) gaya inline KALAH oleh `.catatan` bawaan → warna
+  // tidak sesuai (misteri lama "spanduk krem"); (3) tidak ada di DOM awal
+  // sehingga tidak bisa diuji gerbang.
+  // CARA BARU: bar SUDAH ADA di HTML (`#bar-model`), kita hanya mengisi
+  // nama model lalu membuang atribut `hidden` — mengikuti alur yang
+  // MEMANG SUDAH ADA, bukan menambal DOM dari JS.
+  const bar = el('bar-model');
+  const barNama = el('bar-model-nama');
+  if (bar && barNama) {
+    // Ambil nama ramah (judul kartu), bukan slug teknis. Peta judul di
+    // JALUR_MODEL dipakai supaya SATU SUMBER — jangan tulis ulang di sini.
+    barNama.textContent = J.judul || slug;
+    bar.hidden = false;
+  }
+
+  // 7. Judul halaman disesuaikan (biar user tahu dia di jalur mana).
+  const judulHalaman = document.querySelector('h1');
+  if (judulHalaman) judulHalaman.textContent = J.judul;
+
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAAT HALAMAN DIBUKA — urutan pemanggilan WAJIB begini (jangan diubah):
+//   1. angkaWajar()   → isi β awal (hanya mengubah data, tidak menyentuh DOM)
+//   2. bangunTabel()  → bangun tabel SEKALI (pemanggil tunggal)
+//   3. segarkan()     → perbarui angka & teks di dalamnya
+//   4. terapkanJalurModel() → DISETEL TERAKHIR, setelah DOM siap.
+// Kalau salah satu fungsi saling memanggil (seperti bug 17Sep26), lahir
+// lingkaran tak berujung → slider lambat, tombol + berat di HP.
+//
+// ⚠️ KENAPA mode jalur dipanggil PALING AKHIR (19Sep26): ia menyentuh slider,
+// kartu 'cara', dan kolom nama — semuanya HARUS sudah dibangun lebih dulu.
+// Kalau dipanggil sebelum bangunTabel(), kolom .nama-var belum ada →
+// pengisian contoh nama diam-diam tidak terjadi.
+// ═══════════════════════════════════════════════════════════════════════════
+angkaWajar();
+bangunTabel();
+segarkan();
+terapkanJalurModel();
+</script>
+{% endblock %}

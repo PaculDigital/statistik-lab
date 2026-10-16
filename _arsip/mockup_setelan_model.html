@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOCKUP — Alur Setelan Model (Penelitian STATISTIK Lab.)</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   MOCKUP — BUKAN APLIKASI. Hanya untuk Bos LIHAT & KOREKSI bentuknya.
+   Warna & gaya diambil PERSIS dari app/static/gaya.css supaya yang Bos
+   lihat di sini = yang akan jadi di aplikasi.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  --kertas:#FBF8F3; --kertas-2:#F5F0E6; --kertas-3:#EDE6D8;
+  --tinta:#2B2722; --tinta-2:#6B6259; --tinta-3:#9A9086;
+  --garis:#E0D8C8; --teal:#2E7D6F; --teal-terang:#E4F0EC;
+  --amber:#B5762A; --amber-terang:#FBEFDC;
+  --merah:#A85A5A; --merah-terang:#F7E7E7;
+  --hijau:#4E8A5A; --hijau-terang:#E5F0E7;
+  --r:14px; --r-s:9px;
+  --bayang:0 1px 2px rgba(43,39,34,.05), 0 8px 24px -12px rgba(43,39,34,.16);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--kertas);color:var(--tinta);
+  font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+.bungkus{max-width:1060px;margin:0 auto;padding:22px 18px 60px}
+.puncak{margin-bottom:22px}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--teal);font-weight:700}
+h1{font-size:23px;margin:6px 0 4px;letter-spacing:-.01em}
+h2{font-size:16.5px;margin:22px 0 10px}
+p{margin:0 0 8px}
+.samar{color:var(--tinta-3);font-size:12.5px}
+.kartu{background:var(--kertas-2);border:1px solid var(--garis);
+  border-radius:var(--r);padding:20px;box-shadow:var(--bayang)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+
+/* ── KARTU PILIHAN (dipakai untuk 4 bentuk model) ── */
+.pilih-kisi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{
+  position:relative;display:flex;align-items:center;gap:12px;
+  border:1.5px solid var(--garis);border-radius:var(--r-s);
+  background:var(--kertas);padding:13px 14px;cursor:pointer;
+  transition:all .14s;text-align:left;
+}
+.card:hover{border-color:var(--teal);background:var(--teal-terang)}
+.card.aktif{border-color:var(--teal);background:var(--teal-terang);
+  box-shadow:0 0 0 2.5px rgba(46,125,111,.13)}
+.card-ikon{width:34px;height:34px;flex:0 0 34px;border-radius:8px;
+  background:var(--kertas-3);display:grid;place-items:center;font-size:17px}
+.card-teks{flex:1 1 auto;min-width:0}
+.card-judul{display:block;font-weight:700;font-size:14px;line-height:1.3}
+.card-ket{display:block;color:var(--tinta-2);font-size:12.5px;line-height:1.35;
+  margin-top:2px}
+.card-tanda{flex:0 0 20px;width:20px;height:20px;border-radius:50%;
+  border:1.5px solid var(--garis);display:grid;place-items:center;
+  font-size:12px;color:transparent;font-weight:700}
+.card.aktif .card-tanda{background:var(--teal);border-color:var(--teal);color:#fff}
+
+/* ── KARTU MINI (tombol tambah perantara / penguat) ── */
+.kartu-mini{border:1.5px dashed var(--garis);border-radius:var(--r-s);
+  background:var(--kertas);padding:10px 13px;display:flex;align-items:center;
+  gap:10px;cursor:pointer;transition:all .14s;width:100%;font:inherit;
+  color:inherit;text-align:left;margin-top:9px}
+.kartu-mini:hover{border-color:var(--teal);border-style:solid;
+  background:var(--teal-terang)}
+.kartu-mini.tersembunyi{display:none}
+.plus{width:22px;height:22px;border-radius:50%;background:var(--teal);
+  color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;
+  flex:0 0 22px}
+.plus.pudar{background:var(--kertas-3);color:var(--tinta-3)}
+
+/* ── TABEL ── */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--tinta-3);padding:7px 8px;border-bottom:1.5px solid var(--garis);
+  font-weight:700;vertical-align:bottom}
+td{padding:8px;border-bottom:1px solid var(--garis);vertical-align:middle}
+tr:baris-m{background:var(--amber-terang)}
+tr.baris-m td{background:var(--amber-terang)}
+tr.baris-z td{background:var(--teal-terang)}
+td input{width:100%;max-width:96px;border:1.5px solid var(--garis);
+  border-radius:7px;padding:7px 9px;font:inherit;font-size:14px;
+  background:var(--kertas);color:var(--tinta)}
+/* ⚠️ BUG yang ditutup di mockup: semua input dipaksa max-width:96px →
+   nama variabel TERPOTONG ("Tingkat Ed..."). Kolom nama butuh lebar sendiri. */
+td input.nama{max-width:none;min-width:120px;font-weight:600}
+.pita{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;
+  font-weight:700;white-space:nowrap}
+.pita-hijau{background:var(--hijau-terang);color:var(--hijau)}
+.pita-abu{background:var(--kertas-3);color:var(--tinta-2)}
+.pita-amber{background:var(--amber-terang);color:var(--amber)}
+
+/* ── DIAGRAM HIDUP ── */
+.kanvas-diagram{background:var(--kertas-3);border:1px solid var(--garis);
+  border-radius:var(--r-s);padding:16px;display:grid;place-items:center;min-height:150px}
+.dugaan{max-width:100%;height:auto}
+
+/* ── HASIL ── */
+.r2-simbol{font-size:15px;font-weight:700}
+.r2-angka{font-size:33px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.kotak-r2{background:var(--kertas);border:1px solid var(--garis);
+  border-radius:var(--r-s);padding:13px 15px;display:inline-block;min-width:180px}
+.r2-arti{font-size:12.5px;color:var(--tinta-2);margin-top:3px}
+.baris-hasil{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.kalimat{background:var(--teal-terang);border-left:3px solid var(--teal);
+  border-radius:0 var(--r-s) var(--r-s) 0;padding:11px 14px;font-size:14px;
+  margin-top:12px}
+.kalimat.amber{background:var(--amber-terang);border-left-color:var(--amber)}
+.sorot{background:#FFF3B8;padding:0 3px;border-radius:3px;font-weight:700}
+
+/* ── CATATAN MOCKUP ── */
+.catatan-mockup{background:#FFF8E1;border:1.5px solid #E8C86A;
+  border-radius:var(--r);padding:15px 17px;margin-bottom:20px;font-size:13.5px}
+.catatan-mockup b{color:#8A6410}
+.tombol{border:none;border-radius:var(--r-s);padding:11px 19px;font:inherit;
+  font-weight:700;font-size:14px;background:var(--teal);color:#fff;cursor:pointer}
+.tombol.kedua{background:var(--kertas-3);color:var(--tinta)}
+
+/* ── HP ── */
+@media (max-width:560px){
+  .grid2{grid-template-columns:1fr}
+  .pilih-kisi{grid-template-columns:1fr}
+  .bungkus{padding:14px 12px 40px}
+  h1{font-size:20px}
+  td input{max-width:none}
+  td input.nama{min-width:0}
+
+  /* ⚠️ BUG yang ditutup: di HP kolom tabel menyempit → nama variabel
+     TERPOTONG ("Tingkat Edu"). Solusi: tabel jadi BLOK — tiap baris
+     berubah menjadi kartu kecil; judul kolom tampil sebagai label
+     kecil di atas nilainya (pakai data-label). */
+  table.tabel-hp thead{display:none}
+  table.tabel-hp, table.tabel-hp tbody, table.tabel-hp tr,
+  table.tabel-hp td{display:block;width:100%}
+  table.tabel-hp tr{border:1px solid var(--garis);border-radius:9px;
+    padding:10px;margin-bottom:9px;background:var(--kertas)}
+  table.tabel-hp tr.baris-m{background:var(--amber-terang)}
+  table.tabel-hp tr.baris-z{background:var(--teal-terang)}
+  table.tabel-hp td{border:none;padding:3px 0}
+  table.tabel-hp td::before{
+    content:attr(data-label);display:block;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--tinta-3);
+    font-weight:700;margin-bottom:2px}
+  table.tabel-hp td:empty{display:none}
+}
+</style>
+</head>
+<body>
+<div class="bungkus">
+
+  <div class="catatan-mockup">
+    <b>📐 INI MOCKUP — bukan aplikasi.</b> Halaman ini Cuma untuk Bos lihat bentuknya
+    dan koreksi. Angka di dalamnya belum dihitung sungguhan.<br>
+    <b>Coba klik</b> kartu bentuknya (4 kartu) dan tombol <b>+ perantara</b> /
+    <b>+ penguat</b> di bawah tabel — tabel &amp; diagram akan berubah sendiri.
+  </div>
+
+  <div class="puncak">
+    <span class="eyebrow">Mockup · Fase 2</span>
+    <h1>Menyusun Model Penelitian</h1>
+    <p class="samar">Semua kemampuan mesin (10 bentuk) bisa dipakai dari satu halaman ini —
+      dan halaman ini tetap sederhana.</p>
+  </div>
+
+  <!-- ══════════════ LANGKAH 1 ══════════════ -->
+  <h2>1. Apa yang mau kamu teliti?</h2>
+  <div class="card kartu" style="padding:16px">
+    <div class="pilih-kisi" id="kisi-bentuk">
+      <button class="card aktif" data-bentuk="langsung">
+        <span class="card-ikon">→</span>
+        <span class="card-teks">
+          <span class="card-judul">X memengaruhi Y langsung</span>
+          <span class="card-ket">Tanpa perantara</span>
+        </span>
+        <span class="card-tanda">✓</span>
+      </button>
+      <button class="card" data-bentuk="perantara">
+        <span class="card-ikon">⇢</span>
+        <span class="card-teks">
+          <span class="card-judul">X memengaruhi Y lewat perantara</span>
+          <span class="card-ket">Ada satu hal di tengah</span>
+        </span>
+        <span class="card-tanda">✓</span>
+      </button>
+      <button class="card" data-bentuk="penguat">
+        <span class="card-ikon">⤙</span>
+        <span class="card-teks">
+          <span class="card-judul">Ada yang menguatkan / melemahkan</span>
+          <span class="card-ket">Pengaruh berubah di kondisi tertentu</span>
+        </span>
+        <span class="card-tanda">✓</span>
+      </button>
+      <button class="card" data-bentuk="keduanya">
+        <span class="card-ikon">⇢⤙</span>
+        <span class="card-teks">
+          <span class="card-judul">Keduanya</span>
+          <span class="card-ket">Ada perantara <i>dan</i> ada penguat</span>
+        </span>
+        <span class="card-tanda">✓</span>
+      </button>
+    </div>
+    <p class="samar" id="bentuk-ringkas" style="margin:11px 0 0"></p>
+  </div>
+
+  <!-- ══════════════ LANGKAH 2 ══════════════ -->
+  <h2>2. Isi nama variabel dan besar pengaruhnya</h2>
+  <div class="grid2">
+    <div class="kartu">
+      <div id="tabel-jalur"></div>
+
+      <button class="kartu-mini" id="btn-m">
+        <span class="plus">+</span>
+        <span class="card-teks">
+          <span class="card-judul">Tambah perantara</span>
+          <span class="card-ket">Ada hal lain yang meneruskan pengaruh</span>
+        </span>
+      </button>
+      <button class="kartu-mini" id="btn-z">
+        <span class="plus">+</span>
+        <span class="card-teks">
+          <span class="card-judul">Tambah penguat</span>
+          <span class="card-ket">Pengaruhnya beda tergantung kondisi ini</span>
+        </span>
+      </button>
+      <p class="samar" id="bentuk-terpakai" style="margin:11px 0 0"></p>
+    </div>
+
+    <!-- DIAGRAM HIDUP -->
+    <div class="kartu">
+      <div class="eyebrow" style="font-size:11.5px;margin-bottom:8px">Model kamu</div>
+      <div class="kanvas-diagram" id="kanvas"></div>
+      <p class="samar" style="margin:9px 0 0">Gambar ini mengikuti isianmu — jadi
+        kelihatan salahnya <b>sebelum</b> data dibuat.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════ LANGKAH 3 ══════════════ -->
+  <h2>3. Bentuk data</h2>
+  <div class="kartu">
+    <p style="font-size:13.5px;margin-bottom:12px">
+      Jumlah responden &amp; cara menguji — sama seperti yang sudah ada sekarang.
+    </p>
+    <div class="baris-hasil">
+      <label style="font-size:13.5px">Responden
+        <input value="200" style="width:80px;border:1.5px solid var(--garis);
+          border-radius:7px;padding:7px 9px;font:inherit;margin-left:6px"></label>
+      <label style="font-size:13.5px">Cara menguji
+        <select style="border:1.5px solid var(--garis);border-radius:7px;
+          padding:7px 9px;font:inherit;margin-left:6px">
+          <option>Berganda (semua X bersama)</option>
+          <option>Sederhana (tiap X sendiri)</option>
+          <option>Dua-duanya, tampilkan keduanya</option>
+        </select></label>
+    </div>
+    <div style="margin-top:14px">
+      <button class="tombol" id="btn-buat">Buatkan data</button>
+      <button class="tombol kedua">Setel angka wajar</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ HASIL ══════════════ -->
+  <h2>4. Hasilnya nanti seperti ini</h2>
+  <div class="kartu">
+    <div class="kartu" style="background:var(--kertas);padding:16px">
+      <div class="eyebrow" style="font-size:11.5px;margin-bottom:10px">Koefisien per jalur</div>
+      <div id="tabel-hasil"></div>
+    </div>
+
+    <div class="baris-hasil" style="margin-top:16px">
+      <div class="kotak-r2">
+        <div class="samar">Prediksi R² <span title="Contoh">?</span></div>
+        <div style="display:flex;align-items:baseline;gap:7px">
+          <span class="r2-simbol">R²</span>
+          <span class="r2-angka" id="r2-angka">0,26</span>
+        </div>
+        <div class="r2-arti">Seberapa besar X menerangkan Y</div>
+      </div>
+      <div style="flex:1 1 260px;min-width:230px">
+        <span class="pita pita-hijau" id="r2-pita">Sedang</span>
+        <p class="samar" style="margin:7px 0 0" id="r2-pesan"></p>
+      </div>
+    </div>
+
+    <!-- kalimat awam hasil mediasi -->
+    <div class="kalimat" id="kalimat-hasil" style="display:none"></div>
+
+    <!-- grafik moderasi -->
+    <div id="grafik-moderasi" style="display:none;margin-top:16px">
+      <div class="eyebrow" style="font-size:11.5px;margin-bottom:8px">
+        Pengaruh X ke Y pada dua kondisi
+      </div>
+      <div class="kanvas-diagram" style="place-items:stretch;min-height:230px">
+        <svg viewBox="0 0 420 210" class="dugaan" id="svg-mod">
+          <line x1="52" y1="176" x2="404" y2="176" stroke="#9A9086" stroke-width="1.4"/>
+          <line x1="52" y1="16" x2="52" y2="176" stroke="#9A9086" stroke-width="1.4"/>
+          <text x="228" y="200" font-size="11.5" fill="#6B6259" text-anchor="middle">X (Variabel Bebas)</text>
+          <text x="16" y="100" font-size="11.5" fill="#6B6259" text-anchor="middle"
+                transform="rotate(-90 16 100)">Y</text>
+          <line x1="70" y1="150" x2="386" y2="38" stroke="#2E7D6F" stroke-width="3"/>
+          <line x1="70" y1="163" x2="386" y2="126" stroke="#B5762A" stroke-width="3"
+                stroke-dasharray="7 5"/>
+          <text x="392" y="36" font-size="11.5" fill="#2E7D6F" font-weight="700">penguat tinggi</text>
+          <text x="392" y="132" font-size="11.5" fill="#B5762A" font-weight="700">penguat rendah</text>
+        </svg>
+      </div>
+      <div class="kalimat amber">
+        Garisnya <b>tidak sejajar</b> — artinya penguat ini <b>benar-benar mengubah</b>
+        besarnya pengaruh X ke Y. Di kondisi penguat tinggi, pengaruhnya lebih curam
+        (lebih kuat). <i>Kalau kedua garis sejajar, berarti penguat itu tidak berpengaruh.</i>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CELAH ══════════════ -->
+  <h2>Yang masih perlu Bos putuskan</h2>
+  <div class="kartu">
+    <p><b>1. Kalimat hasil mediasi</b> — Wulan usul TIDAK pakai istilah
+      “mediasi penuh/sebagian”, tapi kalimat awam:</p>
+    <div class="kalimat">Pengaruh X ke Y lewat perantara sebesar <b>0,135</b>.
+      Pengaruh langsungnya cuma <b>0,05</b> — jadi bisa dikatakan pengaruhnya
+      <span class="sorot">hampir seluruhnya lewat perantara</span>.</div>
+    <p style="margin-top:12px"><b>2. Tombol “+ perantara”</b> — kalau ditekan dua kali,
+      jadi <b>2 perantara sejajar</b>. Wulan usul tambah pilihan kecil
+      <b>“berurutan”</b> (perantara 1 → perantara 2) tanpa istilah “berjenjang”.</p>
+    <p><b>3. Kalau X cuma 1 tapi pilih “ada penguat”</b> — Wulan usul aplikasi
+      <b>otomatis menambah kotak penguat</b>, bukan menolak.</p>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   MOCKUP — logika ringkas. Tujuan: Bos bisa MERASAKAN alurnya.
+   Angka koefisien hanyalah contoh, bukan hitungan mesin.
+   ══════════════════════════════════════════════════════════════════════ */
+
+var BENTUK = 'langsung';
+var ADA_M = false, ADA_Z = false, DUA_M = false, DUA_Z = false, BERURUTAN = false;
+
+var NAMA_X = ['Tingkat Edukasi', 'Motivasi Belajar', 'Kualitas Layanan'];
+var NAMA_M = 'Kepuasan';
+var NAMA_Z = 'Dukungan Keluarga';
+
+function bentukEfektif() {
+  // bentuk yang DIPILIH user vs bentuk yang SEDANG terpakai (mengikuti tombol)
+  if (ADA_M && ADA_Z) return 'keduanya';
+  if (ADA_M) return 'perantara';
+  if (ADA_Z) return 'penguat';
+  return 'langsung';
+}
+
+function aturTombol() {
+  // tombol "+ perantara"/"+ penguat" hanya muncul bila belum ada bentuknya
+  document.getElementById('btn-m').classList.toggle('tersembunyi', ADA_M);
+  document.getElementById('btn-z').classList.toggle('tersembunyi', ADA_Z);
+}
+
+function ringkasBentuk(b) {
+  var t = {
+    langsung: 'Semua X diuji langsung ke Y.',
+    perantara: 'Ada satu hal di tengah yang meneruskan pengaruh X ke Y.',
+    penguat: 'Pengaruh X ke Y berbeda, tergantung kondisi penguat.',
+    keduanya: 'Ada perantara, dan pengaruh itu juga dipengaruhi penguat.'
+  };
+  var n = NAMA_X.length;
+  return t[b] + ' (' + n + ' variabel X)';
+}
+
+function bangunTabel() {
+  var b = bentukEfektif(), h = '';
+  h += '<table class="tabel-hp"><thead><tr>';
+  h += '<th style="min-width:132px">Nama variabel</th>';
+  if (b === 'perantara' || b === 'keduanya') {
+    h += '<th>Pengaruh X<br>ke Perantara</th><th>Pengaruh Perantara<br>ke Y</th>';
+  }
+  if (b === 'penguat' || b === 'keduanya') h += '<th>Pengaruh<br>X×Penguat</th>';
+  h += '<th>Pengaruh<br>langsung ke Y</th><th>Nanti</th></tr></thead><tbody>';
+
+  NAMA_X.forEach(function (nm) {
+    h += '<tr><td data-label="Nama variabel"><input class="nama" value="' + nm + '"></td>';
+    if (b === 'perantara' || b === 'keduanya') h += '<td data-label="Pengaruh X ke Perantara"><input value="0,45"></td><td data-label="Pengaruh Perantara ke Y"><input value="0,30"></td>';
+    if (b === 'penguat' || b === 'keduanya') h += '<td data-label="Pengaruh X×Penguat"><input value="0,22"></td>';
+    h += '<td data-label="Pengaruh langsung ke Y"><input value="0,05"></td><td data-label="Nanti"><span class="pita pita-hijau">Signifikan</span></td></tr>';
+  });
+
+  if (b === 'perantara' || b === 'keduanya') {
+    h += '<tr class="baris-m"><td data-label="Nama variabel"><input class="nama" value="' + NAMA_M + '"></td>';
+    h += '<td data-label="Pengaruh X ke Perantara"><span class="samar">— perantara —</span></td>';
+    h += '<td data-label="Pengaruh Perantara ke Y"><span class="samar">diukur</span></td>';
+    if (b === 'keduanya') h += '<td data-label="Pengaruh X×Penguat"><input value="0,12"></td>';
+    h += '<td></td><td><span class="pita pita-abu">Perantara</span></td></tr>';
+  }
+  if (b === 'penguat' || b === 'keduanya') {
+    h += '<tr class="baris-z"><td data-label="Nama variabel"><input class="nama" value="' + NAMA_Z + '"></td>';
+    if (b === 'keduanya') h += '<td></td><td></td>';
+    h += '<td data-label="Pengaruh X×Penguat"><span class="samar">— penguat —</span></td>';
+    h += '<td data-label="Pengaruh langsung ke Y"><input value="0,08"></td>';
+    h += '<td><span class="pita pita-amber">Penguat</span></td></tr>';
+  }
+  h += '</tbody></table>';
+  document.getElementById('tabel-jalur').innerHTML = h;
+}
+
+function bangunDiagram() {
+  var b = bentukEfektif(), s = '';
+  function kotak(x, y, w, t, w2) {
+    var f = '#FBF8F3', g = '#E0D8C8', c = '#2B2722';
+    if (w2 === 'm') { f = '#FBEFDC'; g = '#B5762A'; }
+    if (w2 === 'z') { f = '#E4F0EC'; g = '#2E7D6F'; }
+    return '<rect x="' + x + '" y="' + y + '" width="' + (w || 116) + '" height="38" rx="9" fill="' + f + '" stroke="' + g + '" stroke-width="1.6"/>' +
+      '<text x="' + (x + (w || 116) / 2) + '" y="' + (y + 24) + '" font-size="12.5" fill="' + c + '" text-anchor="middle" font-weight="600">' + t + '</text>';
+  }
+  function panah(x1, y1, x2, y2, putus, lab, warna) {
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + (warna || '#6B6259') + '" stroke-width="2"' +
+      (putus ? ' stroke-dasharray="6 4"' : '') + ' marker-end="url(#ah)"/>' +
+      (lab ? '<text x="' + ((x1 + x2) / 2) + '" y="' + ((y1 + y2) / 2 - 6) + '" font-size="11" fill="#6B6259" text-anchor="middle">' + lab + '</text>' : '');
+  }
+  s += '<svg viewBox="0 0 400 200" class="dugaan">';
+  s += '<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">' +
+       '<path d="M0,0 L9,4.5 L0,9 z" fill="#6B6259"/></marker></defs>';
+
+  if (b === 'langsung') {
+    s += kotak(18, 82, 116, 'X');
+    s += kotak(264, 82, 116, 'Y');
+    s += panah(136, 101, 260, 101, false, 'β');
+  } else if (b === 'perantara' || b === 'keduanya') {
+    s += kotak(8, 80, 96, 'X');
+    s += kotak(150, 80, 104, 'Perantara', 'm');
+    s += kotak(296, 80, 96, 'Y');
+    s += panah(106, 92, 148, 92, false, 'a');
+    s += panah(256, 92, 294, 92, false, 'b');
+    if (b === 'keduanya') {
+      s += panah(60, 118, 344, 118, false, 'c′ (langsung)', '#B5762A');
+      s += kotak(150, 158, 104, 'Penguat', 'z');
+      s += '<line x1="202" y1="158" x2="202" y2="122" stroke="#2E7D6F" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah)"/>';
+    } else {
+      s += panah(60, 124, 344, 124, true, 'pengaruh langsung', '#9A9086');
+    }
+  } else if (b === 'penguat') {
+    s += kotak(20, 60, 110, 'X');
+    s += kotak(266, 60, 110, 'Y');
+    s += kotak(143, 148, 110, 'Penguat', 'z');
+    s += panah(132, 79, 262, 79, false, 'β');
+    s += '<line x1="198" y1="146" x2="198" y2="104" stroke="#2E7D6F" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#ah)"/>';
+    s += '<text x="218" y="132" font-size="11" fill="#2E7D6F" font-weight="700">X×Penguat</text>';
+  }
+  s += '</svg>';
+  document.getElementById('kanvas').innerHTML = s;
+}
+
+function bangunTabelHasil() {
+  var b = bentukEfektif(), h = '<table class="tabel-hp"><thead><tr><th>Jalur</th><th>Nilai</th><th>Nanti</th></tr></thead><tbody>';
+  h += '<tr><td data-label="Jalur">Pengaruh X langsung ke Y</td><td data-label="Nilai"><b>0,05</b></td><td><span class="pita pita-abu">Tidak signifikan</span></td></tr>';
+  if (b === 'perantara' || b === 'keduanya') {
+    h += '<tr><td data-label="Jalur">X ke Perantara (a)</td><td data-label="Nilai"><b>0,45</b></td><td><span class="pita pita-hijau">Signifikan</span></td></tr>';
+    h += '<tr><td data-label="Jalur">Perantara ke Y (b)</td><td data-label="Nilai"><b>0,30</b></td><td><span class="pita pita-hijau">Signifikan</span></td></tr>';
+    h += '<tr class="baris-m"><td data-label="Jalur"><b>Pengaruh gabungan lewat perantara</b> (a×b)</td><td data-label="Nilai"><b>0,135</b></td><td><span class="pita pita-hijau">Signifikan</span></td></tr>';
+  }
+  if (b === 'penguat' || b === 'keduanya') {
+    h += '<tr class="baris-z"><td data-label="Jalur">Penguatan (X×Penguat)</td><td data-label="Nilai"><b>0,22</b></td><td><span class="pita pita-hijau">Signifikan</span></td></tr>';
+  }
+  h += '</tbody></table>';
+  document.getElementById('tabel-hasil').innerHTML = h;
+
+  // kalimat awam + grafik
+  var adaM = (b === 'perantara' || b === 'keduanya');
+  var adaZ = (b === 'penguat' || b === 'keduanya');
+  var kh = document.getElementById('kalimat-hasil');
+  if (adaM) {
+    kh.style.display = 'block';
+    kh.innerHTML = 'Pengaruh X ke Y lewat perantara sebesar <b>0,135</b>. ' +
+      'Pengaruh langsungnya cuma <b>0,05</b> dan tidak nyata — jadi bisa dikatakan ' +
+      'pengaruhnya <b>hampir seluruhnya lewat perantara</b>.';
+  } else { kh.style.display = 'none'; }
+  document.getElementById('grafik-moderasi').style.display = adaZ ? 'block' : 'none';
+}
+
+function perbarui() {
+  aturTombol();
+  document.getElementById('bentuk-ringkas').textContent = ringkasBentuk(bentukEfektif());
+  document.getElementById('bentuk-terpakai').textContent =
+    'Bentuk terpakai: ' + bentukEfektif() + (BERURUTAN ? ' (perantara berurutan)' : '');
+  bangunTabel();
+  bangunDiagram();
+  bangunTabelHasil();
+}
+
+// ── kejadian ──
+document.querySelectorAll('#kisi-bentuk .card').forEach(function (k) {
+  k.addEventListener('click', function () {
+    document.querySelectorAll('#kisi-bentuk .card').forEach(function (x) { x.classList.remove('aktif'); });
+    k.classList.add('aktif');
+    BENTUK = k.dataset.bentuk;
+    ADA_M = (BENTUK === 'perantara' || BENTUK === 'keduanya');
+    ADA_Z = (BENTUK === 'penguat' || BENTUK === 'keduanya');
+    perbarui();
+  });
+});
+document.getElementById('btn-m').addEventListener('click', function () {
+  // klik ke-1 -> muncul 1 perantara; klik ke-2 -> jadi 2 perantara SEJAJAR
+  if (ADA_M) { DUA_M = true; } else { ADA_M = true; }
+  perbarui();
+  if (DUA_M) {
+    var tb = document.getElementById('tabel-jalur');
+    var t = tb.querySelector('tbody');
+    var row = document.createElement('tr');
+    row.className = 'baris-m';
+    row.innerHTML = '<td data-label="Nama variabel"><input class="nama" value="Kepercayaan"></td>' +
+      '<td data-label="Pengaruh X ke Perantara"><span class="samar">— perantara 2 —</span></td>' +
+      '<td data-label="Pengaruh Perantara ke Y"><span class="samar">diukur</span></td>' +
+      '<td></td><td><span class="pita pita-abu">Perantara</span></td>';
+    t.appendChild(row);
+    document.getElementById('bentuk-terpakai').textContent =
+      'Bentuk terpakai: DUAL MEDIASI PARALEL (2 perantara sejajar)';
+  }
+});
+document.getElementById('btn-z').addEventListener('click', function () {
+  if (ADA_Z) { DUA_Z = true; } else { ADA_Z = true; }
+  perbarui();
+});
+perbarui();
+</script>
+</body>
+</html>

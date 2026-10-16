@@ -1,0 +1,40 @@
+{% extends 'dasar.html' %}
+{% block isi %}
+
+<div style="max-width:720px">
+  <span class="eyebrow">{{ ikon('settings', 13) }} Pengaturan</span>
+  <h1>Pengaturan</h1>
+  <p class="besar">Semua setelan di sini berlaku untuk seluruh modul.</p>
+</div>
+
+<div class="kartu renggang" style="max-width:720px">
+  <span class="eyebrow">{{ ikon('sparkles', 13) }} Bantuan AI</span>
+  <div class="baris-antara">
+    <div style="flex:1;min-width:250px">
+      <h3 style="margin-bottom:6px">Tombol AI</h3>
+      <p style="margin:0;font-size:13.5px">
+        <strong>Hitungan statistik tidak memakai AI</strong> — semua berjalan
+        lokal di server, gratis, dan bisa dipertanggungjawabkan. AI hanya dipakai
+        kalau kamu minta <em>penjelasan bahasa manusia</em> atau pembuatan soal.
+        Matikan kalau tidak diperlukan.
+      </p>
+    </div>
+    <div class="saklar {{ 'nyala' if ai else '' }}" onclick="alihkanAI(this)">
+      <span class="saklar-jalur"></span>
+      <span class="saklar-teks">AI {{ 'ON' if ai else 'OFF' }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="kartu renggang" style="max-width:720px">
+  <span class="eyebrow">{{ ikon('database', 13) }} Tentang hitungan</span>
+  <table class="data">
+    <tr><td>Mesin hitung</td><td class="angka">numpy · scipy (lokal)</td></tr>
+    <tr><td>Pembacaan file</td><td class="angka">pandas · pyreadstat (.sav)</td></tr>
+    <tr><td>Format terima</td><td class="angka">.sav · .csv · .xlsx · .por</td></tr>
+    <tr><td>Biaya</td><td class="angka">Rp 0 — tanpa AI</td></tr>
+    <tr><td>Tahap</td><td class="angka">Fase 1 — kerangka</td></tr>
+  </table>
+</div>
+
+{% endblock %}

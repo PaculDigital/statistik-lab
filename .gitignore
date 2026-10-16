@@ -1,0 +1,40 @@
+# ── Lingkungan virtual (dibangun ulang dengan uv) ──────────────────────────
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ── Data runtime (dibangkitkan mesin, jangan di-commit) ────────────────────
+data/terakhir.pkl
+data/*.pkl
+*.pkl
+
+# ── Unduhan pihak ketiga (bukan bagian proyek) ─────────────────────────────
+*.deb
+
+# ── Rahasia — JANGAN PERNAH masuk repo ─────────────────────────────────────
+.env
+.env.*
+*.secret
+*credential*
+*credentials*
+*token*
+!*token*.md
+!*token*.py
+!*token*.html
+
+# ── Sampah OS / editor ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ── Log & cadangan sementara ───────────────────────────────────────────────
+*.log
+*.bak
+*.bak-*
+*.broken.BAK
+*.corrupt.*
+*.tmp
+_potret/

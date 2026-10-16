@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sketsa — kotak judul di /mulai</title>
+<link rel="stylesheet" href="gaya.css"><link rel="stylesheet" href="css_judul.css">
+<style>.ik{font-size:11px;color:#2E7D6F;font-weight:700}
+body{padding:26px;max-width:1180px;margin:0 auto}</style></head><body>
+
+
+<span class="eyebrow"><span class="ik">[play-circle]</span> Mulai</span>
+<h1 style="margin:8px 0 10px">Mau meneliti apa?</h1>
+<p class="besar" style="max-width:720px;margin-bottom:22px">
+  Pilih jenis penelitianmu dulu. Dari sini jalurnya bercabang — kamu tidak
+  akan disuguhi hal-hal yang belum kamu butuhkan.
+</p>
+
+{# ── KOTAK DETEKSI JUDUL (Lapis 1) ────────────────────────────────────── #}
+<div class="kartu kotak-judul" style="margin:0 0 26px">
+  <div class="kepala-judul">
+    <div>
+      <span class="eyebrow teal"><span class="ik">[search]</span> Cara cepat</span>
+      <h3 style="margin:7px 0 5px;font-size:17px">
+        Punya judul penelitian? Tempel di sini
+      </h3>
+      <p class="samar" style="font-size:13px;margin:0">
+        Wulan bacakan judulmu, lalu usulkan model penelitian yang paling
+        cocok — lengkap dengan alasannya.
+      </p>
+    </div>
+    <span class="pita pita-abu2"><span class="ik">[clock]</span> segera aktif</span>
+  </div>
+
+  <div class="baris-judul">
+    <input type="text" id="judul" class="isian-judul"
+           placeholder="Contoh: Pengaruh Harga dan Promosi terhadap Keputusan Pembelian"
+           disabled>
+    <button class="tb tb-utama" disabled>
+      <span class="ik">[sparkles]</span> Cek rekomendasi
+    </button>
+  </div>
+
+  <p class="samar" style="font-size:12.5px;margin:11px 0 0">
+    Belum punya judul? Tidak masalah —
+    <a href="#pilih-jenis" style="color:var(--teal);font-weight:600">pilih
+    jenis penelitian di bawah</a> saja.
+  </p>
+
+  {# contoh hasil rekomendasi — supaya Bos & user lihat bentuk outputnya #}
+  <div class="contoh-rekomendasi">
+    <span class="eyebrow amber" style="font-size:11px">
+      <span class="ik">[lightbulb]</span> Bentuk hasilnya nanti
+    </span>
+    <div class="rekomendasi-isi">
+      <p class="rekomendasi-judul">
+        “Pengaruh Harga dan Promosi terhadap Keputusan Pembelian”
+      </p>
+      <p class="rekomendasi-model">
+        Sepertinya <strong>Regresi Linear Berganda</strong>
+      </p>
+      <p class="rekomendasi-alasan">
+        Alasannya: judulmu menyebut <strong>dua hal yang diuji bersama-sama</strong>
+        (Harga dan Promosi) ke satu tujuan (Keputusan Pembelian).
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <span class="tb-kecil tb-kecil-utama">Ya, pakai ini</span>
+        <span class="tb-kecil">Pilih model lain</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── DUA PINTU ────────────────────────────────────────────────────────── #}
+<div id="pilih-jenis" class="grid-jenis">
+
+  <a href="/kuantitatif" class="pintu pintu-kuant">
+    <span class="pintu-ikon"><span class="ik">[bar-chart-3]</span></span>
+    <h3>Kuantitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>angka</strong> — kuesioner, skor 1–5,
+      diolah dengan SPSS atau SmartPLS.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>mengukur seberapa besar</strong> pengaruh
+      sesuatu terhadap hal lain.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: pengaruh harga &amp; promosi → keputusan pembelian
+    </span>
+    <span class="pintu-aksi">
+      Pilih model penelitian <span class="ik">[arrow-right]</span>
+    </span>
+  </a>
+
+  <a href="/segera/kualitatif" class="pintu pintu-kual">
+    <span class="pintu-lencana">
+      <span class="pita pita-abu2"><span class="ik">[clock]</span> belum siap</span>
+    </span>
+    <span class="pintu-ikon"><span class="ik">[message-square]</span></span>
+    <h3>Kualitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>kata &amp; cerita</strong> — wawancara,
+      observasi, tanpa angka.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>memahami alasan</strong> di balik
+      sesuatu — kenapa, bagaimana.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: kenapa pelanggan tetap setia walau harganya naik
+    </span>
+    <span class="pintu-aksi">
+      Lihat rencananya <span class="ik">[arrow-right]</span>
+    </span>
+  </a>
+
+</div>
+
+{# ── PENJELASAN ALUR ──────────────────────────────────────────────────── #}
+<div class="kartu" style="margin-top:24px">
+  <span class="eyebrow"><span class="ik">[lightbulb]</span> Kenapa ditanyakan dulu?</span>
+  <p style="color:var(--tinta-2);font-size:13.5px;line-height:1.78;margin:9px 0 0">
+    Karena tiap jenis penelitian <strong>jalurnya berbeda</strong>. Setelah
+    kamu pilih, Wulan hanya menampilkan hal-hal yang kamu perlukan — jadi
+    kamu tidak tersesat di antara puluhan istilah statistik yang belum
+    kamu butuhkan. Pilihan bisa diganti kapan saja.
+  </p>
+</div>
+
+</body></html>

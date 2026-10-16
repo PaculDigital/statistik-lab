@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOCKUP — Konfirmasi Model (Penelitian STATISTIK Lab.)</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   MOCKUP — BUKAN APLIKASI. Hanya untuk Bos LIHAT & KOREKSI bentuknya.
+   Warna & gaya diambil PERSIS dari app/static/gaya.css.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  --kertas:#FBF8F3; --kertas-2:#F5F0E6; --kertas-3:#EDE6D8;
+  --tinta:#2B2722; --tinta-2:#6B6259; --tinta-3:#9A9086;
+  --garis:#E0D8C8; --teal:#2E7D6F; --teal-terang:#E4F0EC;
+  --amber:#B5762A; --amber-terang:#FBEFDC;
+  --merah:#A85A5A; --merah-terang:#F7E7E7;
+  --hijau:#4E8A5A; --hijau-terang:#E5F0E7;
+  --r:14px; --r-s:9px;
+  --bayang:0 1px 2px rgba(43,39,34,.05), 0 8px 24px -12px rgba(43,39,34,.16);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--kertas);color:var(--tinta);
+  font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.bungkus{max-width:1060px;margin:0 auto;padding:22px 18px 60px}
+/* ⚠️ WAJIB: cegah ISI (tabel/svg/input) meluber keluar kartu.
+   Terukur 18Sep26: tanpa ini tabel mendorong kolom BESAR & PERANNYA
+   ke luar batas kartu di HP 390px. */
+.kartu,.konfirmasi,.kanvas-diagram{min-width:0}
+table{table-layout:auto;width:100%;max-width:100%}
+.bungkus *{min-width:0}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--teal);font-weight:700}
+h1{font-size:23px;margin:6px 0 4px;letter-spacing:-.01em}
+h2{font-size:16.5px;margin:22px 0 10px}
+p{margin:0 0 8px}
+.samar{color:var(--tinta-3);font-size:12.5px}
+.kartu{background:var(--kertas-2);border:1px solid var(--garis);
+  border-radius:var(--r);padding:20px;box-shadow:var(--bayang)}
+
+/* ── CATATAN MOCKUP ── */
+.catatan-mockup{background:#FFF8E1;border:1.5px solid #E8C86A;
+  border-radius:var(--r);padding:15px 17px;margin-bottom:20px;font-size:13.5px}
+.catatan-mockup b{color:#8A6410}
+
+/* ══════════════ TAB (inti permintaan Bos) ══════════════ */
+.tab-baris{display:flex;gap:6px;border-bottom:2px solid var(--garis);
+  margin-bottom:18px;position:relative}
+.tab{
+  border:none;background:transparent;font:inherit;font-weight:700;font-size:14.5px;
+  color:var(--tinta-2);padding:11px 16px;cursor:pointer;position:relative;
+  border-radius:var(--r-s) var(--r-s) 0 0;display:flex;align-items:center;gap:8px;
+  transition:all .14s;margin-bottom:-2px;border-bottom:2px solid transparent;
+}
+.tab:hover{background:var(--kertas-2);color:var(--tinta)}
+.tab.aktif{color:var(--teal);border-bottom-color:var(--teal)}
+.tab .jml{background:var(--kertas-3);color:var(--tinta-2);font-size:11.5px;
+  padding:1px 7px;border-radius:20px;font-weight:700}
+.tab.aktif .jml{background:var(--teal-terang);color:var(--teal)}
+.panel{display:none}
+.panel.aktif{display:block;animation:masuk .18s ease-out}
+@keyframes masuk{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── KARTU PILIHAN MODEL ── */
+.contoh-kisi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.contoh{
+  position:relative;display:flex;align-items:flex-start;gap:12px;
+  border:1.5px solid var(--garis);border-radius:var(--r-s);
+  background:var(--kertas);padding:13px 14px;cursor:pointer;
+  transition:all .14s;text-align:left;font:inherit;color:inherit;width:100%;
+}
+.contoh:hover{border-color:var(--teal);background:var(--teal-terang)}
+.contoh.aktif{border-color:var(--teal);background:var(--teal-terang);
+  box-shadow:0 0 0 2.5px rgba(46,125,111,.13)}
+.contoh-ikon{width:34px;height:34px;flex:0 0 34px;border-radius:8px;
+  background:var(--kertas-3);display:grid;place-items:center;font-size:15px;
+  font-weight:700;color:var(--tinta-2)}
+.contoh-aktif .contoh-ikon,.contoh.aktif .contoh-ikon{background:var(--teal);color:#fff}
+.contoh-teks{flex:1 1 auto;min-width:0}
+.contoh-judul{display:block;font-weight:700;font-size:14px;line-height:1.3}
+.contoh-ket{display:block;color:var(--tinta-2);font-size:12.5px;line-height:1.4;
+  margin-top:3px}
+.contoh-rumus{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:11.5px;color:var(--teal);margin-top:5px;font-weight:600}
+
+/* ── TABEL JALUR (daftar panah) ── */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--tinta-3);padding:7px 8px;border-bottom:1.5px solid var(--garis);
+  font-weight:700;vertical-align:bottom}
+td{padding:9px 8px;border-bottom:1px solid var(--garis);vertical-align:middle}
+.panah-sel{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;
+  font-size:13px;color:var(--teal);white-space:nowrap}
+.panah-nh{color:var(--tinta-3);font-weight:600}
+.panah-mod{color:var(--amber);font-weight:700}
+tr.baris-m td{background:var(--amber-terang)}
+tr.baris-z td{background:var(--teal-terang)}
+tr.baris-nh td{background:var(--kertas-3)}
+.pita{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;
+  font-weight:700;white-space:nowrap}
+.pita-hijau{background:var(--hijau-terang);color:var(--hijau)}
+.pita-abu{background:var(--kertas-3);color:var(--tinta-2)}
+.pita-amber{background:var(--amber-terang);color:var(--amber)}
+.pita-teal{background:var(--teal-terang);color:var(--teal)}
+
+/* ── KALIMAT KONFIRMASI ── */
+.konfirmasi{background:var(--kertas);border:1.5px solid var(--teal);
+  border-radius:var(--r);padding:18px 20px;margin-top:16px}
+.konfirmasi-pertanyaan{font-size:15.5px;font-weight:700;line-height:1.5;
+  margin-bottom:4px}
+.konfirmasi-rinci{font-size:13.5px;color:var(--tinta-2);line-height:1.6}
+.konfirmasi-rinci b{color:var(--tinta)}
+.konfirmasi-aksi{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px;
+  padding-top:14px;border-top:1px solid var(--garis)}
+.tombol{border:none;border-radius:var(--r-s);padding:11px 19px;font:inherit;
+  font-weight:700;font-size:14px;background:var(--teal);color:#fff;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;transition:all .14s}
+.tombol:hover{filter:brightness(1.07)}
+.tombol.kedua{background:var(--kertas-3);color:var(--tinta)}
+.tombol.kedua:hover{background:var(--garis)}
+.tombol.kecil{padding:8px 14px;font-size:13px}
+
+/* ── KANVAS DIAGRAM ── */
+.kanvas-diagram{background:var(--kertas-3);border:1px solid var(--garis);
+  border-radius:var(--r-s);padding:14px;display:grid;place-items:center;
+  min-height:170px}
+.dugaan{max-width:100%;height:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+
+/* ── LEGENDA NOTASI ───────────────────────────────────────────────── */
+.legenda{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;
+  margin-top:10px;padding:10px 12px;background:var(--kertas);
+  border:1px solid var(--garis);border-radius:var(--r-s);font-size:12px;
+  color:var(--tinta-2);line-height:1.5}
+.legenda>b{color:var(--tinta);font-size:11.5px}
+.legenda>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.legenda b{color:var(--tinta)}
+.lg{width:14px;height:14px;border-radius:3px;flex:0 0 14px;
+  border:1.5px solid;display:inline-block}
+.lg-x{background:#FBF8F3;border-color:#E0D8C8}
+.lg-m{background:#FBEFDC;border-color:#B5762A}
+.lg-z{background:#E4F0EC;border-color:#2E7D6F}
+.lg-y{background:#F5F0E6;border-color:#2B2722}
+.lg-panah{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;
+  color:var(--tinta-2);letter-spacing:-.5px}
+
+/* ── SUARA (kotak jawaban) ── */
+.kotak-hasil{display:none;margin-top:14px;padding:13px 16px;border-radius:var(--r-s);
+  font-size:13.5px;background:var(--hijau-terang);border-left:3px solid var(--hijau)}
+.kotak-hasil.batal{background:var(--merah-terang);border-left-color:var(--merah)}
+
+@media (max-width:620px){
+  .contoh-kisi,.grid2{grid-template-columns:1fr}
+  .bungkus{padding:14px 12px 40px}
+  h1{font-size:20px}
+  .tab{padding:10px 12px;font-size:13.5px}
+  .konfirmasi-aksi .tombol{width:100%;justify-content:center}
+
+  /* ⚠️ AKAR cacat HP (terukur 18Sep26): kolom tabel mendorong BESAR &
+     PERANNYA keluar batas kartu. Solusi: tabel jadi BLOK — tiap baris
+     jadi kartu kecil, judul kolom pindah ke atas nilainya (data-label). */
+  table.tabel-hp thead{display:none}
+  table.tabel-hp, table.tabel-hp tbody, table.tabel-hp tr,
+  table.tabel-hp td{display:block;width:100%}
+  table.tabel-hp tr{border:1px solid var(--garis);border-radius:9px;
+    padding:10px;margin-bottom:9px;background:var(--kertas)}
+  table.tabel-hp tr.baris-m{background:var(--amber-terang)}
+  table.tabel-hp tr.baris-z{background:var(--teal-terang)}
+  table.tabel-hp tr.baris-nh{background:var(--kertas-3)}
+  table.tabel-hp td{border:none;padding:3px 0}
+  table.tabel-hp td::before{
+    content:attr(data-label);display:block;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--tinta-3);
+    font-weight:700;margin-bottom:2px}
+  table.tabel-hp td:empty{display:none}
+  .panah-sel{white-space:normal}
+}
+</style>
+</head>
+<body>
+<div class="bungkus">
+
+  <div class="catatan-mockup">
+    <b>📐 INI MOCKUP — bukan aplikasi.</b> Untuk Bos lihat bentuk &amp; koreksi.
+    Angka di dalamnya contoh, belum dihitung mesin.<br>
+    <b>Coba klik</b> tab <b>“Sudah tahu”</b> / <b>“Beri saya contoh”</b>, pilih salah
+    satu dari <b>6 contoh</b>, lalu tekan tombol konfirmasi di bawah.
+  </div>
+
+  <div style="margin-bottom:20px">
+    <span class="eyebrow">Mockup · Fase 2</span>
+    <h1>Konfirmasi Model Penelitian</h1>
+    <p class="samar">Sebelum data dibuat, kamu melihat dulu <b>daftar panah</b> yang akan
+      dibangun. Kalau ada yang salah, ketahuan sekarang — bukan setelah data jadi.</p>
+  </div>
+
+  <!-- ═══════════════════ DUA TAB ═══════════════════ -->
+  <div class="tab-baris" role="tablist">
+    <button class="tab aktif" id="tab-tahu" role="tab">
+      Sudah tahu modelnya
+      <span class="jml">isi sendiri</span>
+    </button>
+    <button class="tab" id="tab-contoh" role="tab">
+      Beri saya contoh
+      <span class="jml">6 contoh</span>
+    </button>
+  </div>
+
+  <!-- ══════════════ PANEL 1 — SUDAH TAHU ══════════════ -->
+  <div class="panel aktif" id="panel-tahu">
+    <div class="kartu">
+      <p style="font-size:13.5px;margin-bottom:14px">
+        Susun sendiri panahnya: pilih <b>dari</b> variabel mana <b>ke</b> variabel mana.
+        Arah panah = arah dugaanmu.
+      </p>
+
+      <div class="grid2">
+        <div>
+          <div class="eyebrow" style="font-size:11.5px;margin-bottom:9px">
+            Variabel kamu
+          </div>
+          <div id="daftar-var"></div>
+          <button class="tombol kedua kecil" id="btn-tambah-var"
+                  style="margin-top:9px;width:100%;justify-content:center">
+            + Tambah variabel
+          </button>
+
+          <div class="eyebrow" style="font-size:11.5px;margin:20px 0 9px">
+            Daftar panah
+          </div>
+          <div id="tabel-panah"></div>
+          <button class="tombol kedua kecil" id="btn-tambah-panah"
+                  style="margin-top:9px;width:100%;justify-content:center">
+            + Tambah panah
+          </button>
+        </div>
+
+        <div>
+          <div class="eyebrow" style="font-size:11.5px;margin-bottom:9px">
+            Model kamu
+          </div>
+          <div class="kanvas-diagram" id="kanvas-tahu"></div>
+          <div class="legenda" id="legenda-tahu">
+            <b>Baca gambarnya:</b>
+            <span><span class="lg lg-x"></span> <b>X1, X2</b> variabel bebas</span>
+            <span><span class="lg lg-m"></span> <b>M</b> perantara</span>
+            <span><span class="lg lg-z"></span> <b>Z</b> penguat</span>
+            <span><span class="lg lg-y"></span> <b>Y</b> terikat</span>
+            <span class="lg-panah">——→</span> <b>H1</b> diuji
+            <span class="lg-panah">- - ⇢</span> <b>NH1</b> tidak diuji
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kotak-hasil" id="hasil-tahu"></div>
+  </div>
+
+  <!-- ══════════════ PANEL 2 — BERI SAYA CONTOH ══════════════ -->
+  <div class="panel" id="panel-contoh">
+    <div class="kartu">
+      <p style="font-size:13.5px;margin-bottom:14px">
+        Belum yakin mau model seperti apa? Pilih salah satu <b>6 contoh siap pakai</b> —
+        langsung terisi, bisa kamu ubah namanya.
+      </p>
+      <div class="contoh-kisi" id="kisi-contoh"></div>
+    </div>
+
+    <h2 style="margin-top:24px">Isi panah contoh ini</h2>
+    <div class="kartu">
+      <div class="grid2">
+        <div>
+          <div class="eyebrow" style="font-size:11.5px;margin-bottom:9px">
+            Daftar panah
+          </div>
+          <div id="tabel-contoh"></div>
+          <p class="samar" style="margin-top:9px">Contoh ini bisa langsung dipakai —
+            atau ubah namanya dulu.</p>
+        </div>
+        <div>
+          <div class="eyebrow" style="font-size:11.5px;margin-bottom:9px">
+            Model kamu
+          </div>
+          <div class="kanvas-diagram" id="kanvas-contoh"></div>
+          <div class="legenda" id="legenda-contoh"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kotak-hasil" id="hasil-contoh"></div>
+  </div>
+
+  <!-- ══════════════ KONFIRMASI (dipakai dua panel) ══════════════ -->
+  <h2>Konfirmasi</h2>
+  <div class="kartu" id="kotak-konfirmasi">
+    <div class="konfirmasi">
+      <div class="konfirmasi-pertanyaan" id="konfirmasi-tanya">
+        Apakah daftar panah di atas sudah benar?
+      </div>
+      <div class="konfirmasi-rinci" id="konfirmasi-rinci"></div>
+      <div class="konfirmasi-aksi">
+        <button class="tombol" id="btn-ya">Ya, benar — buatkan data</button>
+        <button class="tombol kedua" id="btn-ubah">Belum, saya ubah dulu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CATATAN UNTUK BOS ══════════════ -->
+  <h2 style="margin-top:28px">Ada 6 contoh. Kenapa 6 ini?</h2>
+  <div class="kartu">
+    <p style="font-size:13.5px">Enam contoh ini dipilih karena <b>mewakili semua yang
+      mesin sudah sanggup</b> (10 bentuk terbukti). Contoh 1–3 yang paling sering dipakai
+      skripsi/tesis; contoh 4–6 untuk yang lebih maju — tapi <b>ditulis dengan bahasa
+      sehari-hari</b>, bukan istilah teknis.</p>
+  </div>
+
+</div>
+
+<script>
+/* ══ diagram_model.js (inline — WAJIB: file:// tidak memuat src) ══ */
+/* ══════════════════════════════════════════════════════════════════════
+   DIAGRAM MODEL PENELITIAN — notasi lengkap
+   ──────────────────────────────────────────────────────────────────────
+   AKAR MASALAH YANG DITUTUP (18Sep26):
+   Versi lama menggambar kotak berisi NAMA saja, tanpa kode variabel,
+   tanpa label hipotesis, dan MATA PANAH hilang (marker id bentrok karena
+   <defs> ditulis ulang tiap kali fungsi dipanggil → browser ambil marker
+   pertama yang sudah hilang → garis tampil tanpa ujung).
+
+   ATURAN YANG DIPAKAI SEKARANG:
+   1. Setiap kotak WAJIB punya KODE (X1/X2/M/Y/Z) — besar & tebal.
+      Nama variabel jadi keterangan di bawah kode.
+   2. Setiap panah WAJIB punya LABEL HIPOTESIS (H1, H2, …) di atas garisnya,
+      ATAU "NH1" kalau tidak dihipotesiskan.
+   3. Panah wajib punya MATA PANAH (marker) — id marker UNIK per gambar
+      (ditambah penanda) supaya tidak bentrok.
+   4. Jalur mediasi wajib punya label a / b / c′.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Gaya kotak per peran ───────────────────────────────────────────── */
+var GAYA_KOTAK = {
+  x: { isi:'#FBF8F3', garis:'#E0D8C8', tinta:'#2B2722' },  /* Variabel bebas  */
+  m: { isi:'#FBEFDC', garis:'#B5762A', tinta:'#8A5A1C' },  /* Mediasi         */
+  y: { isi:'#F5F0E6', garis:'#2B2722', tinta:'#2B2722' },  /* Variabel terikat*/
+  z: { isi:'#E4F0EC', garis:'#2E7D6F', tinta:'#1F6357' }   /* Moderasi        */
+};
+
+/* ── Bikin id unik supaya marker tidak bentrok antar-gambar ─────────── */
+var _URUT_SVG = 0;
+
+function _esc(t){
+  return String(t === null || t === undefined ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Gambar kotak variabel.
+ * @param kode  'X1' | 'M' | 'Y' | 'Z'  → tampil BESAR
+ * @param nama  'Kepemimpinan'          → tampil kecil di bawah kode
+ */
+function kotakVariabel(x, y, w, h, kode, nama, peran){
+  var g = GAYA_KOTAK[peran] || GAYA_KOTAK.x;
+  var kodeUkuran = 15;
+  var namaUkuran = 9.5;
+
+  /* Kalau nama panjang, perkecil font nama (JANGAN dipotong) */
+  var n = (nama || '').length;
+  if (n > 16) namaUkuran = 8.5;
+  if (n > 22) namaUkuran = 7.5;
+  if (n > 28) namaUkuran = 6.8;
+
+  var s = '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+    '" rx="8" fill="' + g.isi + '" stroke="' + g.garis + '" stroke-width="1.8"/>';
+
+  /* Kode variabel — besar, tebal, di tengah-atas kotak */
+  var adaNama = !!(nama && nama.length);
+  var yKode = adaNama ? y + h / 2 - 2 : y + h / 2 + 5;
+  s += '<text x="' + (x + w / 2) + '" y="' + yKode + '" font-size="' + kodeUkuran +
+    '" fill="' + g.tinta + '" text-anchor="middle" font-weight="800" ' +
+    'letter-spacing="0.3">' + _esc(kode) + '</text>';
+
+  /* Nama variabel — kecil, di bawah kode */
+  if (adaNama){
+    s += '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 11) +
+      '" font-size="' + namaUkuran + '" fill="#6B6259" text-anchor="middle" ' +
+      'font-weight="500">' + _esc(nama) + '</text>';
+  }
+  return s;
+}
+
+/**
+ * Gambar panah + LABEL HIPOTESIS.
+ * @param jid    penanda unik gambar (supaya marker tidak bentrok)
+ * @param label  'H1' | 'NH1' | 'a' | 'b' | "c'" | null
+ * @param warna  'tinta' | 'teal' | 'amber' | 'abu'
+ */
+function panahLengkap(jid, x1, y1, x2, y2, label, warna, putus){
+  var peta = {
+    tinta: { garis:'#6B6259', teks:'#2B2722' },
+    teal:  { garis:'#2E7D6F', teks:'#1F6357' },
+    amber: { garis:'#B5762A', teks:'#8A5A1C' },
+    abu:   { garis:'#9A9086', teks:'#9A9086' }
+  };
+  var w = peta[warna] || peta.tinta;
+  var putusAtur = (putus === 'mod') ? ' stroke-dasharray="5 4"' :
+                  (putus === 'nh'  ? ' stroke-dasharray="2 4"' :
+                  (putus ? ' stroke-dasharray="6 4"' : ''));
+  var tebal = (warna === 'teal' && putus === 'mod') ? 2.2 : 2;
+
+  var s = '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + w.garis + '" stroke-width="' + tebal + '"' + putusAtur +
+    ' marker-end="url(#mk-' + jid + '-' + warna + ')"/>';
+
+  /* LABEL HIPOTESIS — wajib terlihat, ada latar putih supaya tidak
+     tertabrak garis (dulu hilang total → model tidak terbaca) */
+  if (label){
+    var lx = (x1 + x2) / 2;
+    var ly = (y1 + y2) / 2 - 7;
+    var lebar = label.length * 6.2 + 8;
+    s += '<rect x="' + (lx - lebar / 2) + '" y="' + (ly - 10) + '" width="' +
+      lebar + '" height="13" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="' + lx + '" y="' + (ly) + '" font-size="10" ' +
+      'fill="' + w.teks + '" text-anchor="middle" font-weight="800">' +
+      _esc(label) + '</text>';
+  }
+  return s;
+}
+
+/** Definisi mata panah — id UNIK per gambar. WAJIB dipanggil sekali. */
+function definisiPanah(jid){
+  var s = '<defs>';
+  [['tinta','#6B6259'], ['teal','#2E7D6F'], ['amber','#B5762A'], ['abu','#9A9086']]
+    .forEach(function(p){
+      s += '<marker id="mk-' + jid + '-' + p[0] + '" markerWidth="10" markerHeight="10" ' +
+        'refX="9" refY="5" orient="auto" markerUnits="strokeWidth">' +
+        '<path d="M0,0 L10,5 L0,10 z" fill="' + p[1] + '"/></marker>';
+    });
+  s += '</defs>';
+  return s;
+}
+/* ══ diagram_bentuk.js (inline) ══ */
+/* ══════════════════════════════════════════════════════════════════════
+   PENGGAMBAR DIAGRAM MODEL — 6 bentuk, NOTASI LENGKAP
+   ──────────────────────────────────────────────────────────────────────
+   Setiap bentuk menggambar:
+     · kotak berkode   : X1, X2, M1, M2, Y, Z
+     · nama variabel   : kecil di bawah kode
+     · label hipotesis : H1, H2, … di atas panah  (NH1 bila tak diuji)
+     · koefisien jalur : a, b, c′ pada panah mediasi
+   ══════════════════════════════════════════════════════════════════════ */
+
+var DIAGRAM = {
+  L: 420,   /* lebar viewBox */
+  T: 260    /* tinggi viewBox */
+};
+
+/**
+ * @param bentuk  'sederhana'|'mediasi'|'moderasi'|'dual-paralel'|'berjenjang'|'modmed'
+ * @param v       daftar nama variabel, urut sesuai bentuk
+ */
+function gambarDiagram(bentuk, v){
+  var jid = 'g' + (++_URUT_SVG);
+  var s = '<svg viewBox="0 0 ' + DIAGRAM.L + ' ' + DIAGRAM.T + '" class="dugaan" ' +
+          'role="img" style="width:100%;height:auto">';
+  s += definisiPanah(jid);
+
+  if (bentuk === 'sederhana'){
+    /* X1 → Y   (H1) */
+    s += kotakVariabel(24, 88, 132, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(264, 88, 132, 52, 'Y',  v[1], 'y');
+    s += panahLengkap(jid, 156, 114, 260, 114, 'H1', 'tinta');
+
+  } else if (bentuk === 'mediasi'){
+    /* X1 → M (a, H1) · M → Y (b, H2) · X1 ⇢ Y (c′, H3) */
+    s += kotakVariabel(6, 78, 108, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(156, 78, 108, 52, 'M',  v[1], 'm');
+    s += kotakVariabel(306, 78, 108, 52, 'Y',  v[2], 'y');
+    s += panahLengkap(jid, 114, 96, 152, 96, 'H1', 'tinta');
+    s += '<text x="133" y="112" font-size="9" fill="#6B6259" text-anchor="middle" font-weight="700">a</text>';
+    s += panahLengkap(jid, 264, 96, 302, 96, 'H2', 'tinta');
+    s += '<text x="283" y="112" font-size="9" fill="#6B6259" text-anchor="middle" font-weight="700">b</text>';
+    /* jalur langsung: lengkung di BAWAH kotak */
+    s += '<path d="M 60 130 C 60 190 150 200 340 200 C 380 200 392 160 392 130" ' +
+         'fill="none" stroke="#6B6259" stroke-width="2" stroke-dasharray="6 4" ' +
+         'marker-end="url(#mk-' + jid + '-tinta)"/>';
+    s += '<rect x="196" y="192" width="64" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="228" y="203" font-size="10" fill="#2B2722" text-anchor="middle" ' +
+         'font-weight="800">H3 · c′</text>';
+
+  } else if (bentuk === 'moderasi'){
+    /* X1 → Y (H1) · Z ⇢ garis X1→Y (H2) */
+    s += kotakVariabel(24, 60, 130, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(266, 60, 130, 52, 'Y', v[2], 'y');
+    s += kotakVariabel(145, 176, 130, 52, 'Z', v[1], 'z');
+    s += panahLengkap(jid, 154, 78, 262, 78, 'H1', 'tinta');
+    /* Z masuk ke GARIS (bukan kotak) — aturan moderasi */
+    s += '<line x1="210" y1="174" x2="210" y2="120" stroke="#2E7D6F" ' +
+         'stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#mk-' + jid + '-teal)"/>';
+    s += '<line x1="210" y1="120" x2="210" y2="54" stroke="#2E7D6F" ' +
+         'stroke-width="2.2" marker-end="url(#mk-' + jid + '-teal)"/>';
+    s += '<rect x="126" y="96" width="52" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="152" y="107" font-size="10" fill="#1F6357" text-anchor="middle" ' +
+         'font-weight="800">H2</text>';
+
+  } else if (bentuk === 'dual-paralel'){
+    /* X1 → M1 (H1) · X1 → M2 (H2) · M1 → Y (H3) · M2 → Y (H4) */
+    s += kotakVariabel(4, 104, 100, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(160, 24, 100, 52, 'M1', v[1], 'm');
+    s += kotakVariabel(160, 184, 100, 52, 'M2', v[2], 'm');
+    s += kotakVariabel(316, 104, 100, 52, 'Y',  v[3], 'y');
+    s += panahLengkap(jid, 106, 120, 156, 62, 'H1', 'tinta');
+    s += panahLengkap(jid, 106, 140, 156, 198, 'H2', 'tinta');
+    s += panahLengkap(jid, 262, 62, 314, 120, 'H3', 'tinta');
+    s += panahLengkap(jid, 262, 198, 314, 140, 'H4', 'tinta');
+
+  } else if (bentuk === 'berjenjang'){
+    /* X1 → M1 (H1) · M1 → M2 (H2) · M2 → Y (H3) */
+    s += kotakVariabel(2, 96, 92, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(116, 96, 92, 52, 'M1', v[1], 'm');
+    s += kotakVariabel(230, 96, 92, 52, 'M2', v[2], 'm');
+    s += kotakVariabel(330, 178, 88, 52, 'Y',  v[3], 'y');
+    s += panahLengkap(jid, 96, 114, 112, 114, 'H1', 'tinta');
+    s += panahLengkap(jid, 210, 114, 226, 114, 'H2', 'tinta');
+    s += '<path d="M 276 150 L 276 204 L 326 204" fill="none" stroke="#6B6259" ' +
+         'stroke-width="2" marker-end="url(#mk-' + jid + '-tinta)"/>';
+    s += '<rect x="258" y="164" width="46" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="281" y="175" font-size="10" fill="#2B2722" text-anchor="middle" ' +
+         'font-weight="800">H3</text>';
+
+  } else if (bentuk === 'modmed'){
+    /* Jalur baku + notasi lengkap (X1, M, Z, Y · H1..H5 · NH1) */
+    s += kotakVariabel(6, 34, 104, 52, 'X1', v[0], 'x');
+    s += kotakVariabel(158, 34, 104, 52, 'M', v[1], 'm');
+    s += kotakVariabel(310, 34, 104, 52, 'Y',  v[3], 'y');
+    s += kotakVariabel(158, 186, 104, 52, 'Z', v[2], 'z');
+    s += panahLengkap(jid, 112, 60, 154, 60, 'H1', 'tinta');
+    s += panahLengkap(jid, 264, 60, 306, 60, 'H2', 'tinta');
+    /* X1 → Y langsung: lengkung BAWAH, di bawah kotak Z (y=186..238) */
+    s += '<path d="M 34 88 C 34 122 90 254 210 254 C 330 254 386 200 380 92" ' +
+         'fill="none" stroke="#B5762A" stroke-width="2" ' +
+         'marker-end="url(#mk-' + jid + '-amber)"/>';
+    s += '<rect x="168" y="246" width="92" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="214" y="257" font-size="10" fill="#8A5A1C" text-anchor="middle" ' +
+         'font-weight="800">H3 · c′</text>';
+    /* Z → Y (H4) */
+    s += '<path d="M 264 212 L 392 212 L 392 92" fill="none" stroke="#2E7D6F" ' +
+         'stroke-width="2" marker-end="url(#mk-' + jid + '-teal)"/>';
+    s += '<rect x="300" y="202" width="52" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="326" y="213" font-size="10" fill="#1F6357" text-anchor="middle" ' +
+         'font-weight="800">H4</text>';
+    /* Moderasi M×Z → garis M→Y (H5) */
+    s += '<line x1="210" y1="184" x2="210" y2="148" stroke="#2E7D6F" ' +
+         'stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#mk-' + jid + '-teal)"/>';
+    s += '<line x1="210" y1="148" x2="256" y2="148" stroke="#2E7D6F" ' +
+         'stroke-width="2.2" marker-end="url(#mk-' + jid + '-teal)"/>';
+    s += '<rect x="212" y="132" width="62" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="243" y="143" font-size="10" fill="#1F6357" text-anchor="middle" ' +
+         'font-weight="800">H5</text>';
+    /* Z ⇢ M — TIDAK dihipotesiskan */
+    s += '<line x1="182" y1="184" x2="182" y2="90" stroke="#9A9086" ' +
+         'stroke-width="2" stroke-dasharray="2 4" marker-end="url(#mk-' + jid + '-abu)"/>';
+    s += '<rect x="186" y="130" width="36" height="14" rx="3" fill="#FBF8F3" opacity="0.92"/>';
+    s += '<text x="204" y="141" font-size="9.5" fill="#9A9086" text-anchor="middle" ' +
+         'font-weight="800">NH1</text>';
+  }
+
+  s += '</svg>';
+  return s;
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   MOCKUP — logika ringkas. Angka = contoh, bukan hitungan mesin.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 6 CONTOH SIAP PAKAI ───────────────────────────────────────────── */
+var CONTOH = [
+  {
+    kode:'C1', ikon:'\u2192',
+    judul:'Dua hal yang saling berhubungan',
+    ket:'Satu memengaruhi satu. Paling dasar \u2014 awal yang baik.',
+    rumus:'X1 \u2192 Y',
+    varian:['Kualitas Layanan','Kepuasan Pelanggan'],
+    kodeVar:['X1','Y'],
+    panah:[
+      {d:'X1', dn:'Kualitas Layanan', k:'Y', kn:'Kepuasan Pelanggan',
+       b:'0,45', kf:'\u03b2', ket:'pengaruh utama', h:'H1'}
+    ],
+    gambar:'sederhana', legenda:true
+  },
+  {
+    kode:'C2', ikon:'\u21e2',
+    judul:'Lewat satu perantara',
+    ket:'X memengaruhi Y, tapi lewat satu hal di tengah.',
+    rumus:'X1 \u2192 M \u2192 Y',
+    varian:['Motivasi Belajar','Cara Mengajar','Prestasi'],
+    kodeVar:['X1','M','Y'],
+    panah:[
+      {d:'X1', dn:'Motivasi Belajar', k:'M', kn:'Cara Mengajar',
+       b:'0,50', kf:'a', ket:'X ke perantara', h:'H1'},
+      {d:'M', dn:'Cara Mengajar', k:'Y', kn:'Prestasi',
+       b:'0,38', kf:'b', ket:'perantara ke Y', h:'H2'},
+      {d:'X1', dn:'Motivasi Belajar', k:'Y', kn:'Prestasi',
+       b:'0,08', kf:"c\u2032", ket:'langsung (kecil)', h:'H3'}
+    ],
+    gambar:'mediasi'
+  },
+  {
+    kode:'C3', ikon:'\u2929',
+    judul:'Ada yang menguatkan',
+    ket:'Pengaruh X ke Y berbeda tergantung kondisi lain.',
+    rumus:'X1 \u00d7 Z \u2192 Y',
+    varian:['Beban Kerja','Dukungan Atasan','Kelelahan'],
+    kodeVar:['X1','Z','Y'],
+    panah:[
+      {d:'X1', dn:'Beban Kerja', k:'Y', kn:'Kelelahan',
+       b:'0,35', kf:'\u03b2', ket:'pengaruh utama', h:'H1'},
+      {d:'X1 \u00d7 Z', dn:'Beban Kerja \u00d7 Dukungan Atasan', k:'Y', kn:'Kelelahan',
+       b:'0,18', kf:'\u03b2', ket:'penguatan', h:'H2', jenis:'mod'}
+    ],
+    gambar:'moderasi'
+  },
+  {
+    kode:'C4', ikon:'\u21e2\u21e2',
+    judul:'Dua perantara sejajar',
+    ket:'Dua hal di tengah, jalan masing-masing \u2014 tidak berurutan.',
+    rumus:'X1 \u2192 M1 \u2192 Y  \u00b7  X1 \u2192 M2 \u2192 Y',
+    varian:['Pelatihan','Kepercayaan','Keterampilan','Kinerja'],
+    kodeVar:['X1','M1','M2','Y'],
+    panah:[
+      {d:'X1', dn:'Pelatihan', k:'M1', kn:'Kepercayaan',
+       b:'0,42', kf:'a1', ket:'X ke perantara 1', h:'H1'},
+      {d:'X1', dn:'Pelatihan', k:'M2', kn:'Keterampilan',
+       b:'0,46', kf:'a2', ket:'X ke perantara 2', h:'H2'},
+      {d:'M1', dn:'Kepercayaan', k:'Y', kn:'Kinerja',
+       b:'0,30', kf:'b1', ket:'perantara 1 ke Y', h:'H3'},
+      {d:'M2', dn:'Keterampilan', k:'Y', kn:'Kinerja',
+       b:'0,33', kf:'b2', ket:'perantara 2 ke Y', h:'H4'}
+    ],
+    gambar:'dual-paralel'
+  },
+  {
+    kode:'C5', ikon:'\u21e2\u203a',
+    judul:'Perantara berurutan',
+    ket:'Yang satu menuju yang lain: X1 \u2192 M1 \u2192 M2 \u2192 Y.',
+    rumus:'X1 \u2192 M1 \u2192 M2 \u2192 Y',
+    varian:['Gaya Kepemimpinan','Iklim Kerja','Komitmen','Kinerja'],
+    kodeVar:['X1','M1','M2','Y'],
+    panah:[
+      {d:'X1', dn:'Gaya Kepemimpinan', k:'M1', kn:'Iklim Kerja',
+       b:'0,48', kf:'a1', ket:'X ke perantara 1', h:'H1'},
+      {d:'M1', dn:'Iklim Kerja', k:'M2', kn:'Komitmen',
+       b:'0,40', kf:'d', ket:'perantara 1 ke 2', h:'H2'},
+      {d:'M2', dn:'Komitmen', k:'Y', kn:'Kinerja',
+       b:'0,36', kf:'b', ket:'perantara 2 ke Y', h:'H3'}
+    ],
+    gambar:'berjenjang'
+  },
+  {
+    kode:'C6', ikon:'\u21e2\u2929',
+    judul:'Perantara yang dikuatkan',
+    ket:'Lewat perantara, DAN kekuatan jalur itu tergantung kondisi lain.',
+    rumus:'X1 \u2192 M \u2192 Y, dengan M \u00d7 Z',
+    varian:['Kepemimpinan','Motivasi','Budaya Kerja','Kinerja'],
+    kodeVar:['X1','M','Z','Y'],
+    panah:[
+      {d:'X1', dn:'Kepemimpinan', k:'M', kn:'Motivasi',
+       b:'0,44', kf:'a', ket:'X ke perantara', h:'H1'},
+      {d:'M', dn:'Motivasi', k:'Y', kn:'Kinerja',
+       b:'0,32', kf:'b', ket:'perantara ke Y', h:'H2'},
+      {d:'X1', dn:'Kepemimpinan', k:'Y', kn:'Kinerja',
+       b:'0,10', kf:"c\u2032", ket:'langsung (kecil)', h:'H3'},
+      {d:'Z', dn:'Budaya Kerja', k:'Y', kn:'Kinerja',
+       b:'0,15', kf:'\u03b2', ket:'pengaruh sendiri', h:'H4'},
+      {d:'M \u00d7 Z', dn:'Motivasi \u00d7 Budaya Kerja', k:'Y', kn:'Kinerja',
+       b:'0,14', kf:'\u03b2', ket:'penguatan jalur', h:'H5', jenis:'mod'},
+      {d:'Z', dn:'Budaya Kerja', k:'M', kn:'Motivasi',
+       b:'\u2014', kf:'', ket:'tidak dihipotesiskan', h:'NH1', jenis:'nh'}
+    ],
+    gambar:'modmed'
+  }
+];
+
+/* ── SAKLAR TAB ────────────────────────────────────────────────────── */
+var TAB_AKTIF = 'tahu';
+function bukaTab(nama){
+  TAB_AKTIF = nama;
+  document.getElementById('tab-tahu').classList.toggle('aktif', nama === 'tahu');
+  document.getElementById('tab-contoh').classList.toggle('aktif', nama === 'contoh');
+  document.getElementById('panel-tahu').classList.toggle('aktif', nama === 'tahu');
+  document.getElementById('panel-contoh').classList.toggle('aktif', nama === 'contoh');
+  document.getElementById('hasil-tahu').style.display = 'none';
+  document.getElementById('hasil-contoh').style.display = 'none';
+  segarkanKonfirmasi();
+}
+document.getElementById('tab-tahu').addEventListener('click', function(){ bukaTab('tahu'); });
+document.getElementById('tab-contoh').addEventListener('click', function(){ bukaTab('contoh'); });
+
+/* ── KISI 6 CONTOH ─────────────────────────────────────────────────── */
+var CONTOH_DIPILIH = null;
+function pasangKisiContoh(){
+  var h = '';
+  CONTOH.forEach(function(c, i){
+    h += '<button class="contoh" data-i="' + i + '">' +
+      '<span class="contoh-ikon">' + c.ikon + '</span>' +
+      '<span class="contoh-teks">' +
+        '<span class="contoh-judul">' + c.kode + ' · ' + c.judul + '</span>' +
+        '<span class="contoh-ket">' + c.ket + '</span>' +
+        '<span class="contoh-rumus">' + c.rumus + '</span>' +
+      '</span></button>';
+  });
+  document.getElementById('kisi-contoh').innerHTML = h;
+  document.querySelectorAll('#kisi-contoh .contoh').forEach(function(k){
+    k.addEventListener('click', function(){
+      document.querySelectorAll('#kisi-contoh .contoh').forEach(function(x){ x.classList.remove('aktif'); });
+      k.classList.add('aktif');
+      CONTOH_DIPILIH = CONTOH[parseInt(k.dataset.i, 10)];
+      document.getElementById('btn-tambah-var').style.display = 'none';
+      document.getElementById('btn-tambah-panah').style.display = 'none';
+      gambarTabelPanah('tabel-contoh', CONTOH_DIPILIH.panah);
+      document.getElementById('kanvas-contoh').innerHTML =
+        gambarDiagram(CONTOH_DIPILIH.gambar, CONTOH_DIPILIH.varian);
+      document.getElementById('legenda-contoh').innerHTML =
+        legendaUntuk(CONTOH_DIPILIH.gambar, CONTOH_DIPILIH.varian);
+      document.getElementById('kotak-konfirmasi').scrollIntoView({behavior:'smooth', block:'nearest'});
+      segarkanKonfirmasi();
+    });
+  });
+}
+
+/* ── TABEL PANAH ───────────────────────────────────────────────────── */
+function kelasBaris(p){
+  if (p.jenis === 'mod') return 'baris-z';
+  if (p.jenis === 'nh')  return 'baris-nh';
+  return '';
+}
+function kelasPita(p){
+  if (p.jenis === 'mod') return 'pita-teal';
+  if (p.jenis === 'nh')  return 'pita-abu';
+  return 'pita-hijau';
+}
+function gambarTabelPanah(idTabel, panah){
+  var h = '<table class="tabel-hp"><thead><tr>' +
+    '<th style="width:44px">No</th>' +
+    '<th>Panah (arah dugaan)</th>' +
+    '<th style="width:70px">Kode</th>' +
+    '<th style="width:70px">Besar</th>' +
+    '<th style="width:74px">Hipotesis</th>' +
+    '<th style="width:120px">Perannya</th></tr></thead><tbody>';
+  panah.forEach(function(p, i){
+    var isNH = (p.jenis === 'nh');
+    var isMod = (p.jenis === 'mod');
+    var tanda = isNH ? '\u21e2' : (isMod ? '\u2929' : '\u2192');
+    h += '<tr class="' + kelasBaris(p) + '">' +
+      '<td data-label="No"><span class="samar">' + (i + 1) + '</span></td>' +
+      '<td data-label="Panah (arah dugaan)">' +
+        '<span class="panah-sel ' + (isMod ? 'panah-mod' : (isNH ? 'panah-nh' : '')) + '">' +
+          tanda + ' <b>' + p.d + '</b> ' + tanda + ' <b>' + p.k + '</b>' +
+        '</span>' +
+        '<br><span class="samar" style="font-size:11.5px">' + p.dn + ' \u2192 ' + p.kn + '</span>' +
+      '</td>' +
+      '<td data-label="Kode"><span class="pita pita-teal">' + (p.kf || '\u2014') + '</span></td>' +
+      '<td data-label="Besar">' + (p.b === '\u2014' ? '<span class="samar">\u2014</span>' : '<b>' + p.b + '</b>') + '</td>' +
+      '<td data-label="Hipotesis"><span class="pita ' + (isNH ? 'pita-abu' : 'pita-hijau') + '">' + p.h + '</span></td>' +
+      '<td data-label="Perannya"><span class="samar" style="font-size:11.5px">' + p.ket + '</span></td>' +
+    '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(idTabel).innerHTML = h;
+}
+
+/* ── DIAGRAM dipindah ke diagram_model.js + diagram_bentuk.js ── */
+
+/* ── VARIAN (tab sudah tahu) — data contoh sederhana ──────────────── */
+var VAR_TAHU = ['Kualitas Layanan', 'Kepuasan Pelanggan'];
+var PANAH_TAHU = [
+  {d:'X1', dn:'Kualitas Layanan', k:'Y', kn:'Kepuasan Pelanggan',
+   b:'0,45', kf:'\u03b2', ket:'pengaruh utama', h:'H1'}
+];
+
+/* ── LEGENDA — dibangun dari bentuk yang sedang tampil ───────────── */
+function legendaUntuk(bentuk, varian){
+  var kode = {
+    'sederhana':   [['x','X1','variabel bebas'], ['y','Y','variabel terikat']],
+    'mediasi':     [['x','X1','variabel bebas'], ['m','M','perantara'], ['y','Y','variabel terikat']],
+    'moderasi':    [['x','X1','variabel bebas'], ['z','Z','penguat'], ['y','Y','variabel terikat']],
+    'dual-paralel':[['x','X1','variabel bebas'], ['m','M1, M2','perantara'], ['y','Y','variabel terikat']],
+    'berjenjang':  [['x','X1','variabel bebas'], ['m','M1, M2','perantara'], ['y','Y','variabel terikat']],
+    'modmed':      [['x','X1','variabel bebas'], ['m','M','perantara'], ['z','Z','penguat'], ['y','Y','variabel terikat']]
+  };
+  var k = kode[bentuk] || kode['sederhana'];
+  var h = '<b>Baca gambarnya:</b>';
+  k.forEach(function(x){
+    h += '<span><span class="lg lg-' + x[0] + '"></span> <b>' + x[1] + '</b> ' + x[2] + '</span>';
+  });
+  h += '<span class="lg-panah">——→</span> <b>H1, H2…</b> diuji';
+  h += '<span class="lg-panah">- - ⇢</span> <b>NH1</b> tidak diuji';
+  h += '<span class="lg-panah"><b>a, b, c′</b></span> koefisien jalur';
+  return h;
+}
+function gambarDaftarVar(){
+  var h = '';
+  VAR_TAHU.forEach(function(n, i){
+    h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:7px">' +
+      '<span class="samar" style="width:18px">' + (i + 1) + '.</span>' +
+      '<input value="' + n + '" style="flex:1;border:1.5px solid var(--garis);' +
+      'border-radius:7px;padding:8px 10px;font:inherit;background:var(--kertas);color:var(--tinta)">' +
+      '</div>';
+  });
+  document.getElementById('daftar-var').innerHTML = h;
+}
+
+/* ── KONFIRMASI ────────────────────────────────────────────────────── */
+function panahAktif(){
+  if (TAB_AKTIF === 'contoh') return CONTOH_DIPILIH ? CONTOH_DIPILIH.panah : null;
+  return PANAH_TAHU;
+}
+function segarkanKonfirmasi(){
+  var p = panahAktif();
+  var rinci = document.getElementById('konfirmasi-rinci');
+  if (!p || !p.length){
+    rinci.innerHTML = 'Pilih dulu modelnya di atas — daftar panah akan muncul di sini.';
+    return;
+  }
+  var diuji = p.filter(function(x){ return x.jenis !== 'nh'; }).length;
+  var nh = p.filter(function(x){ return x.jenis === 'nh'; }).length;
+  var mod = p.filter(function(x){ return x.jenis === 'mod'; }).length;
+  var med = p.filter(function(x){
+    return x.ket && (x.ket.indexOf('perantara') >= 0);
+  }).length;
+
+  var kalimat = [];
+  kalimat.push('Model ini punya <b>' + p.length + ' panah</b>');
+  if (diuji) kalimat.push('<b>' + diuji + ' dihipotesiskan</b> (diuji)');
+  if (nh) kalimat.push('<b>' + nh + ' tidak dihipotesiskan</b> (dihubungkan tapi tidak diuji)');
+
+  var jenis = [];
+  if (med >= 2) jenis.push('ada perantara');
+  if (mod) jenis.push('ada penguatan');
+  var strJenis = jenis.length
+    ? ' — ' + jenis.join(' dan ') + '.'
+    : ' — hubungan langsung.';
+
+  rinci.innerHTML = kalimat.join(' · ') + strJenis +
+    '<br><span class="samar">Kalau sudah cocok, tekan tombol pertama. Kalau ada yang salah, ' +
+    'tekan tombol kedua — tidak ada yang dibuang.</span>';
+}
+
+/* ── TOMBOL AKSI ───────────────────────────────────────────────────── */
+function tampilkanHasil(idKotak, teks, batal){
+  var k = document.getElementById(idKotak);
+  k.className = 'kotak-hasil' + (batal ? ' batal' : '');
+  k.style.display = 'block';
+  k.innerHTML = teks;
+}
+document.getElementById('btn-ya').addEventListener('click', function(){
+  var id = TAB_AKTIF === 'contoh' ? 'hasil-contoh' : 'hasil-tahu';
+  tampilkanHasil(id, '<b>✔ Siap.</b> Model dikonfirmasi — di aplikasi sungguhan, ' +
+    'ini yang akan memicu pembuatan data dan jadi <b>kunci jawaban</b>-mu.', false);
+  document.getElementById(id).scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+document.getElementById('btn-ubah').addEventListener('click', function(){
+  var id = TAB_AKTIF === 'contoh' ? 'hasil-contoh' : 'hasil-tahu';
+  var pesan = TAB_AKTIF === 'contoh'
+    ? '<b>Aman.</b> Di aplikasi sungguhan, ini menggulirkan layar ke daftar panah ' +
+      'supaya kamu bisa ubah nama variabelnya. <b>Contoh ini tetap tersimpan</b> — ' +
+      'tidak perlu pilih ulang dari awal.'
+    : '<b>Aman.</b> Di aplikasi sungguhan, ini membuka layar ubah nama variabel &amp; ' +
+      'panahnya. Tidak ada yang dibuang.';
+  tampilkanHasil(id, pesan, true);
+  document.getElementById(id).scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+document.getElementById('btn-tambah-var').addEventListener('click', function(){
+  alert('MOCKUP: di aplikasi sungguhan, ini menambah satu variabel baru ke daftar.');
+});
+document.getElementById('btn-tambah-panah').addEventListener('click', function(){
+  alert('MOCKUP: di aplikasi sungguhan, ini menambah satu baris panah baru.');
+});
+
+/* ── JALANKAN ──────────────────────────────────────────────────────── */
+pasangKisiContoh();
+gambarDaftarVar();
+gambarTabelPanah('tabel-panah', PANAH_TAHU);
+document.getElementById('kanvas-tahu').innerHTML =
+  gambarDiagram('sederhana', VAR_TAHU);
+document.getElementById('legenda-tahu').innerHTML =
+  legendaUntuk('sederhana', VAR_TAHU);
+segarkanKonfirmasi();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "nama": "Model of Goal-Directed Student Decision Quality in Choosing a University",
+  "catatan": "Model jurnal Bos — 9 konstruk, 12 hipotesis, 4 tingkat, 1 jalur NH, 2 keluaran paralel. Jalur diurutkan INDUK -> ANAK.",
+  "n_resp": 250,
+  "mode": "presisi",
+  "toleransi": 0.04,
+  "seed": 42,
+  "jalur": [
+    {"target": "Mastery",      "dari": {"SelfEfficacy": 0.45}},
+    {"target": "PerfApproach", "dari": {"SelfEfficacy": 0.35}},
+    {"target": "PerfAvoid",    "dari": {"SelfEfficacy": 0.10}},
+    {"target": "PosAffect",    "dari": {"Mastery": 0.35, "PerfApproach": 0.20, "PerfAvoid": -0.15}},
+    {"target": "DecConf",      "dari": {"Mastery": 0.30, "PerfApproach": 0.25, "PerfAvoid": -0.20}},
+    {"target": "DecSatis",     "dari": {"PosAffect": 0.40, "DecConf": 0.35}},
+    {"target": "Loyalty",      "dari": {"DecSatis": 0.50}},
+    {"target": "Switching",    "dari": {"DecSatis": -0.30}}
+  ],
+  "hipotesis": {
+    "H1": "SelfEfficacy -> Mastery",
+    "H2": "SelfEfficacy -> PerfApproach",
+    "NH": "SelfEfficacy -> PerfAvoid (NOT hypothesized)",
+    "H3": "Mastery -> PosAffect",
+    "H4": "PerfApproach -> PosAffect",
+    "H5": "PerfAvoid -> PosAffect",
+    "H6": "Mastery -> DecConf",
+    "H7": "PerfApproach -> DecConf",
+    "H8": "PerfAvoid -> DecConf",
+    "H9": "PosAffect -> DecSatis",
+    "H10": "DecConf -> DecSatis",
+    "H11": "DecSatis -> Loyalty",
+    "H12": "DecSatis -> Switching"
+  }
+}

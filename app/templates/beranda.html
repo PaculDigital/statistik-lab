@@ -1,0 +1,74 @@
+{% extends 'dasar.html' %}
+{% block isi %}
+
+<div style="max-width:760px">
+  <span class="eyebrow">{{ ikon('microscope', 13) }} Laboratorium Statistik</span>
+  <h1>Belajar statistik penelitian<br>dengan <em>mencoba</em>, bukan menghafal.</h1>
+  <p class="besar">
+    Di sini kamu bisa merancang data penelitian sendiri, melihat hasilnya
+    <strong>sebelum</strong> diolah di SPSS atau SmartPLS, dan memeriksa data
+    lapangan yang sudah kamu kumpulkan.
+  </p>
+  <div class="baris renggang">
+    <a href="/belajar" class="tb tb-utama">{{ ikon('book-open', 16) }} Mulai belajar</a>
+    <a href="/buat-data" class="tb tb-sekunder">{{ ikon('flask-conical', 16) }} Buat data sekarang</a>
+  </div>
+</div>
+
+<h2>Tujuh modul, satu atap</h2>
+<p style="max-width:680px">
+  Modul yang belum siap tetap bisa kamu lihat — supaya tahu apa yang akan datang.
+</p>
+
+<div class="kisi-modul renggang">
+  {% for m in modul %}
+  <a class="modul-kartu" style="--aksen:{{ m.warna }}"
+     href="{{ '/segera/' + m.slug if not m.siap else '/' + m.slug }}">
+    <span class="modul-ikon">{{ ikon(m.ikon, 21) }}</span>
+    <h3>{{ m.nama }}
+      {% if not m.siap %}<span class="pita pita-abu">belum siap</span>
+      {% else %}<span class="pita pita-hijau">siap</span>{% endif %}
+    </h3>
+    <p>{{ m.ringkas }}</p>
+    <span class="modul-kaki">
+      {{ 'Buka modul' if m.siap else 'Lihat rencana' }} {{ ikon('arrow-right', 13) }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+
+<h2>Yang bisa dan tidak bisa dilakukan alat ini</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px">
+
+  <div class="kartu">
+    <span class="eyebrow" style="color:var(--hijau)">{{ ikon('check-circle-2', 13) }} Bisa</span>
+    <ul style="margin:0;padding-left:19px;color:var(--tinta-2);font-size:14px;line-height:1.85">
+      <li>Regresi linear <strong>sederhana &amp; berganda</strong></li>
+      <li><strong>Mediasi</strong> — tunggal, paralel, berjenjang</li>
+      <li><strong>Moderasi</strong> — tunggal, ganda, moderated mediation</li>
+      <li>Model sampai <strong>8 variabel bebas</strong></li>
+      <li>Model <strong>9 konstruk</strong> / 12 hipotesis</li>
+      <li>Rancangan <strong>PLS-SEM &amp; path analysis</strong></li>
+      <li>Periksa data lapangan <strong>(.sav, .csv, .xlsx)</strong></li>
+    </ul>
+  </div>
+
+  <div class="kartu">
+    <span class="eyebrow merah">{{ ikon('x-circle', 13) }} Belum</span>
+    <ul style="margin:0;padding-left:19px;color:var(--tinta-2);font-size:14px;line-height:1.85">
+      <li>Penelitian <strong>kualitatif</strong> (modul terpisah, menyusul)</li>
+      <li>Data <strong>longitudinal / panel</strong></li>
+      <li><strong>Multilevel</strong> (siswa dalam kelas)</li>
+      <li><strong>SEM kovarians</strong> (AMOS, LISREL)</li>
+      <li><strong>Survival analysis</strong> &amp; time series</li>
+      <li>Hasil <strong>biner/kategori</strong> (logistik)</li>
+      <li><strong>Meta-analisis</strong></li>
+    </ul>
+    <p class="samar" style="margin:12px 0 0">
+      Wulan menyebutkan ini terbuka supaya kamu tidak salah pilih alat.
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

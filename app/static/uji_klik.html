@@ -1,0 +1,56 @@
+<!DOCTYPE html><meta charset="utf-8"><title>belum</title>
+<style>html,body{margin:0}iframe{border:0;display:block}</style>
+<iframe id="f"></iframe>
+<script>
+// Halaman ini BENAR-BENAR membuka /buat-data lalu MENGKLIK seperti user,
+// untuk membuktikan slider 1-8 + nama variabel bekerja.
+const f = document.getElementById('f');
+f.style.width = '1000px';
+f.style.height = '2600px';
+f.src = '/buat-data';
+
+f.onload = () => setTimeout(() => {
+  const out = [];
+  try {
+    const d = f.contentDocument, w = f.contentWindow;
+    const Ev = t => new w.Event(t, { bubbles: true });
+
+    // 1. Ubah jumlah X jadi 8 lewat SLIDER (bukan set variabel langsung)
+    const sl = d.getElementById('x-slider');
+    sl.value = '8'; sl.dispatchEvent(Ev('input'));
+    const baris8 = d.querySelectorAll('.nama-var').length;
+    out.push('slider->8: ' + baris8 + ' input nama');
+
+    // 2. Isi nama variabel seperti user
+    const nama = ['Tingkat Edukasi', 'Motivasi Belajar', 'Kualitas Layanan',
+                  'Literasi Digital', 'Lingkungan Kerja', 'Kompetensi Guru',
+                  'Gaya Kepemimpinan', 'Budaya Organisasi'];
+    d.querySelectorAll('.nama-var').forEach((inp, i) => {
+      inp.value = nama[i]; inp.dispatchEvent(Ev('input'));
+    });
+    out.push('8 nama terisi');
+
+    // 3. Set beta 0,30 (berat) -> pagar amber harus muncul
+    d.querySelectorAll('.nilai-beta').forEach(i => {
+      i.value = '0.30'; i.dispatchEvent(Ev('input'));
+    });
+    out.push('beta 0,30 -> pagar: ' + (d.getElementById('catatan-isi').textContent || '').slice(0, 60));
+
+    // 4. Kembali ke 2 variabel lewat TOMBOL KURANG (+/- 6 kali)
+    const kurang = d.getElementById('x-kurang');
+    for (let i = 0; i < 6; i++) kurang.click();
+    out.push('kurang 6x -> ' + d.querySelectorAll('.nama-var').length + ' baris, '
+             + 'label: ' + d.getElementById('x-nama').textContent);
+    out.push('tombol tambah aktif: ' + !d.getElementById('x-tambah').disabled);
+
+    // 5. Tombol "Setel angka wajar" -> pagar harus kembali hijau
+    d.getElementById('tombol-acak').click();
+    setTimeout(() => {
+      out.push('setel wajar -> ' + (d.getElementById('catatan-isi').textContent || '').slice(0, 45));
+      document.title = out.join(' ~~ ');
+    }, 300);
+  } catch (e) {
+    document.title = 'ERR=' + e.message + ' || ' + out.join(' ~~ ');
+  }
+}, 1600);
+</script>

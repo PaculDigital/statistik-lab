@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>UJI MESIN — 1 MODEL BESAR</title>
+<style>
+body{font:14px/1.5 system-ui,sans-serif;background:#fff;margin:0;padding:16px}
+.dugaan{display:block}
+</style>
+</head>
+<body>
+<div id="keluaran"></div>
+<script src="mesin_skema.js"></script>
+<script>
+/* ⚠️ Tujuan: gambar HANYA 1 model, BESAR, supaya vision bisa membacanya.
+   Pelajaran 18Sep26: vision salah baca saat 6 model diperkecil dalam
+   1 tangkapan layar (kotak putih 14px jadi tak terlihat). */
+const sp = [
+  {id:'x1', nama:'Likuiditas', peran:'x', simbol:'X1'},
+  {id:'x2', nama:'Profitabilitas', peran:'x', simbol:'X2'},
+  {id:'z',  nama:'Kualitas Auditor', peran:'m', simbol:'Z'},
+  {id:'y',  nama:'OAGC', peran:'y', simbol:'Y'}
+];
+const pn = [
+  {dari:'x1', ke:'y',  jenis:'langsung',    labelUtama:'PL = X1,Y', labelAngka:'0,162'},
+  {dari:'x2', ke:'y',  jenis:'langsung',    labelUtama:'PL = X2,Y', labelAngka:'0,116'},
+  {dari:'x1', ke:'z',  jenis:'langsung',    labelUtama:'PL = X1,Z', labelAngka:'0,092'},
+  {dari:'x2', ke:'z',  jenis:'langsung',    labelUtama:'PL = X2,Z', labelAngka:'0,153'},
+  {dari:'z',  ke:'y',  jenis:'langsung',    labelUtama:'PL = Z,Y',  labelAngka:'0,011'},
+  {dari:'x1', ke:'y',  jenis:'taklangsung', labelUtama:'PT = X1,Z,Y', labelAngka:'0,163'},
+  {dari:'x2', ke:'y',  jenis:'taklangsung', labelUtama:'PT = X2,Z,Y', labelAngka:'0,117'},
+  {dari:'x1', ke:'z',  jenis:'taklangsung', labelUtama:'TL = X1,Z', labelAngka:'0,001'},
+  {dari:'x2', ke:'z',  jenis:'taklangsung', labelUtama:'TL = X2,Z', labelAngka:'0,001'}
+];
+const d = gambarSkema(sp, pn, {lebar:1300, judul:'Analisis Jalur: Likuiditas & Profitabilitas terhadap OAGC',
+                               gaya:'warna', tampilkanAngka:true});
+document.getElementById('keluaran').innerHTML = d.svg;
+window.__RINGKAS = ['1 model besar: ' + sp.length + ' simpul, ' + pn.length + ' panah, ' + d.tinggi + 'px'];
+</script>
+</body>
+</html>

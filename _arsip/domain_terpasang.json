@@ -1,0 +1,5 @@
+{
+  "hostname": "statistik.bikinaja.id",
+  "service": "http://172.17.0.9:8000",
+  "ip": "172.17.0.9"
+}

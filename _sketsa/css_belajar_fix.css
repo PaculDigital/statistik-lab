@@ -1,0 +1,46 @@
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BELAJAR — PERBAIKAN 18Sep26 (temuan Bos dari tangkapan layar HP)
+   ══════════════════════════════════════════════════════════════════════════
+   AKAR TERPOTONG DI HP (bukan tambalan):
+   SVG sebelumnya memakai preserveAspectRatio="none" dan tinggi tetap 168px.
+   Artinya gambar DIPAKSA melar mengikuti lebar kotak. Di layar lebar jadi
+   gepeng, di layar HP jadi penyok/terpotong — padahal halaman HTTP 200 dan
+   "tampak hidup". Bos menemukannya dengan MATA, bukan dari uji otomatis.
+   PERBAIKAN: rasio gambar dijaga (xMidYMid meet) + tinggi mengikuti lebar
+   lewat aspect-ratio, jadi gambar selalu UTUH di lebar layar apa pun.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+svg.grafik {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 400 / 200;      /* jaga bentuk, jangan melar */
+  max-height: 320px;            /* jangan terlalu tinggi di layar besar */
+  background: var(--kertas);
+  border-radius: var(--r-s);
+}
+
+@media (max-width: 620px) {
+  svg.grafik {
+    aspect-ratio: 400 / 210;    /* sedikit lebih tinggi di HP agar teks lega */
+  }
+}
+
+/* ── kotak "Kenapa bisa terjadi?" ─────────────────────────────────────── */
+.kenapa-kotak { align-items: flex-start; }
+
+.daftar-kenapa {
+  margin: 7px 0 0;
+  padding-left: 17px;
+  list-style: disc;
+}
+.daftar-kenapa li {
+  font-size: 13px;
+  line-height: 1.72;
+  color: var(--tinta-2);
+  margin-bottom: 5px;
+  overflow-wrap: break-word;    /* ⚠️ break-word, BUKAN anywhere — kalau
+                                   anywhere, kata terpotong di tengah */
+}
+.daftar-kenapa li:last-child { margin-bottom: 0; }

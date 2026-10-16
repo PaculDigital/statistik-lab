@@ -1,0 +1,94 @@
+{
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "result": {
+    "tunnel_id": "8ae633d2-4726-47e1-aa5d-1d90fe13ffb1",
+    "version": 61,
+    "config": {
+      "ingress": [
+        {
+          "service": "http://localhost:18081",
+          "hostname": "oo.bikinaja.id"
+        },
+        {
+          "service": "http://localhost:8100",
+          "hostname": "eduai.bikinaja.id"
+        },
+        {
+          "service": "http://localhost:8081",
+          "hostname": "upb.bikinaja.id",
+          "originRequest": {}
+        },
+        {
+          "service": "http://localhost:3001",
+          "hostname": "adminupb.bikinaja.id",
+          "originRequest": {}
+        },
+        {
+          "service": "http://localhost:3001",
+          "hostname": "qr.bikinaja.id",
+          "originRequest": {}
+        },
+        {
+          "service": "http://localhost:1430",
+          "hostname": "router.bikinaja.id"
+        },
+        {
+          "service": "http://localhost:3000",
+          "hostname": "wa.bikinaja.id"
+        },
+        {
+          "service": "http://localhost:80",
+          "hostname": "ruangdosen.my.id"
+        },
+        {
+          "service": "http://localhost:80",
+          "hostname": "*.ruangdosen.my.id"
+        },
+        {
+          "service": "https://localhost:443",
+          "hostname": "*.tridarma.id",
+          "originRequest": {
+            "noTLSVerify": true
+          }
+        },
+        {
+          "service": "https://localhost:443",
+          "hostname": "tridarma.id",
+          "originRequest": {
+            "noTLSVerify": true
+          }
+        },
+        {
+          "service": "http://localhost:20128",
+          "hostname": "9router.bikinaja.id"
+        },
+        {
+          "service": "http://localhost:9119",
+          "hostname": "hermes.bikinaja.id"
+        },
+        {
+          "service": "http://172.17.0.7:3021",
+          "hostname": "pub.bikinaja.id"
+        },
+        {
+          "service": "http://172.17.0.7:3021",
+          "hostname": "bayana.id"
+        },
+        {
+          "service": "http://172.17.0.7:3021",
+          "hostname": "www.bayana.id"
+        },
+        {
+          "service": "http_status:404"
+        }
+      ],
+      "warp-routing": {
+        "enabled": false
+      }
+    },
+    "source": "cloudflare",
+    "created_at": "2026-09-17T14:07:36.545189Z"
+  }
+}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>UJI MESIN GAMBAR SKEMA</title>
+<style>
+body{font:14px/1.5 system-ui,sans-serif;background:#FBF8F3;color:#2B2722;margin:0;padding:20px}
+.kotak{background:#F5F0E6;border:1px solid #E0D8C8;border-radius:12px;
+  padding:16px;margin-bottom:18px}
+h2{font-size:16px;margin:0 0 10px}
+.samar{color:#9A9086;font-size:12px}
+.dugaan{display:block;background:#fff;border:1px solid #E0D8C8;border-radius:8px}
+</style>
+</head>
+<body>
+
+<div id="keluaran"></div>
+
+<script src="mesin_skema.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   UJI MESIN — 5 model nyata. Yang penting: 2 gambar nyata Bos HARUS
+   menghasilkan skema yang masuk akal (mirip gaya yang Bos tunjukkan).
+   ══════════════════════════════════════════════════════════════════════ */
+
+const UJI = [
+  /* ── 1. GAYA GAMBAR BOS #2/#3: Likuiditas, Profitabilitas → Z → Y ── */
+  {
+    nama: '1. Gaya gambar Bos (Likuiditas→Z→Y) — MEDIASI, ada angka',
+    simpul: [
+      {id:'x1', nama:'Likuiditas', peran:'x', simbol:'X1'},
+      {id:'x2', nama:'Profitabilitas', peran:'x', simbol:'X2'},
+      {id:'z',  nama:'Kualitas Auditor', peran:'m', simbol:'Z'},
+      {id:'y',  nama:'OAGC', peran:'y', simbol:'Y'}
+    ],
+    panah: [
+      {dari:'x1', ke:'y',  jenis:'langsung',    labelUtama:'PL = X1,Y', labelAngka:'0,162'},
+      {dari:'x2', ke:'y',  jenis:'langsung',    labelUtama:'PL = X2,Y', labelAngka:'0,116'},
+      {dari:'x1', ke:'z',  jenis:'langsung',    labelUtama:'PL = X1,Z', labelAngka:'0,092'},
+      {dari:'x2', ke:'z',  jenis:'langsung',    labelUtama:'PL = X2,Z', labelAngka:'0,153'},
+      {dari:'z',  ke:'y',  jenis:'langsung',    labelUtama:'PL = Z,Y',  labelAngka:'0,011'},
+      {dari:'x1', ke:'y',  jenis:'taklangsung', labelUtama:'PT = X1,Z,Y', labelAngka:'0,163'},
+      {dari:'x2', ke:'y',  jenis:'taklangsung', labelUtama:'PT = X2,Z,Y', labelAngka:'0,117'},
+      {dari:'x1', ke:'z',  jenis:'taklangsung', labelUtama:'TL = X1,Z', labelAngka:'0,001'},
+      {dari:'x2', ke:'z',  jenis:'taklangsung', labelUtama:'TL = X2,Z', labelAngka:'0,001'}
+    ],
+    opsi:{lebar:940, judul:'Analisis Jalur: Likuiditas & Profitabilitas terhadap OAGC',
+          gaya:'warna', tampilkanAngka:true}
+  },
+
+  /* ── 2. GAYA GAMBAR BOS #1: Goal-Directed, 9 variabel, H1..H12 ── */
+  {
+    nama: '2. Gaya gambar Bos (Goal-Directed 9 variabel, H1..H12 + NH)',
+    simpul: [
+      {id:'se',  nama:'Self-efficacy', peran:'x'},
+      {id:'mg',  nama:'Mastery Goals', peran:'m'},
+      {id:'pg',  nama:'Performance-Approach Goals', peran:'m'},
+      {id:'ag',  nama:'Performance Avoidance Goals', peran:'m'},
+      {id:'pa',  nama:'Positive Affect', peran:'m'},
+      {id:'dc',  nama:'Decision Confidence', peran:'m'},
+      {id:'ds',  nama:'Decision Satisfaction', peran:'m'},
+      {id:'loy', nama:'Attitudinal Loyalty Intention', peran:'y'},
+      {id:'sw',  nama:'Switching Likelihood', peran:'y'}
+    ],
+    panah: [
+      {dari:'se', ke:'mg', jenis:'langsung', labelUtama:'H1'},
+      {dari:'se', ke:'pg', jenis:'langsung', labelUtama:'H2'},
+      {dari:'se', ke:'ag', jenis:'langsung', labelUtama:'NH'},
+      {dari:'mg', ke:'pa', jenis:'langsung', labelUtama:'H3'},
+      {dari:'pg', ke:'pa', jenis:'langsung', labelUtama:'H4'},
+      {dari:'ag', ke:'pa', jenis:'langsung', labelUtama:'H5'},
+      {dari:'mg', ke:'dc', jenis:'langsung', labelUtama:'H6'},
+      {dari:'pg', ke:'dc', jenis:'langsung', labelUtama:'H7'},
+      {dari:'ag', ke:'dc', jenis:'langsung', labelUtama:'H8'},
+      {dari:'pa', ke:'ds', jenis:'langsung', labelUtama:'H9'},
+      {dari:'dc', ke:'ds', jenis:'langsung', labelUtama:'H10'},
+      {dari:'ds', ke:'loy', jenis:'langsung', labelUtama:'H11'},
+      {dari:'ds', ke:'sw', jenis:'langsung', labelUtama:'H12'}
+    ],
+    opsi:{lebar:1000, judul:'Model of Goal-Directed Student Decision Quality', gaya:'hipotesis'}
+  },
+
+  /* ── 3. MEDIASI TUNGGAL sederhana (paling sering di skripsi) ── */
+  {
+    nama: '3. Mediasi tunggal (X → Z → Y) — garis putus-putus TL/PT',
+    simpul: [
+      {id:'x', nama:'Jam Belajar', peran:'x', simbol:'X'},
+      {id:'z', nama:'Kebiasaan', peran:'m', simbol:'Z'},
+      {id:'y', nama:'Nilai Ujian', peran:'y', simbol:'Y'}
+    ],
+    panah: [
+      {dari:'x', ke:'z', jenis:'langsung', labelUtama:'PL = X,Z'},
+      {dari:'z', ke:'y', jenis:'langsung', labelUtama:'PL = Z,Y'},
+      {dari:'x', ke:'y', jenis:'langsung', labelUtama:'PL = X,Y'},
+      {dari:'x', ke:'y', jenis:'taklangsung', labelUtama:'PT = X,Z,Y'}
+    ],
+    opsi:{lebar:900, judul:'Mediasi: Jam Belajar → Kebiasaan → Nilai Ujian', gaya:'warna'}
+  },
+
+  /* ── 4. MODERASI (panah menunjuk panah) ── */
+  {
+    nama: '4. Moderasi (Z menunjuk panah X→Y)',
+    simpul: [
+      {id:'x', nama:'Jam Belajar', peran:'x', simbol:'X'},
+      {id:'y', nama:'Nilai Ujian', peran:'y', simbol:'Y'},
+      {id:'z', nama:'Cara Belajar', peran:'z', simbol:'Z'}
+    ],
+    panah: [
+      {dari:'x', ke:'y', jenis:'langsung', labelUtama:'H1'},
+      {dari:'z', ke:'y', jenis:'moderasi', labelUtama:'H2 (memperkuat/melemahkan)'}
+    ],
+    opsi:{lebar:860, judul:'Moderasi: Cara Belajar mengubah kuatnya pengaruh', gaya:'warna'}
+  },
+
+  /* ── 5. DUA X LANGSUNG (regresi berganda yang sudah jadi) ── */
+  {
+    nama: '5. Regresi berganda (3 X → Y) — sudah jalan sekarang',
+    simpul: [
+      {id:'x1', nama:'Tingkat Edukasi', peran:'x', simbol:'X1'},
+      {id:'x2', nama:'Motivasi Belajar', peran:'x', simbol:'X2'},
+      {id:'x3', nama:'Kualitas Layanan', peran:'x', simbol:'X3'},
+      {id:'y',  nama:'Keputusan Memilih', peran:'y', simbol:'Y'}
+    ],
+    panah: [
+      {dari:'x1', ke:'y', jenis:'langsung', labelUtama:'H1'},
+      {dari:'x2', ke:'y', jenis:'langsung', labelUtama:'H2'},
+      {dari:'x3', ke:'y', jenis:'langsung', labelUtama:'H3'}
+    ],
+    opsi:{lebar:900, judul:'Regresi Berganda: 3 variabel bebas', gaya:'warna'}
+  },
+
+  /* ── 6. MODEL MELINGKAR — harus DITOLAK ── */
+  {
+    nama: '6. UJI PENOLAKAN: model melingkar (A→B→A)',
+    simpul: [
+      {id:'a', nama:'Variabel A', peran:'x'},
+      {id:'b', nama:'Variabel B', peran:'y'}
+    ],
+    panah: [
+      {dari:'a', ke:'b', jenis:'langsung', labelUtama:'H1'},
+      {dari:'b', ke:'a', jenis:'langsung', labelUtama:'H2'}
+    ],
+    opsi:{lebar:700, judul:'Ini harus DITOLAK', gaya:'warna'}
+  }
+];
+
+const kel = document.getElementById('keluaran');
+let ringkas = [];
+UJI.forEach(u => {
+  const d = gambarSkema(u.simpul, u.panah, u.opsi);
+  const box = document.createElement('div');
+  box.className = 'kotak';
+  if (d.galat) {
+    box.innerHTML = `<h2>${u.nama}</h2>
+      <p style="color:#A85A5A;font-weight:700">🛑 DITOLAK: ${d.galat}</p>`;
+    ringkas.push(`${u.nama}: DITOLAK (benar)`);
+  } else {
+    box.innerHTML = `<h2>${u.nama}</h2>${d.svg}
+      <p class="samar">tingkat: maks ${Math.max(...Object.values(d.tingkat))} ·
+      tinggi kanvas ${d.tinggi}px · ${u.simpul.length} variabel · ${u.panah.length} panah</p>`;
+    ringkas.push(`${u.nama}: ${{'simpul':u.simpul.length}.simpul} simpul, ${u.panah.length} panah, maks tingkat ${Math.max(...Object.values(d.tingkat))}`);
+  }
+  kel.appendChild(box);
+});
+window.__RINGKAS = ringkas;
+</script>
+</body>
+</html>

@@ -1,0 +1,1309 @@
+{% extends 'dasar.html' %}
+{% block isi %}
+
+<div style="max-width:720px">
+  <span class="eyebrow">{{ ikon('book-open', 13) }} BELAJAR</span>
+  <h1>Materi, kamus, dan ruang uji</h1>
+  <p class="besar">
+    Geser slider di setiap istilah — kamu akan melihat sendiri bagaimana
+    angkanya berubah, bukan sekadar membaca definisi.
+  </p>
+</div>
+
+<!-- ══════ PITA TAB (19Sep26) ══════ -->
+<div class="pita-tab" role="tablist">
+  <a href="#tab-1" class="aktif" id="pa-1" role="tab" onclick="bukaTab(1);return false">
+    {{ ikon('book-open', 15) }} Materi &amp; Kamus <span class="biji">8</span>
+  </a>
+  <a href="#tab-2" id="pa-2" role="tab" onclick="bukaTab(2);return false">
+    {{ ikon('flask-conical', 15) }} Ruang Uji <span class="biji">2</span>
+  </a>
+</div>
+
+<div id="tab-1" role="tabpanel">
+<div class="kamus-kisi renggang-b">
+  <div class="kamus-daftar" id="daftar">
+    <button class="kamus-tombol aktif" data-k="hetero">{{ ikon('activity', 15) }} Heteroskedastisitas</button>
+    <button class="kamus-tombol" data-k="beta">{{ ikon('trending-up', 15) }} Koefisien β</button>
+    <button class="kamus-tombol" data-k="pvalue">{{ ikon('percent', 15) }} p-value</button>
+    <button class="kamus-tombol" data-k="r2">{{ ikon('bar-chart-3', 15) }} R² (R-kuadrat)</button>
+    <button class="kamus-tombol" data-k="vif">{{ ikon('boxes', 15) }} VIF / Multikolinearitas</button>
+    <button class="kamus-tombol" data-k="alpha">{{ ikon('shield-check', 15) }} Alpha Cronbach</button>
+    <button class="kamus-tombol" data-k="ujit">{{ ikon('alert-circle', 15) }} Uji t: masalah uji t</button>
+    <button class="kamus-tombol" data-k="normalitas">{{ ikon('activity', 15) }} Normalitas</button>
+  </div>
+
+  <div class="papan">
+    <div class="baris-antara">
+      <h2 id="judul" style="margin:0;font-size:19px">Heteroskedastisitas</h2>
+      <span class="pita pita-teal" id="tanda">lihat sendiri</span>
+    </div>
+    <p id="arti" style="margin-top:10px"></p>
+
+    {# ⚠️ PINTASAN SEHAT/SAKIT (20Sep26, ACC Bos) — 2 tombol cepat di ATAS
+       slider. Slider TETAP ADA (keputusan Bos: variasi B) supaya user masih
+       bisa menggeser bebas; tombol cuma jalan pintas satu klik. Tombol
+       menyala sendiri saat slider mentok (diatur di JS fungsi pintasanNyalakan).
+       Alasan penting (temuan Bos): mahasiswa sering menyangka "tidak ada corong
+       = tidak ada hasil". Dua tombol ini membuat keadaan SEHAT bisa dilihat
+       langsung, bukan cuma disimpulkan. #}
+    <div class="pintasan-baris" id="pintasan-baris" hidden>
+      <button type="button" class="pintasan" id="pintasan-sehat">Contoh sehat</button>
+      <button type="button" class="pintasan" id="pintasan-sakit">Contoh sakit</button>
+    </div>
+
+    <div class="medan renggang">
+      <label id="label-slider" for="slider">Seberapa tidak rata sebarannya?</label>
+      <input type="range" id="slider" min="0" max="100" value="35">
+      <div class="baris-antara" style="margin-top:6px">
+        <span class="samar" id="kiri">Rata</span>
+        <span class="samar" id="kanan">Sangat tidak rata</span>
+      </div>
+    </div>
+
+    {# ⚠️ AKAR TERPOTONG SAAT MOBILE (18Sep26) — JANGAN DIUBAH TANPA ALASAN.
+       Sebelumnya di sini tertulis preserveAspectRatio="none". Artinya gambar
+       DIPAKSA melar mengikuti lebar kotak: di layar lebar jadi gepeng, di
+       layar HP jadi terpotong/penyok — padahal HTTP 200 dan "tampak hidup".
+       Bos menemukannya dari tangkapan layar HP ("gambarnya untuk mobile
+       terpotong"). Perbaikannya: pakai "xMidYMid meet" — gambar DIPERKECIL
+       UTUH mengikuti ruang, tidak lagi melar atau terpotong.
+       Tinggi diatur lewat CSS (aspect-ratio) supaya tidak ada ruang kosong. #}
+    <svg class="grafik" id="grafik" viewBox="0 0 400 168"
+         preserveAspectRatio="xMidYMid meet"
+         role="img" aria-label="Diagram istilah statistik"></svg>
+
+    <div class="baris-antara" style="margin-top:14px">
+      <div>
+        <div class="samar">Angka yang terbaca</div>
+        <div class="angka-besar" id="angka">0.00</div>
+      </div>
+      <span class="pita pita-abu" id="pita-hasil">—</span>
+    </div>
+
+    <div class="catatan renggang" id="pesan">
+      {{ ikon('info', 16) }}<div id="pesan-isi"></div>
+    </div>
+
+    {# ⚠️ KENAPA BISA TERJADI — ditambahkan 18Sep26 atas keluhan Bos:
+       "banyak instrumen yang tidak menggambarkan, atau keterangan kurang
+       jelas, jadi sulit memahami". Tiap istilah kini menjelaskan SEBABNYA,
+       bukan cuma artinya (ACC Bos: kedalaman "sedang", 3-4 penyebab,
+       bahasa awam). Daftarnya diisi JavaScript dari KAMUS[k].kenapa. #}
+    <div class="catatan renggang kenapa-kotak" id="kenapa-kotak">
+      {{ ikon('help-circle', 16) }}
+      <div>
+        <strong>Kenapa bisa terjadi?</strong>
+        <ul class="daftar-kenapa" id="kenapa-isi"></ul>
+      </div>
+    </div>
+
+    <div class="catatan amber renggang">
+      {{ ikon('lightbulb', 16) }}
+      <div><strong>Di SPSS:</strong> <span id="spss"></span></div>
+    </div>
+  </div>
+
+{# ⚠️ KARTU UJI t — 3 LAPIS (ACC Bos 18Sep26). Wadah ini TERPISAH dari panel
+   kamus di atas: saat istilah "ujit" dipilih, panel kamus disembunyikan dan
+   kartu ini muncul. Alasannya kartu ini berkonsep beda — bukan "geser slider",
+   melainkan "pilih hasil SPSS-mu". Data kartu ada di /static/kartu_uji_t.js
+   (dibangkitkan dari _sketsa/data_uji_t.py supaya mudah dirawat). #}
+<section class="kartu-ujit" id="kartu-ujit" hidden>
+  <div class="papan">
+  {# ══════════════════════════════════════════════════════════════════════════
+     KETERANGAN AMBANG SIG. (19Sep26, ACC Bos) — ditaruh di PALING ATAS kartu
+     Uji t supaya mahasiswa paham batas 0,05 SEBELUM membaca hasil apa pun.
+     Tiga bagian: ① slider+penerjemah  ② tanda minus  ③ teori asal-usul 0,05.
+     Alasan: mahasiswa lemah membandingkan angka (0,1 vs 0,05) dan bingung
+     apakah hasil negatif berarti tidak signifikan.
+     Sketsa yang di-ACC: _sketsa/sketsa_ambang_sig.html
+     ══════════════════════════════════════════════════════════════════════ #}
+  <div class="papan" id="amb-panel">
+    <span class="pita">baca ini dulu</span>
+    <h2 style="margin:8px 0 4px;font-size:17px">Sebelum membaca hasilmu</h2>
+    <p style="font-size:12.5px;color:var(--tinta-2);margin:0 0 14px;line-height:1.6">
+      <strong>Patokan baku: Sig. &lt; 0,05 = signifikan.</strong>
+      Angka Sig. makin <strong>kecil</strong>, buktinya makin <strong>kuat</strong>.
+      Masukkan angka Sig. dari SPSS-mu — lihat sendiri dia jatuh di kiri atau kanan
+      batas.</p>
+
+    <!-- ① kotak isian -->
+    <div class="amb-masuk">
+      <label for="amb-sig">Angka Sig. hasilmu</label>
+      <input id="amb-sig" type="text" inputmode="decimal" value="0,008"
+             autocomplete="off" aria-label="Angka Sig hasil penelitian">
+      <span class="samar">ketik · atau geser di bawah</span>
+    </div>
+
+    <!-- ① garis bilangan -->
+    <div class="amb-garis">
+      <div class="amb-jalur"></div>
+      <div class="amb-batas" style="left:10%">
+        <span class="amb-batas-lbl">batas 0,05</span>
+      </div>
+      <div class="amb-tanda" style="left:0%">0</div>
+      <div class="amb-tanda" style="left:10%">0,05</div>
+      <div class="amb-tanda" style="left:20%">0,10</div>
+      <div class="amb-tanda" style="left:50%">0,25</div>
+      <div class="amb-tanda" style="left:100%">0,50</div>
+      <div class="amb-pin" id="amb-pin" style="left:1.6%">
+        <div class="amb-tangkai"></div>
+        <div class="amb-nilai" id="amb-nilai">0,008</div>
+      </div>
+    </div>
+
+    <div class="medan" style="margin:12px 0 0">
+      <input type="range" id="amb-geser" min="0" max="500" value="8"
+             aria-label="Geser angka Sig">
+      <div class="baris-antara" style="margin-top:2px">
+        <span class="samar">0,000 — bukti kuat</span>
+        <span class="samar">0,50 — bukti lemah</span>
+      </div>
+    </div>
+
+    <div class="catatan" id="amb-jawab" style="margin-top:14px"></div>
+
+    <p style="font-size:12px;color:var(--tinta-3);margin:12px 0 0;line-height:1.55">
+      ⚠️ Dua hal yang paling sering ketuker: <strong>0,5</strong> itu 10×
+      <strong>lebih besar</strong> dari 0,05 — jadi 0,5 jauh di kanan batas.
+      Dan angka Sig. <strong>tidak pernah minus</strong> (selalu 0 sampai 1).</p>
+  </div>
+
+  {# ── ② TANDA MINUS — dipisah supaya tidak tercampur dengan Sig. ── #}
+  <div class="papan">
+    <h2 style="margin:0 0 4px;font-size:17px">Tanda B ( − ) itu bukan tanda gagal</h2>
+    <p style="font-size:12.5px;color:var(--tinta-2);margin:0 0 10px;line-height:1.6">
+      Di tabel SPSS ada <strong>dua kolom berbeda</strong> pada baris yang sama.
+      Jangan dibaca jadi satu:</p>
+
+    <table class="amb-tbl">
+      <tr><th>Kolom</th><th>Bisa minus?</th><th>Artinya</th></tr>
+      <tr>
+        <td><strong>Sig.</strong></td>
+        <td class="amb-merah">Tidak (0–1)</td>
+        <td>Peluang kebetulan → <strong>penentu signifikan</strong></td>
+      </tr>
+      <tr>
+        <td><strong>B</strong></td>
+        <td class="amb-hijau">Bisa (− / +)</td>
+        <td><strong>Arah</strong> pengaruh (naik / turun) — <strong>bukan</strong> penentu signifikan</td>
+      </tr>
+    </table>
+
+    <p style="font-size:12.5px;color:var(--tinta-2);margin:12px 0 6px;line-height:1.6">
+      Tiga angka di bawah ini <strong>minus semua</strong> — tapi nasibnya beda.
+      Yang menentukan <strong>Sig.</strong>, bukan tandanya:</p>
+
+    <div class="amb-tiga">
+      <div class="amb-contoh">
+        <div class="amb-angka">−0,368</div>
+        <div class="amb-lbl amb-lbl-hijau">Sig 0,008 · SAH</div>
+      </div>
+      <div class="amb-contoh">
+        <div class="amb-angka">−0,380</div>
+        <div class="amb-lbl amb-lbl-kuning">Sig 0,062 · di batas</div>
+      </div>
+      <div class="amb-contoh">
+        <div class="amb-angka">−0,115</div>
+        <div class="amb-lbl amb-lbl-abu">Sig 0,310 · tidak</div>
+      </div>
+    </div>
+
+    <div class="catatan" style="margin-top:12px">
+      Jadi: <strong>−0,368 dengan Sig. 0,008 tetap SIGNIFIKAN</strong> — minusnya cuma
+      berarti arahnya turun (makin tinggi X, makin turun Y).</div>
+  </div>
+
+  {# ── ③ TEORI — dari mana angka 0,05 ── #}
+  <div class="papan">
+    <h2 style="margin:0 0 10px;font-size:17px">Kenapa 0,05? Dari mana angka itu?</h2>
+
+    <div class="amb-teori">
+      <h3>① R. A. Fisher (1925) — asal angkanya</h3>
+      <p>Dalam <em>Statistical Methods for Research Workers</em>, Fisher mengusulkan
+        patokan <strong>“1 dari 20” (0,05)</strong> sebagai alat bantu kerja supaya
+        peneliti tidak bingung menentukan batas.</p>
+      <blockquote>“Batas 0,05 itu hanya kebiasaan — tidak ada dasar ilmiah untuk
+        memilih 0,05 dibanding 0,06.”<br>
+        <span class="amb-kutip-siapa">— R. A. Fisher</span></blockquote>
+    </div>
+
+    <div class="amb-teori">
+      <h3>② Amrhein, Greenland &amp; McShane (2019, <em>Nature</em>) — cara pakainya</h3>
+      <p>Ditandatangani 800+ ilmuwan: <strong>0,05 bukan tembok “ada / tidak ada
+        pengaruh”.</strong> Angka 0,049 dan 0,051 hampir sama saja — satu tidak
+        otomatis “berhasil” dan yang lain “gagal”. Nilai p juga <strong>tidak
+        mengukur seberapa besar</strong> pengaruhnya, hanya seberapa kuat buktinya.</p>
+    </div>
+
+    <p style="font-size:12.5px;color:var(--tinta-2);margin:14px 0 6px;line-height:1.6">
+      <strong>Karena itu: ambang ikut bidang penelitian.</strong></p>
+    <table class="amb-tbl">
+      <tr><th>Bidang</th><th>Ambang lazim</th></tr>
+      <tr><td>Ekonomi, sosial, pendidikan (skripsi/tesis)</td><td><strong>0,05</strong></td></tr>
+      <tr><td>Kedokteran / uji klinis</td><td><strong>0,01</strong></td></tr>
+      <tr><td>Eksplorasi / uji pendahuluan</td><td><strong>0,10</strong></td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--tinta-3);margin:10px 0 0;line-height:1.6">
+      <strong>0,05 itu kesepakatan lapangan, bukan angka dari langit.</strong>
+      Yang salah bukan angkanya — yang salah kalau ambangnya digeser
+      <strong>supaya hasilmu kelihatan signifikan</strong>.</p>
+  </div>
+
+    <div class="ujit-langkah"><b>1</b> Buka tabel Coefficients di SPSS-mu</div>
+    <div class="baris-antara" style="margin-bottom:10px">
+      <h2 style="margin:0;font-size:17px">Hasilmu yang mana?</h2>
+      <span class="ujit-pita abu">5 kemungkinan</span>
+    </div>
+    <div class="ujit-empat" id="ujit-daftar-hasil"></div>
+    <p style="font-size:12.5px;color:#6B6259;margin:10px 0 0">
+      Hanya dua angka yang dipakai: <strong>Sig.</strong> (ada pengaruhnya atau
+      tidak) dan <strong>tanda di B</strong> (arahnya).</p>
+  </div>
+
+  <div class="papan" id="ujit-panel-arti"></div>
+
+  <div class="papan" id="ujit-panel-sebab"></div>
+
+  <div class="papan hack-kartu">
+    <div class="hack-kepala">
+      <h3>5 Cara Hack yang Harus Dihindari</h3>
+      <span class="hack-lencana">HACK</span>
+    </div>
+    <div class="hack-badan">
+      <p class="hack-ket">Bukan karena penguji melarang — tapi karena hasilnya
+         jadi tidak bisa dipercaya, termasuk oleh dirimu sendiri.</p>
+      <div id="ujit-hack-isi"></div>
+      <div class="hack-kaki"><strong>Kuncinya cuma satu: urutan.</strong>
+         Rencanakan dulu di BAB III, baru lihat hasil. Kalau <strong>hasil
+         dilihat dulu, baru aturan diubah</strong> — itulah masalahnya.</div>
+    </div>
+  </div>
+
+  <div class="papan">
+    <h2 style="margin:0 0 4px;font-size:16.5px">Belum yakin datanya benar?</h2>
+    <p style="font-size:13px;color:#6B6259;margin:0 0 10px">
+      Tidak perlu takut bertanya. Periksa dulu lima hal ini — semuanya cara
+      yang sah, dan justru itu yang dilakukan peneliti yang baik.</p>
+    <button class="cek-tombol" id="cek-tombol" type="button">
+      {{ ikon('search', 16) }} <span id="cek-label">Tampilkan daftar periksa</span>
+    </button>
+    <div class="cek-daftar" id="cek-daftar" hidden></div>
+  </div>
+</section>
+</div>
+
+
+</div><!-- /tab-1 -->
+
+<div id="tab-2" role="tabpanel" hidden>
+  <span class="eyebrow">{{ ikon('flask-conical', 13) }} RUANG UJI</span>
+  <h1>Ruang Uji</h1>
+  <p class="besar">
+    Tempat <strong>berlatih</strong> — bukan membaca. Nanti isinya dua latihan:
+    kamu sengaja membuat data bermasalah lalu menebak apa yang salah, dan
+    kuis memilih alat (SPSS atau SmartPLS).
+  </p>
+
+  <div class="papan" style="border-left:3px solid var(--amber)">
+    <h2 style="margin:0 0 4px;font-size:16px">
+      {{ ikon('timer', 15) }} Ruang Uji belum dibuka</h2>
+    <p style="font-size:13px;color:var(--tinta-2);margin:0">
+      Dua latihan ini sedang dibuat dan belum bisa dipakai. Wulan tidak memasang
+      tautan kosong supaya kamu tidak tersesat — jadi belum ada tombolnya dulu.
+    </p>
+  </div>
+
+  <div class="papan" style="margin-top:18px">
+    <h2 style="margin:0 0 4px;font-size:16px">Yang sudah bisa dipakai sekarang</h2>
+    <p style="font-size:13px;color:var(--tinta-2);margin:0 0 12px">
+      Tiga halaman ini sudah jalan — silakan dicoba sekarang.</p>
+    <div class="pilih-kisi">
+      <a class="pilih" href="/belajar">
+        <strong>Kamus istilah</strong>
+        <span>Geser slider, lihat gambarnya berubah, baca cara membacanya.</span>
+      </a>
+      <a class="pilih" href="/syarat">
+        <strong>Kamus Grafik</strong>
+        <span>Grafik uji syarat dari data milikmu sendiri.</span>
+      </a>
+      <a class="pilih" href="/klinik">
+        <strong>Diagnosis Data</strong>
+        <span>Unggah data SPSS/PLS-mu, kami periksa benar atau perlu dibetulkan.</span>
+      </a>
+    </div>
+  </div>
+</div><!-- /tab-2 -->
+
+{% endblock %}
+
+{% block skrip %}
+<script>
+/* ══════ PITA TAB (19Sep26) ══════
+   Tab MANDIRI — tidak mengambil dari skrip lain, menghindari jebakan urutan
+   pemuatan yang sudah pernah menggigit (pelajaran 19Sep26: tag script yang
+   ditaruh sebelum penutup body jatuh SETELAH blok skrip template).
+   ⚠️ DUA HAL YANG JANGAN DITULIS DI DALAM KOMENTAR INI (dua-duanya benar-benar
+   terjadi 19Sep26, halaman /belajar MATI sampai ketemu akarnya):
+     (1) tanda kurung Jinja (block/endblock) — Jinja TIDAK mengenal komentar,
+         ia tetap membacanya sebagai perintah → "Unexpected end of template";
+     (2) tag penutup HTML lengkap dengan kurung sikunya (mis. penutup body) —
+         gerbang_tag_skrip.py membacanya sebagai kode yang bisa tumpah.
+   State disimpan di location.hash supaya tombol mundur peramban bekerja. */
+function bukaTab(n) {
+  [1, 2].forEach(function (i) {
+    const panel = document.getElementById('tab-' + i);
+    const pa = document.getElementById('pa-' + i);
+    if (!panel || !pa) return;
+    panel.hidden = (i !== n);
+    pa.classList.toggle('aktif', i === n);
+  });
+  try { history.replaceState(null, '', '#' + 'tab-' + n); } catch (e) {}
+}
+(() => {
+  const m = (location.hash || '').match(/tab-([12])/);
+  if (m) bukaTab(parseInt(m[1], 10));
+})();
+
+const KAMUS = {
+  hetero: {
+    judul: 'Heteroskedastisitas',
+    arti: 'Syarat regresi: sebaran sisa (residu) harus <strong>rata<\/strong> di sepanjang nilai prediksi. Kalau sebarannya makin melebar, itulah heteroskedastisitas.',
+    tanya: 'Seberapa tidak rata sebarannya?',
+    kiri: 'Rata (homoskedastis)', kanan: 'Sangat tidak rata',
+    satuan: '', ambang: null,
+    ukur: v => v / 100,
+    format: v => (v / 100).toFixed(3),
+    // ⚠️ Ambang tafsir diselaraskan dengan GAMBAR 18Sep26. Sebelumnya ambang
+    // ditulis 0,20 dan 0,50 — angka itu TIDAK nyambung dengan bentuk gambar
+    // baru (0 = benar-benar rata, 100 = corong paling jelas). Ambang baru
+    // dibuat 0,18 dan 0,45 supaya kalimat tafsir dan gambar bercerita sama.
+    tafsir: v => v < 18
+      ? ['pita-hijau', 'Aman', 'Sebarannya rata dari kiri ke kanan. Syarat ini terpenuhi — lanjut ke pengujian hipotesis.']
+      : v < 45
+      ? ['pita-amber', 'Perlu dilihat', 'Sebaran mulai melebar ke kanan. Periksa dengan uji Glejser atau diagram sebaran residu di SPSS.']
+      : ['pita-merah', 'Bermasalah', 'Sebarannya jelas melebar membentuk corong. Dua jalan keluar: pakai robust standard error, atau ubah data dengan logaritma.'],
+    spss: 'Analyze → Regression → Linear → tombol Plots → pindahkan ZPRED ke X dan ZRESID ke Y. Kalau titiknya melebar seperti corong, ada heteroskedastisitas.',
+    kenapa: [
+      'Responden yang nilainya tinggi menjawab lebih beragam daripada yang nilainya rendah.',
+      'Skala pengukuran tidak seragam — sebagian pertanyaan lebih gampang dipahami.',
+      'Ada kelompok responden yang berbeda karakter (misalnya beda jabatan) yang tercampur.',
+      'Datanya tidak simetris: beberapa nilai sangat ekstrem menarik sebaran ke satu arah.'
+    ],
+    /*
+      GAMBAR HETEROSKEDASTISITAS — DIPERBAIKI TOTAL 18Sep26.
+      TEMUAN BOS: "Heterodasitas cek ulang dengan teliti, sepertinya salah dan
+      kurang menggambarkan instrumen slidernya."
+
+      BOS BENAR. Tiga cacat NYATA (bukan soal selera), semuanya terukur:
+
+      CACAT 1 — DI UJUNG "RATA" SEBARANNYA TIDAK RATA.
+        Rumus lama: sebar = 8 + (v/100) × (x/380) × 52
+        Terukur: di v=0, x=20 → sebar 26px ; x=380 → sebar 60px.
+        Artinya pada slider "Rata (homoskedastis)" gambar SUDAH melebar 2,3×.
+        Keadaan "rata" yang benar TIDAK PERNAH bisa dilihat user.
+
+      CACAT 2 — SKALA SLIDER TERLALU SEMPIT.
+        Rentang hanya 2,3× (v=0) sampai 3,3× (v=100). Padahal seharusnya
+        dari 1,0× (benar-benar rata) sampai sekitar 8× (corong yang jelas).
+        Karena skala bawah sudah "melebar", mata tidak melihat perubahan besar.
+
+      CACAT 3 — TITIK DIGAMBAR ACAK (Math.random) TIAP GESERAN.
+        Gambar berkedip dan berubah-ubah, sehingga user TIDAK BISA
+        membandingkan keadaan sebelum dan sesudah. Ini yang membuat
+        instrumennya sulit dipahami, bukan sekadar "kurang jelas".
+
+      PERBAIKAN (akar, bukan tambalan):
+      · Lebar sebaran dipetakan dari 1,0× (v=0) sampai 8× (v=100), sehingga
+        ujung kiri BENAR-BENAR rata dan ujung kanan benar-benar corong.
+      · Memakai derau SEMU yang tetap (seed): nilai acaknya sama untuk titik
+        yang sama, jadi gambar tidak berkedip dan bisa dibandingkan.
+      · Ditambah garis bentuk corong (pembatas atas-bawah) supaya maksudnya
+        terbaca tanpa harus menghitung titik.
+    */
+    gambar: (v, c) => {
+      const t = Math.max(0, Math.min(1, v / 100));
+      // ⚠️ AKAR MATEMATIS DIPERBAIKI 18Sep26 (dari hitungan, bukan coba-coba).
+      // MASALAH: lebar tumbuh LURUS terhadap x, dan tinggi di sepertiga kiri
+      // diukur pada titik 1/3. Karena itu rasio kanan:kiri secara matematis
+      // TERBATAS pada (1/3)/1 = 3× saja — berapa pun angkanya diubah, hasilnya
+      // mentok sekitar 2,3–2,7× (terbukti: 4 kali ubah angka, rasio justru
+      // turun dari 2,45 ke 2,31). Ini yang disebut MENAMBAL.
+      // PERBAIKAN AKAR: bentuk corong diubah dari LURUS menjadi KUADRATIK
+      // (lebar ∝ per²). Corong heteroskedastisitas yang sebenarnya memang
+      // melebar makin cepat ke kanan (seperti kipas), bukan bertahap rata.
+      // Dengan per², sepertiga kiri tetap SANGAT ramping sehingga kontrasnya
+      // besar, sementara ujung kanan tetap lebar.
+      const lebar0 = 5;
+      const lebar1 = 5 + t * 95;
+      const x0 = 20, x1 = 380;
+      const ym = 84;
+
+      // derau SEMU yang tetap — sama untuk tiap geseran, tidak berkedip.
+      const acak = (i) => {
+        const s = Math.sin(i * 12.9898) * 43758.5453;
+        return (s - Math.floor(s)) * 2 - 1;         // −1 … +1, tetap
+      };
+
+      const titik = [];
+      for (let i = 0; i < 110; i++) {
+        const per = i / 109;
+        const x = x0 + per * (x1 - x0);
+        // ⚠️ KUADRATIK (per²), bukan lurus (per) — lihat catatan akar di atas.
+        // Inilah yang membuat bentuknya benar-benar corong: rapat di kiri,
+        // melebar cepat di kanan.
+        const lebar = lebar0 + (lebar1 - lebar0) * per * per;
+        const y = ym + acak(i) * lebar;
+        const yb = Math.max(14, Math.min(154, y));
+        titik.push(`<circle cx="${x.toFixed(1)}" cy="${yb.toFixed(1)}" ` +
+                   `r="2.4" fill="${c}" opacity="0.5"/>`);
+      }
+
+      // garis bentuk corong (pembatas atas & bawah) — mengikuti per² juga
+      const batas = `
+        <line x1="${x0}" y1="${ym - lebar0}" x2="${x1}" y2="${ym - lebar1}"
+              stroke="${c}" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.75"/>
+        <line x1="${x0}" y1="${ym + lebar0}" x2="${x1}" y2="${ym + lebar1}"
+              stroke="${c}" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.75"/>`;
+
+      const label = t < 0.03
+        ? 'lebar tetap dari kiri ke kanan'
+        : (t > 0.92 ? 'makin melebar ke kanan (corong)'
+                    : 'melebar bertahap ke kanan');
+
+      return `<line x1="18" y1="${ym}" x2="386" y2="${ym}"
+                    stroke="#E0D8C8" stroke-width="1.5"/>
+        ${batas}
+        ${titik.join('')}
+        <text x="200" y="166" text-anchor="middle" font-size="10.5"
+              fill="#6B6259">${label}<\/text>`;
+    }
+  },
+  normalitas: {
+    judul: 'Normalitas',
+    arti: 'Syarat regresi: sisa (residu) harus <strong>menyebar normal<\/strong> — bentuknya seperti lonceng yang simetris, bukan miring ke satu sisi. Ini diperiksa dari BENTUK sebarannya, bukan dari lebarnya.',
+    tanya: 'Sebesar apa kemiringannya?',
+    kiri: 'Miring kiri', kanan: 'Miring kanan',
+    // ⚠️ ENTRI INI PUNYA RENTANG SENDIRI (−100…+100), beda dari istilah lain.
+    // Tengah (0) = lonceng sempurna. Inilah sebabnya `pilih()` perlu menyetel
+    // batas slider dari entri yang dipilih — lihat catatan akar di bawah.
+    min: -100, maks: 100, bawaan: 0,
+    satuan: '', ambang: null,
+    // Yang dibaca user = "seberapa jauh dari lonceng", jadi pakai Math.abs.
+    ukur: v => Math.abs(v) / 100,
+    format: v => (v === 0 ? 'lonceng' : Math.abs(v / 100).toFixed(3)),
+    // Ambang 0,18 & 0,45 — SAMA dengan hetero supaya bahasa "kapan dianggap
+    // aman" seragam di seluruh kamus (pelajaran 18Sep26: ambang harus
+    // bercerita sama dengan gambarnya).
+    tafsir: v => Math.abs(v) < 18
+      ? ['pita-hijau', 'Normal', 'Bentuknya lonceng simetris. Syarat normalitas terpenuhi — uji hipotesis boleh dilanjutkan.']
+      : Math.abs(v) < 45
+      ? ['pita-amber', 'Mulai miring', 'Sebarannya mulai condong ke satu sisi. Cek Sig. Kolmogorov-Smirnov di SPSS: kalau masih di atas 0,05, kemiringan ini belum mengganggu.']
+      : ['pita-merah', 'Jauh dari normal', 'Ekornya memanjang ke satu sisi. Jalan keluar: buang pencilan yang memang terbukti menyimpang, atau pakai uji yang tidak menuntut normalitas.'],
+    spss: 'Analyze → Descriptive Statistics → Explore → tombol Plots → centang Histogram dan Normality plots with tests. Lihat Sig. Kolmogorov-Smirnov dan Sig. Saphiro-Wilk — di atas 0,05 berarti sebarannya normal.',
+    kenapa: [
+      'Ada beberapa jawaban yang jauh berbeda dari yang lain (pencilan).',
+      'Jumlah responden sedikit, sehingga bentuk sebarannya belum stabil.',
+      'Pertanyaannya terlalu mudah atau terlalu sulit, jadi jawabannya menumpuk di satu sisi.',
+      'Skala yang dipakai tidak menampung variasi jawaban yang sebenarnya.'
+    ],
+    /*
+      GAMBAR NORMALITAS — HISTOGRAM (BARU 20Sep26, ACC Bos).
+
+      INI MENJAWAB PERTANYAAN BOS yang paling penting:
+        "Kenapa di gambar contoh saya atau SPSS tidak ada corongnya?"
+      Jawabannya: TIDAK ADA CORONG = DATA SEHAT. Corong itu nama
+      PENYAKITNYA (heteroskedastisitas), bukan tanda keberhasilan uji.
+      Karena itu gambar contoh yang rapi TIDAK boleh dibaca "tidak ada hasil".
+
+      BEDA DENGAN HETERO (penting, jangan disamakan):
+        · Hetero  = BENTUK titik (scatter ZPRED×ZRESID) → dilihat dari SAMPING.
+        · Normali = BENTUK batang (histogram)          → dilihat dari DEPAN.
+      Keduanya diperiksa dari benda yang SAMA (sisa/residu), tapi
+      pertanyaannya beda. Itu yang membuat keduanya perlu kartu tersendiri.
+
+      CARA MENGGAMBAR: lonceng dasar (fungsi Gauss) di puncak yang digeser
+      oleh kemiringan, lalu ekor di sisi kemiringan DITARIK MEMANJANG.
+      Derau semu ber-seed supaya batangnya tidak berkedip saat digeser —
+      akar yang sama dengan perbaikan hetero 18Sep26.
+    */
+    gambar: (v, c) => {
+      const t = v / 100;                       // −1 … +1
+      const x0 = 34, x1 = 366, ym = 150, tinggi = 118;
+      const acak = (i) => {
+        const s = Math.sin(i * 27.3119) * 9137.1357;
+        return s - Math.floor(s);
+      };
+      const batang = [];
+      const N = 26;
+      for (let i = 0; i < N; i++) {
+        const per = i / (N - 1);
+        // puncak bergeser mengikuti arah kemiringan
+        const puncak = 0.5 + t * 0.30;
+        let g = Math.exp(-Math.pow((per - puncak) / (0.19 + Math.abs(t) * 0.07), 2));
+        // ekor memanjang ke SISI kemiringan
+        if (t > 0 && per > puncak) {
+          g += t * 0.55 * Math.pow(per - puncak, 1.1) * 3.2;
+        }
+        if (t < 0 && per < puncak) {
+          g += Math.abs(t) * 0.55 * Math.pow(puncak - per, 1.1) * 3.2;
+        }
+        g = Math.max(0, Math.min(1, g + (acak(i) - 0.5) * 0.07));
+        const leb = (x1 - x0) / N - 2.5;
+        const x = x0 + per * (x1 - x0) - leb / 2;
+        const h = g * tinggi;
+        if (h > 1.5) {
+          batang.push(`<rect x="${x.toFixed(1)}" y="${(ym - h).toFixed(1)}" `
+            + `width="${leb.toFixed(1)}" height="${h.toFixed(1)}" rx="2" `
+            + `fill="${c}" opacity="0.72"/>`);
+        }
+      }
+      const label = Math.abs(t) < 0.06 ? 'bentuk lonceng — normal'
+                  : (t > 0 ? 'ekor memanjang ke kanan (miring positif)'
+                           : 'ekor memanjang ke kiri (miring negatif)');
+      return `<line x1="24" y1="${ym}" x2="376" y2="${ym}"
+                    stroke="#E0D8C8" stroke-width="1.5"/>
+        ${batang.join('')}
+        <line x1="200" y1="20" x2="200" y2="${ym}" stroke="#D8CDBC"
+              stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="200" y="164" text-anchor="middle" font-size="10.5"
+              fill="#6B6259">${label}<\/text>`;
+    }
+  },
+  beta: {
+    judul: 'Koefisien β (beta)',
+    arti: 'Besarnya pengaruh satu variabel bebas terhadap variabel terikat, dalam satuan baku. β = 0,35 artinya: naik 1 simpangan baku X, naik 0,35 simpangan baku Y.',
+    tanya: 'Seberapa besar pengaruhnya?',
+    kiri: 'Tidak ada pengaruh', kanan: 'Pengaruh kuat',
+    format: v => (v / 100).toFixed(2),
+    tafsir: v => v < 5
+      ? ['pita-abu', 'Tidak ada pengaruh', 'β di bawah 0,05 hampir tidak bisa dibedakan dari nol. Hipotesis seperti ini biasanya ditolak.']
+      : v < 15
+      ? ['pita-amber', 'Lemah / marginal', 'β 0,05–0,15 itu daerah rawan: kadang signifikan, kadang tidak — tergantung jumlah responden.']
+      : v < 35
+      ? ['pita-hijau', 'Sedang', 'β 0,15–0,35 khas penelitian sosial. Ini daerah yang paling sering signifikan.']
+      : ['pita-hijau', 'Kuat', 'β di atas 0,35 sudah kuat untuk ilmu sosial. Kalau terlalu banyak β kuat sekaligus, curigai multikolinearitas.'],
+    spss: 'Analyze → Regression → Linear → tabel Coefficients, kolom Standardized Coefficients Beta. Itu angka β-nya.',
+    kenapa: [
+      'Pengaruhnya memang kecil menurut data — hubungannya tipis, bukan kuat.',
+      'Ada variabel lain yang lebih kuat, sehingga pengaruh X ini tertutupi.',
+      'X dan variabel lain terlalu mirip, jadi pengaruhnya sulit dipisahkan (lihat VIF).',
+      'Alat ukurnya kurang peka, sehingga pengaruh nyata terbaca lebih kecil.'
+    ],
+    gambar: (v, c) => {
+      const tinggi = 6 + (v / 100) * 130;
+      const bx = 120, bw = 46;
+      return `<line x1="18" y1="152" x2="386" y2="152" stroke="#E0D8C8" stroke-width="1.5"/>
+        <rect x="${bx}" y="${152 - tinggi}" width="${bw}" height="${tinggi}" rx="4" fill="${c}" opacity="0.85"/>
+        <text x="${bx + bw / 2}" y="${152 - tinggi - 9}" text-anchor="middle" font-size="13"
+              font-weight="700" fill="#2B2722">${(v / 100).toFixed(2)}<\/text>
+        <line x1="${bx - 30}" y1="152" x2="${bx - 30}" y2="${152 - 0.35 * 130}"
+              stroke="#4E8A5A" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="${bx - 36}" y="${152 - 0.35 * 130}" text-anchor="end" font-size="10"
+              fill="#4E8A5A" dy="4">0,35 kuat<\/text>`;
+    }
+  },
+  pvalue: {
+    judul: 'p-value (nilai peluang)',
+    arti: 'Peluang hasil kita muncul <em>kalau sebenarnya tidak ada pengaruh<\/em>. p kecil = sulit dijelaskan oleh kebetulan. <strong>p bukan ukuran besar pengaruh<\/strong> — itu tugas β.',
+    tanya: 'Seberapa kuat bukti dari data?',
+    kiri: 'Lemah', kanan: 'Sangat kuat',
+    format: v => (1 - v / 100).toFixed(3),
+    tafsir: v => {
+      const p = 1 - v / 100;
+      if (p < 0.001) return ['pita-hijau', 'Sangat signifikan', 'p < 0,001 — biasanya ditulis p = 0,000 di SPSS. Bukti sangat kuat.'];
+      if (p < 0.05) return ['pita-hijau', 'Signifikan', 'p < 0,05 — hipotesis diterima. Ini ambang yang paling banyak dipakai.'];
+      if (p < 0.10) return ['pita-amber', 'Marginal', 'p 0,05–0,10 — sering ditulis "mendekati signifikan". Jujur saja menyebutnya marginal.'];
+      return ['pita-merah', 'Tidak signifikan', 'p ≥ 0,10 — belum cukup bukti. Bukan berarti "tidak ada pengaruh", hanya belum terbukti dari data ini.'];
+    },
+    spss: 'Tabel Coefficients, kolom Sig. Angka itu p-value. Bandingkan dengan 0,05.',
+    kenapa: [
+      'Datanya kurang banyak — jumlah responden kecil, jadi buktinya belum kuat.',
+      'Pengaruhnya memang tipis, jadi susah dibedakan dari kebetulan.',
+      'Sebarannya terlalu beragam (ragam jawaban besar), sehingga bukti jadi kabur.',
+      'Variabelnya kurang tepat mengukur hal yang diteliti, jadi pengaruhnya tidak terbaca.'
+    ],
+    /*
+      GAMBAR p-value — DIPERBAIKI 18Sep26 atas temuan Bos.
+      TEMUAN BOS (verbatim): "P value, belum dijelaskan detail maksud garis ke
+      atas di grafik, itu maksudnya apa? Dan kenapa selalu di pinggir, kenapa
+      tidak di tengah?"
+
+      AKAR MASALAHNYA (bukan tambalan):
+      1. Garis merah dulu ditulis sebagai angka tetap (180 + 1.96*52) —
+         TERPAKU, tidak pernah bergerak, dan TIDAK ADA SATU KATA pun yang
+         menjelaskannya. User hanya melihat garis misterius di pinggir.
+      2. Warna gambar berubah mengikuti slider, sehingga terlihat "hidup"
+         padahal garisnya diam — inilah sumber kebingungannya.
+      KEPUTUSAN BOS (opsi A): garis batas TETAP di ±1,96 tapi DIJELASKAN,
+      plus satu penanda BERGERAK yang menunjukkan posisi p kita.
+      Alasan garis batas memang di pinggir: di situlah batas "masih wajar
+      dijelaskan kebetulan". Bagian TENGAH adalah rata-rata (paling ramai),
+      bukan batas — jadi batas SELALU di pinggir, bukan di tengah.
+    */
+    gambar: (v, c) => {
+      const p = 1 - v / 100;
+      const puncak = 78;
+      const tengah = 200, lebarZ = 46;
+      let d = 'M 20 152 ';
+      for (let x = 0; x <= 360; x += 6) {
+        const z = (x - 180) / lebarZ;
+        const y = Math.exp(-z * z / 2) * puncak;
+        d += `L ${20 + x} ${152 - y} `;
+      }
+      d += 'L 380 152 Z';
+
+      // garis batas 0,05 (TETAP — memang begitu kenyataannya)
+      const batasKanan = tengah + 1.96 * lebarZ;
+      const batasKiri = tengah - 1.96 * lebarZ;
+
+      // 18Sep26: sebelumnya rumusnya `1.2 + jauh * 2.6`, sehingga pada
+      // seluruh rentang slider posisinya tetap (terukur: x(10)=267 dan
+      // x(90)=267 — TIDAK bergerak). Itu ditemukan uji geometri, bukan mata.
+      // Sekarang dipetakan linier: p kecil (bukti kuat) → jauh ke ekor kiri;
+      // p besar (bukti lemah) → dekat tengah. Rentang 300 px supaya jelas.
+      const xPaman = Math.max(24, Math.min(376, tengah - p * 300));
+
+      return `
+        <path d="${d}" fill="${c}" opacity="0.20" stroke="${c}" stroke-width="2"/>
+        <line x1="18" y1="152" x2="386" y2="152" stroke="#E0D8C8" stroke-width="1.5"/>
+
+        <line x1="${batasKiri}" y1="152" x2="${batasKiri}" y2="30"
+              stroke="#A85A5A" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="${batasKanan}" y1="152" x2="${batasKanan}" y2="30"
+              stroke="#A85A5A" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="${batasKanan - 4}" y="24" text-anchor="end" font-size="10"
+              font-weight="700" fill="#A85A5A">batas 0,05 →<\/text>
+
+        <line x1="${xPaman}" y1="152" x2="${xPaman}" y2="52"
+              stroke="#2B2722" stroke-width="2.5"/>
+        <circle cx="${xPaman}" cy="52" r="4" fill="#2B2722"/>
+        <text x="${xPaman}" y="44" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#2B2722">p = ${p.toFixed(3)}<\/text>
+
+        <text x="200" y="140" text-anchor="middle" font-size="10.5"
+              fill="#6B6259">paling ramai = kebetulan biasa<\/text>`;
+    }
+  },
+  r2: {
+    judul: 'R² (R-kuadrat)',
+    arti: 'Berapa persen keragaman Y yang bisa dijelaskan oleh semua X sekaligus. R² = 0,40 artinya 40% — sisanya 60% dijelaskan hal lain di luar model.',
+    tanya: 'Seberapa besar keragaman yang terjelaskan?',
+    kiri: 'Tidak ada', kanan: 'Hampir semua',
+    format: v => (v / 100).toFixed(3),
+    tafsir: v => {
+      const r = v / 100;
+      if (r > 0.90) return ['pita-merah', 'Terlalu tinggi', 'R² di atas 0,90 pada data kuesioner sangat jarang. Periksa multikolinearitas atau ada variabel yang sebenarnya sama.'];
+      if (r >= 0.60) return ['pita-hijau', 'Tinggi', 'R² 0,60 ke atas sudah tinggi untuk ilmu sosial — biasanya hanya pada model yang memang kuat.'];
+      if (r >= 0.25) return ['pita-hijau', 'Wajar', 'R² 0,25–0,60 itu daerah paling wajar untuk penelitian sosial. Terlihat meyakinkan dan masuk akal.'];
+      if (r >= 0.10) return ['pita-amber', 'Rendah', 'R² di bawah 0,25 masih sah — banyak penelitian sosial seperti ini. Tapi modelnya belum banyak menjelaskan.'];
+      return ['pita-merah', 'Sangat rendah', 'R² di bawah 0,10 berarti variabel bebasmu hampir tidak menjelaskan apa pun.'];
+    },
+    spss: 'Tabel Model Summary, kolom R Square. Itu R²-nya.',
+    kenapa: [
+      'Pengaruhnya memang beberapa, bukan satu saja. Satu X jarang bisa menerangkan Y seluruhnya.',
+      'Ada hal lain di luar model yang juga memengaruhi Y, tapi tidak ikut diteliti.',
+      'Alat ukurnya (kuesioner) tidak sempurna — selalu ada jawaban yang tidak konsisten.',
+      'Jawaban orang memang beragam; keragaman itu wajar dan tidak semua bisa dijelaskan.'
+    ],
+    /*
+      GAMBAR R² — DIPERBAIKI 18Sep26 atas temuan Bos (verbatim):
+      "R Kuadrat, gambarnya untuk mobile terpotong, dan kurang detail
+       penjelasannya. Kenapa bisa terjadi dan apa penyebabnya."
+
+      AKAR TERPOTONG (bukan tambalan):
+      Gambar dulu memakai lingkaran penuh r=96 di titik cx=116. Ujung kanan
+      lingkaran mencapai 116+96+(19/2) = 221, dan elemen batang berada di
+      x=238 sampai 366. Ukuran ini dirancang untuk kolom LEBAR. Begitu kolom
+      menyempit (layar HP), semuanya DIPAKSA melar oleh preserveAspectRatio
+      yang lama → terlihat terpotong/penyok.
+      PERBAIKAN: tidak lagi pakai perbandingan lebar-tinggi yang kaku;
+      gambar dipersempit ke dalam kanvas 400x200 dengan tata letak KIRI-KANAN
+      yang jaraknya aman, sehingga utuh di lebar layar apa pun.
+    */
+    gambar: (v, c) => {
+      const p = Math.min(v / 100, 1);
+      const s = 60, cx = 88, cy = 100;             // lingkaran diperkecil, aman
+      const besar = 2 * Math.PI * s;
+      const isi = besar * (1 - p);
+      const xBatang = 190, wBatang = 180;          // batang di kanan, tidak mepet
+      const wIsi = Math.max(2, p * wBatang);
+      const wSisa = Math.max(2, (1 - p) * wBatang);
+      return `
+        <circle cx="${cx}" cy="${cy}" r="${s}" fill="none" stroke="#EDE6D8" stroke-width="17"/>
+        <circle cx="${cx}" cy="${cy}" r="${s}" fill="none" stroke="${c}" stroke-width="17"
+                stroke-linecap="round" stroke-dasharray="${besar}"
+                stroke-dashoffset="${isi}" transform="rotate(-90 ${cx} ${cy})"/>
+        <text x="${cx}" y="${cy + 7}" text-anchor="middle" font-size="25"
+              font-weight="800" fill="#2B2722">${Math.round(p * 100)}%<\/text>
+        <text x="${cx}" y="${cy + 25}" text-anchor="middle" font-size="10.5"
+              fill="#6B6259">terjelaskan<\/text>
+
+        <text x="${xBatang}" y="46" font-size="12" font-weight="600"
+              fill="#4E8A5A">dijelaskan model ${Math.round(p * 100)}%<\/text>
+        <rect x="${xBatang}" y="54" width="${wIsi}" height="15" rx="4" fill="${c}"/>
+
+        <text x="${xBatang}" y="104" font-size="12" font-weight="600"
+              fill="#A85A5A">dijelaskan hal lain ${Math.round((1 - p) * 100)}%<\/text>
+        <rect x="${xBatang}" y="112" width="${wSisa}" height="15" rx="4"
+              fill="#A85A5A" opacity="0.65"/>
+
+        <text x="20" y="186" font-size="10.5" fill="#6B6259"
+              >Angka R² hanya soal seberapa banyak Y diterangkan — bukan soal benar atau salah.<\/text>`;
+    }
+  },
+  vif: {
+    judul: 'VIF — Multikolinearitas',
+    arti: 'Seberapa <strong>mirip<\/strong> satu variabel bebas dengan variabel bebas lainnya. Kalau terlalu mirip, regresi tidak bisa memisahkan pengaruh masing-masing — koefisiennya jadi bolak-balik.',
+    tanya: 'Seberapa mirip antar variabel bebas?',
+    kiri: 'Beda semua', kanan: 'Nyaris kembar',
+    format: v => (1 / Math.max(0.02, 1 - v / 100)).toFixed(2),
+    tafsir: v => {
+      const vif = 1 / Math.max(0.02, 1 - v / 100);
+      if (vif < 5) return ['pita-hijau', 'Aman', 'VIF di bawah 5 — setiap variabel masih membawa informasi sendiri. Aman.'];
+      if (vif < 10) return ['pita-amber', 'Perlu dilihat', 'VIF 5–10 — pengaruhnya masih terbaca, tapi koefisien mulai kurang stabil.'];
+      return ['pita-merah', 'Bermasalah', 'VIF di atas 10 — dua variabel terlalu mirip. Pilihan: gabung jadi satu, atau buang salah satu.'];
+    },
+    spss: 'Analyze → Regression → Linear → tombol Statistics → centang Collinearity diagnostics → tabel Coefficients, kolom VIF.',
+    kenapa: [
+      'Pertanyaannya mirip — responden menjawab hampir sama, sehingga datanya nyaris kembar.',
+      'Indikatornya kurang dibedakan; dua variabel sebenarnya mengukur hal yang sama.',
+      'Salah satu variabel terlalu luas, jadi mencakup isi variabel lainnya.',
+      'Satu variabel diturunkan dari variabel lain (misalnya keduanya soal pelayanan).'
+    ],
+    /*
+      GAMBAR VIF — DIPERBAIKI 18Sep26 atas temuan Bos (verbatim):
+      "VIF, instrumennya kurang pas, kalau menjelaskan seberapa mirip, tapi
+       contohnya instrumennya selalu mirip."
+
+      AKAR MASALAHNYA (bukan tambalan):
+      Dua lingkaran berjarak TETAP 152 satuan (pusat di 124 dan 276), sedangkan
+      geserannya hanya `r * 44` — maksimal 44 satuan. Artinya berapa pun
+      slidernya digeser, ujung-ujungnya hanya bergerak 44 dari 152, jadi KEDUA
+      LINGKARAN SELALU BERTUMPANG TINDIH. Slider "seberapa mirip" jadi bohong:
+      tidak ada keadaan "beda semua" yang benar-benar bisa dilihat. Ini yang
+      Bos tangkap — dan Bos benar.
+
+      PERBAIKAN: geseran dibuat MENCAPAI FULL (r * 70, jadi maksimal 70 pada
+      jarak 150 → benar-benar berpisah), dan lingkarannya diperkecil (r 42
+      dari 52) supaya keadaan "beda semua" dan "nyaris kembar" SAMA-SAMA
+      terlihat jelas. Label tumpang tindih dihitung dari GEOMETRI nyata,
+      bukan angka slider — supaya tidak menipu.
+    */
+    gambar: (v, c) => {
+      const r = v / 100;
+      const R = 42;                    // jari-jari lingkaran
+      // ⚠️ SKALA DIPERBAIKI 18Sep26 (akar, dari DIAGNOSA terukur).
+      // MASALAHNYA: dengan jarak pusat 150 dan jari-jari 42, dua lingkaran
+      // baru BERSENTUHAN kalau jarak pusat < 84. Ujung kanan slider dulu
+      // hanya mengecil sampai 119 (terukur) → label selalu "0%" dan keadaan
+      // "nyaris kembar" TIDAK PERNAH bisa dilihat. Ini yang Bos tangkap.
+      // PERBAIKAN: jarak pusat dipetakan dari 150 (jauh) sampai 30 (menumpuk
+      // hampir sempurna), jadi SELURUH rentang slider benar-benar berarti.
+      const jarakPusat = 30 + (1 - r) * 120;   // 150 (v=0) → 30 (v=100)
+      const x1 = 200 - jarakPusat / 2;
+      const x2 = 200 + jarakPusat / 2;
+      const cy = 92;
+
+      // tumpang tindih dihitung dari GEOMETRI, bukan angka slider (jangan menipu)
+      const tumpang = Math.max(0, 2 * R - Math.abs(x2 - x1));
+      const persenTumpang = Math.round(tumpang / (2 * R) * 100);
+
+      return `
+        <circle cx="${x1}" cy="${cy}" r="${R}" fill="${c}" opacity="0.32"/>
+        <circle cx="${x2}" cy="${cy}" r="${R}" fill="${c}" opacity="0.32"/>
+        <circle cx="${x1}" cy="${cy}" r="${R}" fill="none" stroke="${c}" stroke-width="1.6"/>
+        <circle cx="${x2}" cy="${cy}" r="${R}" fill="none" stroke="${c}" stroke-width="1.6"/>
+        <text x="${x1}" y="${cy + 5}" text-anchor="middle" font-size="13"
+              font-weight="700" fill="#2B2722">X1<\/text>
+        <text x="${x2}" y="${cy + 5}" text-anchor="middle" font-size="13"
+              font-weight="700" fill="#2B2722">X2<\/text>
+        <text x="200" y="172" text-anchor="middle" font-size="12" font-weight="700"
+              fill="#2B2722">tumpang tindih ${persenTumpang}%<\/text>
+        <text x="200" y="190" text-anchor="middle" font-size="10.5"
+              fill="#6B6259">${persenTumpang === 0
+                ? 'kedua variabel benar-benar berbeda'
+                : (persenTumpang < 50
+                   ? 'masih bisa dibedakan'
+                   : 'semakin mirip — sulit dipisahkan')}<\/text>`;
+    }
+  },
+  alpha: {
+    judul: 'Konsistensi Jawaban (alpha Cronbach)',
+    arti: 'Seberapa seirama jawaban orang pada pertanyaan-pertanyaan yang mengukur hal yang sama. Contoh: 5 pertanyaan tentang "kepuasan kerja" — kalau orang yang setuju di nomor 1 juga setuju di nomor 2, 3, 4, 5, berarti jawabannya seirama. Biasanya di atas 0,70 dianggap cukup.',
+    tanya: 'Seberapa seirama jawaban orang?',
+    kiri: 'Tidak konsisten', kanan: 'Bagus',
+    format: v => (0.10 + v / 100 * 0.90).toFixed(3),
+    tafsir: v => {
+      const a = 0.10 + v / 100 * 0.90;
+      if (a >= 0.90) return ['pita-amber', 'Sangat tinggi', 'Alpha di atas 0,90 sering berarti ada item yang isinya nyaris sama — periksa apakah salah satu perlu dibuang.'];
+      if (a >= 0.70) return ['pita-hijau', 'Cukup', 'Alpha 0,70–0,90 itu yang paling sering dipakai dan paling aman.'];
+      if (a >= 0.60) return ['pita-amber', 'Marginal', 'Alpha 0,60–0,70 masih sering dipakai di penelitian eksploratif, tapi sebaiknya ada item yang diperbaiki.'];
+      return ['pita-merah', 'Rendah', 'Alpha di bawah 0,60 — ada item yang tidak sejalan. Cari item mana yang kalau dibuang membuat alpha naik.'];
+    },
+    spss: 'Analyze → Scale → Reliability Analysis → tombol Statistics → centang Scale if item deleted. Lihat kolom Cronbach\u2019s Alpha if Item Deleted.',
+    kenapa: [
+      'Ada pertanyaan yang maksudnya tidak sejalan dengan pertanyaan lain.',
+      'Kalimat pertanyaannya sulit dipahami, jadi responden menebak-nebak.',
+      'Pertanyaannya terlalu sedikit, sehingga satu jawaban aneh sangat berpengaruh.',
+      'Responden menjawab asal atau asal setuju, bukan benar-benar membaca.'
+    ],
+    gambar: (v, c) => {
+      const isi = 0.10 + v / 100 * 0.90;
+      const lebar = isi * 350;
+      return `<line x1="20" y1="96" x2="380" y2="96" stroke="#EDE6D8" stroke-width="22" stroke-linecap="round"/>
+        <line x1="20" y1="96" x2="${20 + lebar}" y2="96" stroke="${c}" stroke-width="22" stroke-linecap="round"/>
+        <line x1="${20 + 0.70 * 350}" y1="60" x2="${20 + 0.70 * 350}" y2="132"
+              stroke="#4E8A5A" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="${20 + 0.70 * 350}" y="52" text-anchor="middle" font-size="11" fill="#4E8A5A">0,70 ambang<\/text>
+        <text x="${20 + 0.90 * 350}" y="152" text-anchor="middle" font-size="11" fill="#B5762A">0,90<\/text>`;
+    }
+  }
+};
+
+let kunci = 'hetero';
+const el = id => document.getElementById(id);
+
+function gambar() {
+  const k = KAMUS[kunci];
+  const v = parseInt(el('slider').value, 10);
+  const angka = k.format(v);
+  const [kelas, label, pesan] = k.tafsir(v);
+  let warna = '#2E7D6F';
+  if (kelas === 'pita-amber') warna = '#B5762A';
+  if (kelas === 'pita-merah') warna = '#A85A5A';
+  if (kelas === 'pita-hijau') warna = '#4E8A5A';
+  if (kelas === 'pita-abu') warna = '#9A9086';
+
+  el('angka').textContent = angka;
+  el('grafik').innerHTML = k.gambar(v, warna);
+  // ⚠️ KALIMAT PENEGAS (20Sep26, permintaan Bos): "tidak ada corong berarti
+  // bagus/sehat". `tafsir` tetap dipakai untuk pita & istilah lain; kalimat
+  // panjangnya diambil dari kalimatTafsir bila entri punya. Entri lama TIDAK
+  // punya → otomatis pakai `pesan` seperti sebelumnya (tidak ada yang rusak).
+  el('pesan-isi').innerHTML =
+    (typeof kalimatTafsir === 'function')
+      ? kalimatTafsir(kunci, v, pesan) : pesan;
+  el('pita-hasil').className = 'pita ' + kelas;
+  el('pita-hasil').textContent = label;
+  el('spss').textContent = k.spss;
+
+  // ⚠️ "Kenapa bisa terjadi?" (18Sep26) — sebab-sebabnya, bukan cuma artinya.
+  // Kalau istilah belum punya daftar ini, sembunyikan kotaknya (jangan
+  // tampilkan kotak kosong yang membingungkan).
+  const kotakKenapa = el('kenapa-kotak');
+  const isiKenapa = el('kenapa-isi');
+  const daftar = k.kenapa || [];
+  if (daftar.length) {
+    isiKenapa.innerHTML = daftar.map(t => '<li>' + t + '<\/li>').join('');
+    kotakKenapa.hidden = false;
+  } else {
+    kotakKenapa.hidden = true;
+  }
+}
+
+function pilih(k) {
+  kunci = k;
+  // ⚠️ KARTU UJI t (18Sep26): istilah 'ujit' TIDAK memakai pola kamus (tak ada
+  // slider, tak ada satu angka). Jadi panel kamus disembunyikan dan kartu uji t
+  // ditampilkan — kalau tidak, halaman akan menampilkan panel kosong.
+  const kartu = document.getElementById('kartu-ujit');
+  // ⚠️ AKAR (19Sep26) — yang disembunyikan WAJIB `.papan` (panel ISI), BUKAN
+  // `.kamus-kisi`, karena pita tombol istilah ada DI DALAM .kamus-kisi. Kalau
+  // seluruh .kamus-kisi disembunyikan, tombolnya ikut hilang → user tidak bisa
+  // pindah ke istilah lain lagi. Bos minta: "seperti tab tab yang lain" — pita
+  // tetap ada, hanya ISI-nya yang berganti.
+  const panelKamus = document.querySelector('#tab-1 .papan');
+  if (k === 'ujit') {
+    if (panelKamus) panelKamus.hidden = true;
+    if (kartu) kartu.hidden = false;
+    document.querySelectorAll('.kamus-tombol').forEach(b =>
+      b.classList.toggle('aktif', b.dataset.k === k));
+    return;
+  }
+  if (panelKamus) panelKamus.hidden = false;
+  if (kartu) kartu.hidden = true;
+  const kk = KAMUS[k];
+  if (!kk) return;
+  el('judul').textContent = kk.judul;
+  el('arti').innerHTML = kk.arti;
+  el('label-slider').textContent = kk.tanya;
+  // ⚠️ AKAR (20Sep26) — BATAS SLIDER DISETEL DARI ENTRI, bukan dipaku 0…100.
+  // Normalitas butuh −100…+100 (bisa miring dua arah); istilah lain tetap
+  // 0…100 karena tidak punya `min`/`maks`. Tanpa ini, salah satu istilah
+  // pasti rusak: normalitas kehilangan sisi kiri, ATAU istilah lain
+  // kehilangan separuh rentangnya.
+  el('slider').min = (kk.min !== undefined) ? kk.min : 0;
+  el('slider').max = (kk.maks !== undefined) ? kk.maks : 100;
+  el('slider').value = (kk.bawaan !== undefined) ? kk.bawaan : 35;
+  // Tombol pintasan hanya masuk akal untuk hetero (yang punya keadaan
+  // "sehat/sakit" satu arah). Istilah lain disembunyikan — JANGAN
+  // menampilkan tombol yang tidak berfungsi.
+  const barisPintasan = document.getElementById('pintasan-baris');
+  if (barisPintasan) barisPintasan.hidden = (k !== 'hetero');
+  el('kiri').textContent = kk.kiri;
+  el('kanan').textContent = kk.kanan;
+  document.querySelectorAll('.kamus-tombol').forEach(b =>
+    b.classList.toggle('aktif', b.dataset.k === k));
+  gambar();
+}
+
+/* ⚠️ CATATAN (19Sep26): fungsi bawaKeAtas() DIHAPUS — itu tambalan yang
+   salah. Wulan sempat menyelesaikan gejala "kartu tidak terlihat" dengan
+   MENGGULIR OTOMATIS, padahal Bos minta kartunya "punya halaman sendiri"
+   (isi berganti DI TEMPAT, seperti tab lain). Akar sebenarnya = tata letak
+   grid: kartu duduk di baris ke-2. Obatnya di CSS (.kartu-ujit grid-column:2)
+   + menyembunyikan .papan yang benar, BUKAN menggulir. */
+
+document.querySelectorAll('.kamus-tombol').forEach(b =>
+  b.addEventListener('click', () => pilih(b.dataset.k)));
+/* ══════════════════════════════════════════════════════════════════════════
+   KALIMAT PENEGAS + TOMBOL PINTASAN (20Sep26, ACC Bos)
+
+   MENGAPA ADA — temuan Bos saat memeriksa grafik heteroskedastisitas:
+     "Heteroskedastisitas kenapa di gambar contoh saya atau SPSS tidak ada
+      corongnya?"
+   Jawabannya: TIDAK ADA CORONG = DATA SEHAT. Corong itu nama PENYAKITNYA.
+   Masalahnya, mahasiswa membaca "tidak ada apa-apa" sebagai "tidak ada hasil"
+   — padahal justru itu kabar baiknya. Kalimat ini yang menutup salah paham
+   itu, dan hanya muncul saat memang sedang sehat (di pita lain diganti
+   kalimat yang sesuai).
+
+   TOMBOL PINTASAN — kenapa tombol, padahal slider sudah ada:
+     Slider memaksa user MENGHAYAL dulu ("yang sehat itu bagaimana ya?").
+     Dua tombol ini membuatkeadaan sehat & sakit bisa DILIHAT LANGSUNG,
+     membandingkan keduanya dalam satu klik. Slider tetap ada supaya user
+     masih bisa menjelajah di antaranya (keputusan Bos: variasi B).
+   ══════════════════════════════════════════════════════════════════════════ */
+function kalimatTafsir(k, v, pesanBawaan) {
+  // Hanya hetero & normalitas yang punya penegas. Istilah lain apa adanya.
+  if (k === 'hetero') {
+    if (v < 18) {
+      return '<strong>Tidak ada corong — justru ini yang bagus.<\/strong> '
+        + 'Sebarannya rata dari kiri ke kanan, jadi syarat ini <strong>terpenuhi<\/strong>. '
+        + 'Data seperti ini sudah boleh lanjut ke pengujian hipotesis.';
+    }
+    if (v < 45) {
+      return '<strong>Sebarannya mulai melebar.<\/strong> Belum pasti bermasalah, '
+        + 'tapi jangan langsung diabaikan. Periksa dengan <strong>uji Glejser<\/strong>: '
+        + 'kalau Sig. di atas 0,05, sebaran ini masih boleh dipakai.';
+    }
+    return '<strong>Ini contoh yang bermasalah.<\/strong> Sebarannya melebar ke kanan. '
+      + 'Tapi ingat: <strong>melebar bukan cuma bentuk corong<\/strong> — bisa juga '
+      + 'mekar ke arah sebaliknya, atau melengkung di ujung. Dua jalan keluar: '
+      + 'pakai <em>robust standard error<\/em>, atau ubah data dengan logaritma.';
+  }
+  if (k === 'normalitas') {
+    if (Math.abs(v) < 18) {
+      return '<strong>Tidak ada kemiringan — justru ini yang bagus.<\/strong> '
+        + 'Bentuknya lonceng yang simetris, jadi syarat normalitas <strong>terpenuhi<\/strong>. '
+        + 'Uji hipotesis sudah boleh dilanjutkan.';
+    }
+    if (Math.abs(v) < 45) {
+      return '<strong>Mulai condong ke satu sisi.<\/strong> Belum tentu mengganggu — '
+        + 'cek angka <strong>Sig. Kolmogorov-Smirnov<\/strong> di SPSS. Kalau masih '
+        + 'di atas 0,05, kemiringan ini belum menjadi masalah.';
+    }
+    const arah = v > 0 ? 'kanan (miring positif)' : 'kiri (miring negatif)';
+    return '<strong>Jauh dari bentuk lonceng<\/strong> — ekornya memanjang ke ' + arah + '. '
+      + 'Jalan keluarnya: periksa dulu apakah ada pencilan yang memang terbukti '
+      + 'menyimpang, atau pakai uji statistik yang tidak menuntut normalitas.';
+  }
+  return pesanBawaan;
+}
+
+/* ── Tombol pintasan sehat/sakit (khusus hetero) ──────────────────────────
+   Menyetel slider lalu memanggil gambar(). Tombol MENYALA mengikuti posisi
+   slider, jadi saat user menggeser slider sendiri, nyala tombolnya ikut
+   pindah — tidak pernah menunjuk keadaan yang tidak sesuai. */
+function pintasanPasang() {
+  const sehat = document.getElementById('pintasan-sehat');
+  const sakit = document.getElementById('pintasan-sakit');
+  if (!sehat || !sakit) return;
+  const ke = (nilai) => {
+    const s = el('slider');
+    if (!s) return;
+    s.value = nilai;
+    gambar();
+    pintasanNyalakan();
+  };
+  sehat.addEventListener('click', () => ke(0));
+  sakit.addEventListener('click', () => ke(100));
+  el('slider').addEventListener('input', pintasanNyalakan);
+}
+function pintasanNyalakan() {
+  const s = el('slider');
+  const sehat = document.getElementById('pintasan-sehat');
+  const sakit = document.getElementById('pintasan-sakit');
+  if (!s || !sehat || !sakit) return;
+  const nilai = parseInt(s.value, 10);
+  const bawah = parseInt(s.min, 10);
+  const atas = parseInt(s.max, 10);
+  // "mentok" dihitung dari rentang SEKARANG, bukan angka mati — supaya tetap
+  // benar kalau rentang slider berbeda (normalitas −100…+100).
+  sehat.classList.toggle('nyala', nilai <= bawah + 2);
+  sakit.classList.toggle('nyala', nilai >= atas - 2);
+}
+
+el('slider').addEventListener('input', gambar);
+pintasanPasang();
+
+/* ⚠️ URUTAN PENTING (diperbaiki 18Sep26, akar dari galat terukur):
+   `pilih('hetero')` TIDAK boleh dipanggil di sini. Kartu uji t memakai
+   `let ujitAktif` yang dideklarasikan SESUDAH baris ini, dan `let` berada di
+   ZONA MATI (TDZ) sampai deklarasinya dieksekusi. Akibatnya muncul
+   `ReferenceError: Cannot access 'ujitAktif' before initialization` →
+   SELURUH skrip berhenti di baris itu → 0 kotak hasil tampil, walaupun
+   datanya (UJI_T) berhasil termuat. Panggilannya dipindah ke PALING BAWAH,
+   setelah semua fungsi & variabel siap. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KARTU UJI t — 3 LAPIS (ACC Bos 18Sep26)
+
+   MENGAPA KARTU INI BERBEDA DARI KAMUS DI ATAS:
+   Kamus memakai pola "geser slider → gambar berubah". Kartu ini TIDAK bisa
+   begitu, karena yang dibahas bukan satu angka yang bergerak, melainkan
+   PILIHAN HASIL yang berbeda-beda (4 kuadran Sig.×tanda + 1 marginal).
+   Jadi polanya "pilih hasilmu → keluar artinya".
+
+   Kesalahan yang dicegah kartu ini (dua-duanya sering terjadi):
+     (1) "Sig. 0,003 tapi B negatif" → disangka TIDAK berpengaruh. SALAH.
+     (2) "Sig. 0,142 tapi B positif"  → disangka "positif lemah". SALAH —
+         kalau tidak signifikan, tandanya tidak boleh ditafsirkan sama sekali.
+   ══════════════════════════════════════════════════════════════════════════ */
+let ujitAktif = UJI_T.hasil[1].kunci;   // bawaan: kasus yang paling bikin panik
+
+function sarungkan(t) { return (t || '').replace(/<\/strong>/g, '<\/strong>'); }
+
+function ujitGambar(naik) {
+  const titik = [[62,108],[88,100],[112,92],[140,86],[168,74],[196,66],
+                 [224,58],[252,48],[280,40]]
+    .map(([x, y]) => naik ? [x, y] : [x, 150 - y + 12]);
+  const c = titik.map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="3" fill="#2E7D6F" opacity="0.55"/>`).join('');
+  const warna = naik ? '#3C7A5A' : '#A85A5A';
+  const p = naik ? [40,112,298,32] : [40,38,298,118];
+  return `<svg viewBox="0 0 320 150" style="width:100%;height:auto;display:block">
+    <line x1="26" y1="128" x2="308" y2="128" stroke="#E0D8C8" stroke-width="1.5"/>
+    <line x1="26" y1="20" x2="26" y2="128" stroke="#E0D8C8" stroke-width="1.5"/>
+    <text x="167" y="145" text-anchor="middle" font-size="10.5" fill="#6B6259">X<\/text>
+    <text x="12" y="74" text-anchor="middle" font-size="10.5" fill="#6B6259"
+          transform="rotate(-90 12 74)">Y<\/text>
+    ${c}
+    <line x1="${p[0]}" y1="${p[1]}" x2="${p[2]}" y2="${p[3]}"
+          stroke="${warna}" stroke-width="2.2"/>
+  <\/svg>`;
+}
+
+function ujitLot() {
+  const wadah = el('ujit-daftar-hasil');
+  wadah.innerHTML = '';
+  UJI_T.hasil.forEach((h, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ujit-pilih' + (h.kunci === ujitAktif ? ' aktif' : '');
+    b.innerHTML =
+      `<span class="ujit-kepala"><span class="ujit-nilai">${h.nilai}<\/span>` +
+      `<span class="ujit-pita ${h.kelas}">${h.label}<\/span><\/span>` +
+      `<span class="ujit-nama">${i + 1}. ${h.nama}<\/span>` +
+      `<span class="ujit-kecil">${h.kabar}<\/span>`;
+    b.addEventListener('click', () => { ujitAktif = h.kunci; ujitLot(); ujitIsi(); });
+    wadah.appendChild(b);
+  });
+}
+
+function ujitIsi() {
+  const h = UJI_T.hasil.find(x => x.kunci === ujitAktif);
+  const ikonTahu =
+    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="#2E7D6F" stroke-width="2"><circle cx="12" cy="12" r="10"/>' +
+    '<path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/><\/svg>';
+  const ikonAlert =
+    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="#9A7328" stroke-width="2"><path d="M12 9v4M12 17h.01"/>' +
+    '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3' +
+    'L13.7 3.9a2 2 0 0 0-3.4 0Z"/><\/svg>';
+
+  /* ── Tingkat ② : arti + contoh penulisan ── */
+  const kelasIkon = (h.label === 'DITERIMA' || h.label === 'ADA TEMUAN')
+    ? 'teal' : 'amber';
+  el('ujit-panel-arti').innerHTML =
+    `<div class="ujit-langkah"><b>2<\/b> Baca artinya &amp; contoh penulisannya<\/div>
+     <div class="baris-antara">
+       <h2 style="margin:0;font-size:16.5px">${h.nama}<\/h2>
+       <span class="ujit-pita ${h.kelas}">${h.label}<\/span>
+     <\/div>
+     <div class="ujit-dua" style="margin-top:12px">
+       <div>${ujitGambar(h.naik)}<\/div>
+       <div class="catatan c-${kelasIkon}" style="margin-top:0">${ikonTahu}
+         <div>${h.arti}<\/div><\/div>
+     <\/div>
+     <div class="ujit-tulis">
+       <div class="lbl">Contoh penulisan di skripsi<\/div>
+       <p><span class="ujit-benar">✓ Tulis seperti ini:<\/span><br>
+          “${h.benar}”<\/p>
+       ${h.salah ? `<p><span class="ujit-salah">✗ Jangan menulis:<\/span><br>
+          “${h.salah}”<\/p>` : ''}
+     <\/div>`;
+
+  /* ── Tingkat ③ : sebab + cara memperbaiki + label ── */
+  const teksTag = { sah: '✅ SAH', hati: '⚠️ HATI-HATI', curang: '❌ CURANG' };
+  const baris = h.sebab.map(s =>
+    `<tr><td class="kol-sebab"><strong>${s[0]}<\/strong>
+       <div class="sebab-ket">${s[1]}<\/div><\/td>
+     <td>${s[2]}<\/td>
+     <td class="kol-boleh"><span class="ujit-tag ${s[3]}">${teksTag[s[3]]}<\/span><\/td>
+     <\/tr>`).join('');
+  el('ujit-panel-sebab').innerHTML =
+    `<div class="ujit-langkah"><b>3<\/b> Kenapa bisa begitu &amp; boleh diperbaiki?<\/div>
+     <h2 style="margin:0 0 4px;font-size:16.5px">Kemungkinan sebabnya<\/h2>
+     <p style="font-size:12.5px;color:#6B6259;margin:0 0 10px">
+       Tidak semuanya perlu diperbaiki. Lihat labelnya dulu sebelum mengubah
+       apa pun.<\/p>
+     <table class="ujit-tabel">
+       <tr><th>Kemungkinan sebab<\/th><th>Cara memperbaiki<\/th>
+           <th>Boleh?<\/th><\/tr>
+       ${baris}
+     <\/table>
+     <div class="catatan c-merah" style="margin-top:14px">${ikonAlert}
+       <div><strong>Uji lakmus — satu kalimat:<\/strong><br>
+       <em>“Saya mengubah ini karena datanya memang sudah begini, atau karena
+       saya tidak suka hasilnya?”<\/em><br>
+       Kalau jawabannya yang <strong>kedua<\/strong> — itu bukan memperbaiki,
+       itu mencari-cari.<\/div><\/div>`;
+
+  /* ── Tingkat ⑤ : daftar periksa (tombol) ── */
+  el('cek-daftar').innerHTML = h.cek.map((t, i) =>
+    `<div class="cek-butir"><span class="n">${i + 1}<\/span><div>${t}<\/div><\/div>`
+  ).join('');
+  el('cek-daftar').hidden = true;
+  el('cek-label').textContent = 'Tampilkan daftar periksa';
+}
+
+/* ── 5 CARA HACK (isi tetap, cuma sekali digambar) ── */
+el('ujit-hack-isi').innerHTML = UJI_T.hack.map((c, i) =>
+  `<div class="hack-item"><span class="hack-n">${i + 1}<\/span>
+     <div><b>${c[0]}<\/b><span>${c[1]}<\/span><\/div><\/div>`).join('');
+
+el('cek-tombol').addEventListener('click', () => {
+  const d = el('cek-daftar');
+  d.hidden = !d.hidden;
+  el('cek-label').textContent = d.hidden
+    ? 'Tampilkan daftar periksa' : 'Sembunyikan daftar periksa';
+});
+
+// ⚠️ DI PALING BAWAH (18Sep26): baru sekarang semua variabel & fungsi siap,
+// jadi `pilih('hetero')` aman dipanggil. Lihat catatan urutan di atas.
+ujitLot();
+ujitIsi();
+pilih('hetero');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KETERANGAN AMBANG SIG. (19Sep26, ACC Bos) — slider pembanding.
+   Tujuan: mahasiswa LEMAH membandingkan angka. Mereka tidak yakin apakah hasil
+   0,008 itu lebih kecil atau lebih besar dari 0,05 → signifikan atau tidak.
+   Slider ini menunjukkan POSISI angka hasil temuan terhadap garis batas 0,05.
+   Rentang 0,000–0,50 (OPSI A) — batas 0,05 tetap bergaris, semua bisa digeser.
+   ══════════════════════════════════════════════════════════════════════════ */
+function ambGambar(v) {
+  v = Math.max(0, Math.min(0.50, v));
+  const persen = (v / 0.50) * 100;
+  const teks = v.toFixed(3).replace('.', ',');
+
+  const pin = document.getElementById('amb-pin');
+  const nilai = document.getElementById('amb-nilai');
+  const jawab = document.getElementById('amb-jawab');
+  if (pin) pin.style.left = persen + '%';
+  if (nilai) nilai.textContent = teks;
+  if (!jawab) return;
+
+  // ⚠️ AKAR (19Sep26, terukur 2×): di dalam <script>, tag HTML penutup WAJIB
+  // ditulis dengan SATU backslash (`<\/strong>`) supaya tidak dibaca sebagai
+  // penutup skrip. Wulan sempat menulis DUA backslash (`<\\/strong>`) → backslash
+  // ikut tercetak → teks bocor "…<\/strong>…" MUNCUL DI LAYAR.
+  // Sekarang dipakai PEMISAH: `besar` dan `ket` dipecah jadi potongan teks biasa
+  // (tanpa tag sama sekali) + bendera mana yang perlu dicetak tebal.
+  let besar, potongan, kelas;
+  if (v < 0.05) {
+    besar = 'Sig. ' + teks + ' → SIGNIFIKAN';
+    potongan = [
+      { t: teks },
+      { t: ' lebih kecil', tebal: true },
+      { t: ' dari batas 0,05 → pengaruhnya nyata, bukan kebetulan.' }
+    ];
+    if (v > 0 && v < 0.01) {
+      potongan.push({ t: ' Angka sekecil ini biasanya ditulis p < 0,001.' });
+    }
+    kelas = ' hijau';
+  } else if (v <= 0.10) {
+    besar = 'Sig. ' + teks + ' → MARGINAL';
+    potongan = [
+      { t: 'Hasilnya ' },
+      { t: 'di batas', tebal: true },
+      { t: ' (0,05–0,10). Perlu dibahas hati-hati — jangan dipaksa jadi signifikan.' }
+    ];
+    kelas = ' kuning';
+  } else {
+    besar = 'Sig. ' + teks + ' → TIDAK SIGNIFIKAN';
+    potongan = [
+      { t: teks },
+      { t: ' lebih besar', tebal: true },
+      { t: ' dari batas 0,05 → belum cukup bukti. Tandanya juga belum bisa dipakai.' }
+    ];
+    kelas = ' abu';
+  }
+  jawab.className = 'catatan amb-jawab-' + kelas.trim();
+  // ⚠️ AKAR (19Sep26, terukur 3×): di dalam <script> TIDAK ADA satu pun cara
+  // aman menuliskan tag HTML lewat string — gerbang tag skrip menuntut backslash,
+  // tapi backslash itu ikut tercetak jadi teks di layar. Jadi di sini tag
+  // DIBUAT LEWAT DOM: createElement + textContent. Nol string HTML, nol escape,
+  // mustahil bocor. Kata yang perlu tebal dibuat <strong> oleh DOM, bukan teks.
+  jawab.textContent = '';
+  const divBesar = document.createElement('div');
+  divBesar.className = 'amb-besar';
+  divBesar.textContent = besar;
+  const divKet = document.createElement('div');
+  divKet.className = 'amb-ket';
+  potongan.forEach(function (bag) {
+    if (bag.tebal) {
+      const s = document.createElement('strong');
+      s.textContent = bag.t;
+      divKet.appendChild(s);
+    } else {
+      divKet.appendChild(document.createTextNode(bag.t));
+    }
+  });
+  jawab.appendChild(divBesar);
+  jawab.appendChild(divKet);
+}
+
+(function ambPasang() {
+  const inp = document.getElementById('amb-sig');
+  const ges = document.getElementById('amb-geser');
+  if (!inp || !ges) return;
+
+  ges.addEventListener('input', function () {
+    const v = parseInt(this.value, 10) / 1000;
+    inp.value = v.toFixed(3).replace('.', ',');
+    ambGambar(v);
+  });
+
+  function dariKotak() {
+    // terima "0,008" maupun "0.008"; juga "0,00 8" dan spasi lain
+    const v = parseFloat(String(inp.value).replace(',', '.').replace(/[^0-9.]/g, ''));
+    if (isNaN(v)) return;
+    ges.value = Math.round(Math.max(0, Math.min(0.50, v)) * 1000);
+    ambGambar(Math.max(0, Math.min(0.50, v)));
+  }
+  inp.addEventListener('input', dariKotak);
+  inp.addEventListener('change', dariKotak);
+  // kalau user tekan Enter, hilangkan fokus supaya papan angka HP menutup
+  inp.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); this.blur(); dariKotak(); }
+  });
+
+  ambGambar(0.008);
+})();
+</script>
+{% endblock %}

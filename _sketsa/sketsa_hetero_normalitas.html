@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKETSA — Switch Sehat/Sakit Heteroskedastisitas + Tab Normalitas</title>
+<style>
+  :root{
+    --kertas:#FBF7F0; --kertas-2:#F5EFE5; --kertas-3:#EDE4D6; --putih:#fff;
+    --garis:#E4DACA; --tinta:#3B322A; --tinta-2:#6B6259; --tinta-3:#9A9187;
+    --teal:#0F7367; --teal-terang:#D9EDE8; --hijau:#2F7D4F; --hijau-bg:#E3F1E7;
+    --kuning:#8A6A12; --kuning-bg:#FBF0D4; --merah:#A33B32; --merah-bg:#FBE4E0;
+    --abu-bg:#EFEAE1; --r:14px; --r-s:9px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDE7DC;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--tinta);padding:18px}
+  .bingkai{max-width:430px;margin:0 auto;background:var(--kertas);border-radius:18px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.09)}
+  .tanda-sketsa{text-align:center;font-size:11px;letter-spacing:1.4px;color:var(--tinta-3);margin-bottom:10px;text-transform:uppercase}
+  .judul-sketsa{font-size:15px;font-weight:800;margin:22px 0 4px;padding-top:16px;border-top:2px dashed var(--garis)}
+  .judul-sketsa:first-of-type{border-top:none;padding-top:0}
+  .ket-sketsa{font-size:12px;color:var(--tinta-2);margin:0 0 12px;line-height:1.6}
+  .papan{background:var(--putih);border:1px solid var(--garis);border-radius:var(--r);padding:15px;margin-bottom:13px}
+  .baris-antara{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pita{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--teal-terang);color:var(--teal);font-weight:700;white-space:nowrap}
+  .pita-abu{background:var(--abu-bg);color:var(--tinta-2)}
+  .pita-hijau{background:var(--hijau-bg);color:var(--hijau)}
+  .pita-amber{background:var(--kuning-bg);color:var(--kuning)}
+  .pita-merah{background:var(--merah-bg);color:var(--merah)}
+  h2{font-size:18px;margin:0}
+  .samar{font-size:11.5px;color:var(--tinta-3)}
+  p{margin:8px 0;font-size:13px;line-height:1.65;color:var(--tinta-2)}
+
+  /* ── tombol saklar ── */
+  .saklar{display:flex;gap:8px;background:var(--kertas-2);border:1.5px solid var(--garis);border-radius:var(--r-s);padding:5px;margin:12px 0 14px}
+  .saklar button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:9px 6px;border:none;border-radius:6px;background:transparent;color:var(--tinta-2);cursor:pointer}
+  .saklar button.nyala{background:var(--teal);color:#fff;box-shadow:0 2px 6px rgba(15,115,103,.28)}
+  .saklar button.nyala.merah{background:var(--merah);box-shadow:0 2px 6px rgba(163,59,50,.28)}
+
+  /* ── slider (variasi B) ── */
+  .medan{background:var(--kertas-2);border:1.5px solid var(--garis);border-radius:var(--r-s);padding:11px 13px;margin-bottom:12px}
+  .medan label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+  .medan input[type=range]{width:100%;accent-color:var(--teal)}
+  .kaki-slider{display:flex;justify-content:space-between;margin-top:4px}
+
+  .kotak-gambar{background:var(--kertas-2);border-radius:var(--r-s);padding:8px;margin:10px 0}
+  svg{display:block;width:100%;height:auto}
+
+  .angka-baris{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .angka-besar{font-size:26px;font-weight:800;color:var(--teal);line-height:1.1}
+  .angka-besar.merah{color:var(--merah)}
+  .angka-besar.abu{color:var(--tinta-3)}
+  .catatan{display:flex;gap:8px;align-items:flex-start;background:var(--kertas-2);border-radius:var(--r-s);padding:10px 12px;margin-top:11px;font-size:12.5px;line-height:1.6}
+  .catatan.hijau{background:var(--hijau-bg)}
+  .catatan.merah{background:var(--merah-bg)}
+  .catatan.amber{background:var(--kuning-bg)}
+  .catatan strong{color:var(--tinta)}
+
+  /* ── banding berdampingan (variasi C) ── */
+  .dua-kolom{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .kecil-papan{background:var(--kertas-2);border-radius:var(--r-s);padding:9px}
+  .kecil-papan h4{margin:0 0 6px;font-size:11.5px;text-align:center;letter-spacing:.4px;text-transform:uppercase}
+  .kecil-papan .pita{display:inline-block;font-size:10px}
+
+  /* ── normalitas: dua arah ── */
+  .amb-garis{position:relative;height:36px;margin:6px 0 2px}
+  .amb-jalur{position:absolute;top:16px;left:0;right:0;height:3px;background:var(--kertas-3);border-radius:2px}
+  .amb-titik{position:absolute;top:9px;width:17px;height:17px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .amb-label{position:absolute;font-size:10.5px;color:var(--tinta-3)}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+  th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--garis)}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--tinta-3)}
+  .signifikan{color:var(--merah);font-weight:800}
+</style>
+</head>
+<body>
+<div class="bingkai">
+  <div class="tanda-sketsa">Sketsa · 20 Sep 2026 · belum koding</div>
+
+  <p class="ket-sketsa">
+    <strong>3 variasi switch hetero (A/B/C) + 2 variasi normalitas</strong>.
+    Semua gambar di bawah <strong>titiknya dihitung rumus</strong> — sama seperti yang sudah jalan di bagian AB sekarang.
+  </p>
+
+  <!-- ═══════════════════ VARIASI A ═══════════════════ -->
+  <div class="judul-sketsa">Variasi A — slider DIGANTI 2 tombol</div>
+  <p class="ket-sketsa">Paling ringan. Klik tombol → gambar &amp; pita lompat. Tidak bisa "setengah sakit".</p>
+
+  <div class="papan">
+    <div class="baris-antara">
+      <h2>Heteroskedastisitas</h2>
+      <span class="pita pita-hijau" id="A-pita">Aman</span>
+    </div>
+    <p>Syarat regresi: sebaran sisa (residu) harus <strong>rata</strong> di sepanjang nilai prediksi.</p>
+
+    <div class="saklar">
+      <button class="nyala" id="A-sehat" onclick="Ake(0)">Sehat (rata)</button>
+      <button id="A-sakit" onclick="Ake(1)">Sakit (corong)</button>
+    </div>
+
+    <div class="kotak-gambar"><svg viewBox="0 0 400 168" id="A-svg"></svg></div>
+
+    <div class="angka-baris">
+      <div>
+        <div class="samar">Angka yang terbaca</div>
+        <div class="angka-besar" id="A-angka">0.000</div>
+      </div>
+      <span class="pita pita-abu">lihat sendiri</span>
+    </div>
+
+    <div class="catatan hijau" id="A-catatan">
+      <strong>Aman.</strong> Sebarannya rata dari kiri ke kanan. Syarat terpenuhi.
+    </div>
+  </div>
+
+  <!-- ═══════════════════ VARIASI B ═══════════════════ -->
+  <div class="judul-sketsa">Variasi B — slider TETAP + 2 tombol pintasan ⭐</div>
+  <p class="ket-sketsa">Usulan Wulan. Slider masih bisa digeser bebas; tombol cuma jalan pintas cepat. Tombol yang aktif menyesuaikan diri saat slider digeser.</p>
+
+  <div class="papan">
+    <div class="baris-antara">
+      <h2>Heteroskedastisitas</h2>
+      <span class="pita pita-amber" id="B-pita">Perlu dilihat</span>
+    </div>
+    <p>Syarat regresi: sebaran sisa (residu) harus <strong>rata</strong> di sepanjang nilai prediksi.</p>
+
+    <div class="saklar">
+      <button id="B-sehat" onclick="Bke(0)">Contoh sehat</button>
+      <button id="B-sakit" onclick="Bke(1)">Contoh sakit</button>
+    </div>
+
+    <div class="medan">
+      <label>Seberapa tidak rata sebarannya?</label>
+      <input type="range" id="B-slider" min="0" max="100" value="35" oninput="Bgambar()">
+      <div class="kaki-slider">
+        <span class="samar">Rata</span><span class="samar">Sangat tidak rata</span>
+      </div>
+    </div>
+
+    <div class="kotak-gambar"><svg viewBox="0 0 400 168" id="B-svg"></svg></div>
+
+    <div class="angka-baris">
+      <div>
+        <div class="samar">Angka yang terbaca</div>
+        <div class="angka-besar" id="B-angka">0.350</div>
+      </div>
+      <span class="pita pita-abu">lihat sendiri</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ VARIASI C ═══════════════════ -->
+  <div class="judul-sketsa">Variasi C — berdampingan (kiri sehat · kanan sakit)</div>
+  <p class="ket-sketsa">Dua gambar sekaligus, tidak perlu klik. Kelemahan: ruang gambar jadi kecil kalau dibuka di HP.</p>
+
+  <div class="papan">
+    <h2>Heteroskedastisitas — bedanya di mana?</h2>
+    <p>Yang kiri <strong>lebar tetap</strong>. Yang kanan <strong>makin melebar</strong>. Itu bedanya.</p>
+
+    <div class="dua-kolom">
+      <div class="kecil-papan">
+        <h4>Sehat</h4>
+        <svg viewBox="0 0 400 168" id="C1-svg"></svg>
+        <div style="text-align:center;margin-top:6px"><span class="pita pita-hijau">Aman</span></div>
+      </div>
+      <div class="kecil-papan">
+        <h4>Sakit</h4>
+        <svg viewBox="0 0 400 168" id="C2-svg"></svg>
+        <div style="text-align:center;margin-top:6px"><span class="pita pita-merah">Bermasalah</span></div>
+      </div>
+    </div>
+
+    <div class="catatan"><strong>Bandingkan lebarnya:</strong> jarak titik paling atas ke paling bawah. Kiri kira-kira <strong>sama</strong> di mana pun. Kanan <strong>makin jauh</strong> ke arah kanan.</div>
+  </div>
+
+  <!-- ═══════════════════ NORMALITAS v1 ═══════════════════ -->
+  <div class="judul-sketsa">Normalitas — Variasi 1: satu slider DUA ARAH</div>
+  <p class="ket-sketsa">Tengah = lonceng sempurna. Geser kiri → ekor memanjang kiri. Geser kanan → ekor memanjang kanan.</p>
+
+  <div class="papan">
+    <div class="baris-antara">
+      <h2>Normalitas</h2>
+      <span class="pita pita-amber" id="N1-pita">Mulai miring</span>
+    </div>
+    <p>Syarat regresi: sisa (residu) harus <strong>menyebar normal</strong> — bentuknya seperti lonceng, bukan miring ke satu sisi.</p>
+
+    <div class="kotak-gambar"><svg viewBox="0 0 400 168" id="N1-svg"></svg></div>
+
+    <div class="medan">
+      <label>Posisi kemiringannya?</label>
+      <input type="range" id="N1-slider" min="-100" max="100" value="35" oninput="N1gambar()">
+      <div class="kaki-slider">
+        <span class="samar">Miring kiri</span>
+        <span class="samar" style="font-weight:700;color:var(--teal)">Lonceng</span>
+        <span class="samar">Miring kanan</span>
+      </div>
+    </div>
+
+    <div class="angka-baris">
+      <div>
+        <div class="samar">Angka yang terbaca</div>
+        <div class="angka-besar" id="N1-angka">0.350</div>
+      </div>
+      <span class="pita pita-abu">lihat sendiri</span>
+    </div>
+
+    <div class="catatan amber"><div><strong>Di SPSS:</strong> Analyze → Descriptive Statistics → Explore → Plots → centang <em>Histogram</em> dan <em>Normality plots with tests</em>. Lihat juga <strong>Sig. Kolmogorov-Smirnov</strong> — di atas 0,05 berarti normal.</div></div>
+  </div>
+
+  <!-- ═══════════════════ NORMALITAS v2 ═══════════════════ -->
+  <div class="judul-sketsa">Normalitas — Variasi 2: 3 tombol (Kiri · Normal · Kanan)</div>
+  <p class="ket-sketsa">Lebih sederhana, konsisten dengan tombol Sehat/Sakit di hetero.</p>
+
+  <div class="papan">
+    <div class="baris-antara">
+      <h2>Normalitas</h2>
+      <span class="pita pita-hijau" id="N2-pita">Normal</span>
+    </div>
+    <p>Syarat regresi: sisa (residu) harus <strong>menyebar normal</strong>.</p>
+
+    <div class="saklar" style="gap:6px">
+      <button id="N2-kiri" onclick="N2ke(-1)">Miring kiri</button>
+      <button class="nyala" id="N2-normal" onclick="N2ke(0)">Lonceng</button>
+      <button id="N2-kanan" onclick="N2ke(1)">Miring kanan</button>
+    </div>
+
+    <div class="kotak-gambar"><svg viewBox="0 0 400 168" id="N2-svg"></svg></div>
+
+    <div class="dua-kolom" style="margin-top:10px">
+      <div class="kecil-papan" style="background:var(--putih);border:1px solid var(--garis)">
+        <div class="samar">Uji K-S</div>
+        <div style="font-size:19px;font-weight:800;color:var(--teal)" id="N2-sig">0,412</div>
+        <span class="pita pita-hijau" id="N2-tag">Normal</span>
+      </div>
+      <div class="kecil-papan" style="background:var(--putih);border:1px solid var(--garis)">
+        <div class="samar">Bentuk</div>
+        <div style="font-size:19px;font-weight:800;color:var(--teal)" id="N2-skew">0,04</div>
+        <span class="samar">skewness</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="ket-sketsa" style="margin-top:16px;text-align:center;color:var(--tinta-3)">
+    — akhir sketsa · Wulan belum menyentuh berkas asli —
+  </p>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   RUMUS GAMBAR — DISALIN APA ADANYA dari belajar.html bagian hetero
+   (lebar = lebar0 + (lebar1-lebar0) × per²  ·  derau tetap ber-seed)
+   Supaya sketsa ini menunjukkan HASIL YANG SAMA dengan yang live.
+   ═══════════════════════════════════════════════════════════════ */
+function gambarHetero(el, v, c) {
+  const t = Math.max(0, Math.min(1, v / 100));
+  const lebar0 = 5, lebar1 = 5 + t * 95;
+  const x0 = 20, x1 = 380, ym = 84;
+  const acak = (i) => { const s = Math.sin(i * 12.9898) * 43758.5453;
+                        return (s - Math.floor(s)) * 2 - 1; };
+  const titik = [];
+  for (let i = 0; i < 110; i++) {
+    const per = i / 109;
+    const x = x0 + per * (x1 - x0);
+    const lebar = lebar0 + (lebar1 - lebar0) * per * per;
+    const y = ym + acak(i) * lebar;
+    titik.push(`<circle cx="${x.toFixed(1)}" cy="${Math.max(14,Math.min(154,y)).toFixed(1)}" r="2.4" fill="${c}" opacity="0.5"/>`);
+  }
+  const batas = `
+    <line x1="${x0}" y1="${ym-lebar0}" x2="${x1}" y2="${ym-lebar1}" stroke="${c}" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.75"/>
+    <line x1="${x0}" y1="${ym+lebar0}" x2="${x1}" y2="${ym+lebar1}" stroke="${c}" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.75"/>`;
+  const label = t < 0.03 ? 'lebar tetap dari kiri ke kanan'
+              : (t > 0.92 ? 'makin melebar ke kanan (corong)' : 'melebar bertahap ke kanan');
+  el.innerHTML = `<line x1="18" y1="${ym}" x2="386" y2="${ym}" stroke="#E0D8C8" stroke-width="1.5"/>
+    ${batas}${titik.join('')}
+    <text x="200" y="163" text-anchor="middle" font-size="10.5" fill="#6B6259">${label}</text>`;
+}
+
+/* ── VARIASI A ── */
+let A_aktif = 0;
+function Ake(n) {
+  A_aktif = n;
+  const v = n === 0 ? 0 : 100;
+  const warna = n === 0 ? '#2F7D4F' : '#A33B32';
+  gambarHetero(document.getElementById('A-svg'), v, warna);
+  document.getElementById('A-angka').textContent = (v/100).toFixed(3);
+  document.getElementById('A-angka').className = 'angka-besar ' + (n === 0 ? '' : 'merah');
+  const pita = document.getElementById('A-pita');
+  pita.className = 'pita ' + (n === 0 ? 'pita-hijau' : 'pita-merah');
+  pita.textContent = n === 0 ? 'Aman' : 'Bermasalah';
+  const cat = document.getElementById('A-catatan');
+  cat.className = 'catatan ' + (n === 0 ? 'hijau' : 'merah');
+  cat.innerHTML = n === 0
+    ? '<strong>Aman.</strong> Sebarannya rata dari kiri ke kanan. Syarat terpenuhi — lanjut ke pengujian hipotesis.'
+    : '<strong>Bermasalah.</strong> Sebarannya melebar membentuk corong. Dua jalan keluar: <em>robust standard error</em>, atau ubah data dengan logaritma.';
+  document.getElementById('A-sehat').className = n === 0 ? 'nyala' : '';
+  const bs = document.getElementById('A-sakit');
+  bs.className = n === 1 ? 'nyala merah' : '';
+}
+
+/* ── VARIASI B ── */
+function Bgambar() {
+  const v = parseInt(document.getElementById('B-slider').value, 10);
+  const warna = v < 18 ? '#2F7D4F' : (v < 45 ? '#B8860B' : '#A33B32');
+  gambarHetero(document.getElementById('B-svg'), v, warna);
+  document.getElementById('B-angka').textContent = (v/100).toFixed(3);
+  document.getElementById('B-angka').className = 'angka-besar' + (v < 18 ? '' : (v < 45 ? ' abu' : ' merah'));
+  const pita = document.getElementById('B-pita');
+  const kelas = v < 18 ? 'pita-hijau' : (v < 45 ? 'pita-amber' : 'pita-merah');
+  const teks  = v < 18 ? 'Aman' : (v < 45 ? 'Perlu dilihat' : 'Bermasalah');
+  pita.className = 'pita ' + kelas; pita.textContent = teks;
+  // tombol menyala mengikuti slider
+  document.getElementById('B-sehat').className = (v <= 2) ? 'nyala' : '';
+  document.getElementById('B-sakit').className  = (v >= 98) ? 'nyala merah' : '';
+}
+function Bke(n) {
+  document.getElementById('B-slider').value = n === 0 ? 0 : 100;
+  Bgambar();
+}
+
+/* ── VARIASI C (dua gambar, tidak berubah) ── */
+gambarHetero(document.getElementById('C1-svg'), 0, '#2F7D4F');
+gambarHetero(document.getElementById('C2-svg'), 100, '#A33B32');
+
+/* ═══════════════════════════════════════════════════════════════
+   NORMALITAS — HISTOGRAM dari sebaran yang dimiringkan.
+   Pakai fungsi sigmoid sederhana: makin besar |skew|, makin
+   memanjang ekornya ke satu sisi. Titik tengah = lonceng.
+   ═══════════════════════════════════════════════════════════════ */
+function gambarNormal(el, sk, warna) {
+  // sk: −100 (miring kiri) … 0 (lonceng) … +100 (miring kanan)
+  const t = sk / 100;
+  const x0 = 34, x1 = 366, ym = 150, tinggi = 118;
+  const acak = (i) => { const s = Math.sin(i * 27.3119) * 9137.1357;
+                        return (s - Math.floor(s)); };
+  const batang = [];
+  const N = 26;
+  for (let i = 0; i < N; i++) {
+    const per = i / (N - 1);
+    // lonceng dasar
+    const lonceng = Math.exp(-Math.pow((per - 0.5) / 0.19, 2));
+    // distorsi miring: geser puncak + tarik ekor
+    const geser = t * 0.30;
+    const puncak = 0.5 + geser;
+    let g = Math.exp(-Math.pow((per - puncak) / (0.19 + Math.abs(t)*0.07), 2));
+    // ekor memanjang ke sisi kemiringan
+    if (t > 0 && per > puncak) g += t * 0.55 * Math.pow(per - puncak, 1.1) * 3.2;
+    if (t < 0 && per < puncak) g += Math.abs(t) * 0.55 * Math.pow(puncak - per, 1.1) * 3.2;
+    g = Math.max(0, Math.min(1, g + (acak(i) - 0.5) * 0.07));
+    const leb = (x1 - x0) / N - 2.5;
+    const x = x0 + per * (x1 - x0) - leb / 2;
+    const h = g * tinggi;
+    if (h > 1.5) {
+      batang.push(`<rect x="${x.toFixed(1)}" y="${(ym-h).toFixed(1)}" width="${leb.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${warna}" opacity="0.72"/>`);
+    }
+  }
+  const label = Math.abs(t) < 0.06 ? 'bentuk lonceng — normal'
+              : (t > 0 ? 'ekor memanjang ke kanan (miring positif)'
+                       : 'ekor memanjang ke kiri (miring negatif)');
+  el.innerHTML = `<line x1="24" y1="${ym}" x2="376" y2="${ym}" stroke="#E0D8C8" stroke-width="1.5"/>
+    ${batang.join('')}
+    <line x1="200" y1="20" x2="200" y2="${ym}" stroke="#D8CDBC" stroke-width="1" stroke-dasharray="4 4"/>
+    <text x="200" y="164" text-anchor="middle" font-size="10.5" fill="#6B6259">${label}</text>`;
+}
+
+/* ── NORMALITAS v1 (slider dua arah) ── */
+function N1gambar() {
+  const v = parseInt(document.getElementById('N1-slider').value, 10);
+  const warna = Math.abs(v) < 18 ? '#2F7D4F' : (Math.abs(v) < 45 ? '#B8860B' : '#A33B32');
+  gambarNormal(document.getElementById('N1-svg'), v, warna);
+  const pita = document.getElementById('N1-pita');
+  const kelas = Math.abs(v) < 18 ? 'pita-hijau' : (Math.abs(v) < 45 ? 'pita-amber' : 'pita-merah');
+  pita.className = 'pita ' + kelas;
+  pita.textContent = Math.abs(v) < 18 ? 'Normal' : (Math.abs(v) < 45 ? 'Mulai miring' : 'Jauh dari normal');
+  document.getElementById('N1-angka').textContent = Math.abs(v/100).toFixed(3);
+}
+
+/* ── NORMALITAS v2 (3 tombol) ── */
+const N2_DATA = {
+  '-1': { sk: -100, warna: '#A33B32', pita: ['pita-merah', 'Jauh dari normal'], sig: '0,003', tag: ['pita-merah', 'Tidak normal'], skew: '−0,86' },
+  '0':  { sk: 0,    warna: '#2F7D4F', pita: ['pita-hijau', 'Normal'],          sig: '0,412', tag: ['pita-hijau', 'Normal'],       skew: '0,04' },
+  '1':  { sk: 100,  warna: '#A33B32', pita: ['pita-merah', 'Jauh dari normal'], sig: '0,001', tag: ['pita-merah', 'Tidak normal'], skew: '+0,91' },
+};
+function N2ke(n) {
+  const d = N2_DATA[String(n)];
+  gambarNormal(document.getElementById('N2-svg'), d.sk, d.warna);
+  const p = document.getElementById('N2-pita');
+  p.className = 'pita ' + d.pita[0]; p.textContent = d.pita[1];
+  document.getElementById('N2-sig').textContent = d.sig;
+  document.getElementById('N2-skew').textContent = d.skew;
+  const tg = document.getElementById('N2-tag');
+  tg.className = 'pita ' + d.tag[0]; tg.textContent = d.tag[1];
+  ['kiri','normal','kanan'].forEach((k, i) => {
+    const b = document.getElementById('N2-' + k);
+    b.className = (i === n + 1) ? 'nyala' : '';
+  });
+}
+
+/* ── jalan pertama kali ── */
+Ake(0);
+Bgambar();
+N1gambar();
+N2ke(0);
+</script>
+</body>
+</html>

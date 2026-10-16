@@ -1,0 +1,76 @@
+<!DOCTYPE html><meta charset="utf-8"><title>ukur</title>
+<style>html,body{margin:0;font:13px system-ui}iframe{display:block;border:0}</style>
+<!--
+  UKUR KECEPATAN halaman BUAT DATA di dalam iframe selebar HP.
+
+  Yang diukur (semua dalam milidetik):
+   • waktu geser slider 10×
+   • waktu klik tombol + dan −
+   • waktu ketik nama variabel
+   • jumlah panggilan bangunTabel()
+
+  ⚠️ Cara ini memakai iframe selebar HP + disajikan dari ORIGIN SAMA
+  (http kontainer). Kalau dari file:// → contentDocument null.
+-->
+<iframe id="f"></iframe>
+<script>
+const P = new URLSearchParams(location.search);
+const LEBAR = parseInt(P.get('lebar') || '390', 10);
+const f = document.getElementById('f');
+f.style.width = LEBAR + 'px';
+f.style.height = '1700px';
+f.src = '/buat-data?uji=x8';
+
+f.addEventListener('load', () => {
+  setTimeout(() => {
+    try {
+      const w = f.contentWindow, d = f.contentDocument;
+      const el = id => d.getElementById(id);
+      const hasil = {};
+      const t = () => performance.now();
+
+      // ── hitung berapa kali bangunTabel dipanggil ─────────────────────
+      let jumlahBangun = 0;
+      const asli = w.bangunTabel;
+      w.bangunTabel = function () { jumlahBangun++; return asli.apply(this, arguments); };
+
+      // ── 1. geser slider n 10× ────────────────────────────────────────
+      const sl = el('n-slider');
+      let t0 = t();
+      for (let i = 0; i < 10; i++) {
+        sl.value = 100 + i * 20;
+        sl.dispatchEvent(new Event('input', {bubbles: true}));
+      }
+      hasil.geserSlider10x = Math.round(t() - t0);
+
+      // ── 2. klik tombol + 3× lalu − 3× ────────────────────────────────
+      const plus = el('x-tambah'), min = el('x-kurang');
+      t0 = t();
+      for (let i = 0; i < 3; i++) plus.click();
+      for (let i = 0; i < 3; i++) min.click();
+      hasil.klikPlusMinus6x = Math.round(t() - t0);
+
+      // ── 3. ketik nama variabel 8× (simulasi mengetik) ────────────────
+      const nama = [...d.querySelectorAll('.nama-var')];
+      t0 = t();
+      nama.forEach((inp, i) => {
+        inp.value = 'Variabel Uji ' + (i + 1);
+        inp.dispatchEvent(new Event('input', {bubbles: true}));
+      });
+      hasil.ketikNama8x = Math.round(t() - t0);
+
+      // ── 4. berapa kali tabel dibangun ulang ──────────────────────────
+      hasil.panggilanBangunTabel = jumlahBangun;
+
+      // ── 5. berapa pendengar event terpasang ──────────────────────────
+      hasil.jumlahBeta = d.querySelectorAll('.nilai-beta').length;
+      hasil.jumlahNama = d.querySelectorAll('.nama-var').length;
+
+      hasil.lebarLayar = w.innerWidth;
+      document.title = 'SPD::' + JSON.stringify(hasil);
+    } catch (e) {
+      document.title = 'SPD::GALAT ' + e.message;
+    }
+  }, 2600);
+});
+</script>

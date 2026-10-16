@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SKETSA — Alur Baru Statistik Lab</title>
+<link rel="stylesheet" href="gaya.css">
+<style>
+  /* gaya khusus SKETSA saja — tidak masuk aplikasi */
+  .sketsa-note{background:var(--amber-terang);border:1px dashed var(--amber);
+    border-radius:var(--r-s);padding:12px 14px;margin:0 0 22px;
+    font-size:13.5px;color:var(--tinta-2);line-height:1.7}
+  .sketsa-note b{color:var(--tinta)}
+  .halaman{border:2px dashed var(--garis);border-radius:var(--r);
+    padding:22px;margin:0 0 40px;background:var(--kertas)}
+  .halaman > h2{margin:0 0 4px;font-size:19px}
+  .halaman > .ket{color:var(--tinta-2);font-size:13.5px;margin:0 0 20px}
+
+  /* ── halaman 1: dua pintu ── */
+  .dua-pintu{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .pintu{background:var(--kertas-2);border:1.5px solid var(--garis);
+    border-radius:var(--r);padding:26px 22px;text-align:center;
+    transition:.15s;cursor:pointer}
+  .pintu:hover{border-color:var(--teal);box-shadow:var(--bayang-h);
+    transform:translateY(-2px)}
+  .pintu .ikon-bulat{width:52px;height:52px;border-radius:50%;
+    display:grid;place-items:center;margin:0 auto 14px}
+  .pintu.kuant .ikon-bulat{background:var(--teal-terang);color:var(--teal)}
+  .pintu.kual .ikon-bulat{background:var(--amber-terang);color:var(--amber)}
+  .pintu h3{margin:0 0 8px;font-size:19px}
+  .pintu .tanya{color:var(--tinta-2);font-size:13.5px;
+    line-height:1.7;margin:0 0 12px}
+  .pintu .contoh{font-size:12.5px;color:var(--tinta-3);
+    border-top:1px solid var(--garis);padding-top:11px;margin-top:14px}
+  .pintu .siap{position:absolute;top:14px;right:14px}
+
+  /* ── halaman 2: kartu model ── */
+  .grid-model{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .kartu-model{background:var(--kertas-2);border:1.5px solid var(--garis);
+    border-radius:var(--r);padding:16px;cursor:pointer;transition:.15s;
+    display:flex;flex-direction:column}
+  .kartu-model:hover{border-color:var(--teal);box-shadow:var(--bayang-h);
+    transform:translateY(-2px)}
+  .kartu-model.terkunci{opacity:.62;cursor:not-allowed}
+  .kartu-model.terkunci:hover{border-color:var(--garis);transform:none;
+    box-shadow:none}
+  .kartu-model svg.denah{display:block;margin:0 auto 10px;width:100%;
+    max-width:150px;height:64px}
+  .kartu-model .judul{font-weight:650;font-size:14.5px;margin:0 0 5px}
+  .kartu-model .tujuan{color:var(--tinta-2);font-size:12.5px;
+    line-height:1.65;margin:0 0 10px;flex:1}
+  .kartu-model .kaki{display:flex;gap:6px;align-items:center;
+    border-top:1px solid var(--garis);padding-top:9px}
+  .pita-kecil{font-size:11px;padding:2px 8px;border-radius:20px;
+    font-weight:600;letter-spacing:.02em}
+  .pita-kecil.s1{background:var(--teal-terang);color:var(--teal)}
+  .pita-kecil.s2{background:var(--amber-terang);color:var(--amber)}
+  .pita-kecil.s3{background:var(--merah-terang);color:var(--merah)}
+
+  /* ── halaman 3: periksa syarat ── */
+  .grid-syarat{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .kartu-syarat{background:var(--kertas-2);border:1.5px solid var(--garis);
+    border-radius:var(--r);padding:16px}
+  .kartu-syarat .kepala{display:flex;justify-content:space-between;
+    align-items:flex-start;gap:10px;margin-bottom:10px}
+  .kartu-syarat h4{margin:0;font-size:14.5px}
+  .kartu-syarat .alat{font-size:11.5px;color:var(--tinta-3)}
+  .kotak-gambar{background:var(--kertas);border:1px solid var(--garis);
+    border-radius:var(--r-s);padding:10px;margin:0 0 11px}
+  .tafsir{font-size:12.5px;line-height:1.65;color:var(--tinta-2);
+    background:var(--hijau-terang);border-radius:var(--r-s);
+    padding:9px 11px;margin:0 0 9px}
+  .tafsir.hati{background:var(--amber-terang)}
+  .spss-cara{font-size:11.5px;color:var(--tinta-2);
+    background:var(--kertas-3);border-radius:var(--r-s);padding:9px 11px;
+    line-height:1.6}
+  .kd{font-family:ui-monospace,monospace;background:var(--kertas-3);
+    padding:1px 5px;border-radius:4px;font-size:11.5px}
+  .pil{position:absolute;top:14px;right:14px}
+  .dua-kolom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){
+    .dua-pintu,.grid-model,.grid-syarat,.dua-kolom{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<main class="bungkus" style="padding-top:34px;padding-bottom:60px">
+
+  <span class="eyebrow">SKETSA — bukan halaman jadi</span>
+  <h1 style="margin:8px 0 10px">Alur baru: pilih jenis dulu, baru model</h1>
+  <p class="besar" style="margin-bottom:22px">
+    Tiga halaman di bawah ini <b>belum</b> masuk aplikasi. Bos lihat dulu
+    bentuknya, pilih mana yang cocok — baru Wulan koding.
+  </p>
+
+  <div class="sketsa-note">
+    <b>Kenapa begini?</b> Sekarang halaman <span class="kd">/buat-data</span>
+    langsung minta angka β. Untuk orang awam itu seperti mengisi formulir pajak:
+    dia belum tahu dia mau model apa, tapi sudah diminta isi koefisien.
+    Alur ini menyembunyikan 90% mesin yang tidak dia butuhkan.
+  </div>
+
+  <!-- ═══════════ HALAMAN 1 ═══════════ -->
+  <div class="halaman">
+    <h2>① Halaman Awal — pilih jenis penelitian</h2>
+    <p class="ket">Ini yang pertama dilihat user. Dua pintu besar, tidak ada form.</p>
+
+    <div class="dua-pintu">
+      <div class="pintu kuant" style="position:relative">
+        <span class="pita pita-hijau siap" style="position:absolute;top:14px;right:14px">
+          siap
+        </span>
+        <div class="ikon-bulat">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/>
+            <path d="M8 17v-3"/>
+          </svg>
+        </div>
+        <h3>Kuantitatif</h3>
+        <p class="tanya">Penelitian pakai <b>angka</b> — kuesioner, skor,
+          uji hipotesis.</p>
+        <p class="tanya" style="margin:0">Cocok kalau kamu mau <b>mengukur
+          pengaruh</b> antar variabel.</p>
+        <div class="contoh">Contoh: pengaruh harga &amp; promosi terhadap
+          keputusan pembelian</div>
+      </div>
+
+      <div class="pintu kual" style="position:relative">
+        <span class="pita pita-abu siap" style="position:absolute;top:14px;right:14px">
+          belum siap
+        </span>
+        <div class="ikon-bulat">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3>Kualitatif</h3>
+        <p class="tanya">Penelitian pakai <b>kata</b> — wawancara, transkrip,
+          tema.</p>
+        <p class="tanya" style="margin:0">Cocok kalau kamu mau <b>memahami
+          alasan</b> di balik sesuatu.</p>
+        <div class="contoh">Contoh: kenapa pelanggan tetap setia walau harga naik</div>
+      </div>
+    </div>
+
+    <p class="samar" style="margin:16px 0 0;font-size:12.5px">
+      ℹ️ Pintu kualitatif dibuka sekarang supaya kelihatan gambaran besarnya.
+      Isinya menyusul.
+    </p>
+  </div>
+
+  <!-- ═══════════ HALAMAN 2 ═══════════ -->
+  <div class="halaman">
+    <h2>② Halaman Pilih Model — bahasa tujuan, bukan nama teknik</h2>
+    <p class="ket">Pertanyaan pakai bahasa sehari-hari. Gambar panah = bahasa
+      universal. Nama teknik cuma muncul kecil di bawah.</p>
+
+    <div class="grid-model">
+
+      <div class="kartu-model">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="32" cy="32" rx="24" ry="17" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.6"/>
+          <text x="32" y="36" text-anchor="middle" font-size="11" fill="#2E7D6F" font-weight="600">X</text>
+          <line x1="56" y1="32" x2="94" y2="32" stroke="#6B6259" stroke-width="1.6"/>
+          <polygon points="94,32 87,28.5 87,35.5" fill="#6B6259"/>
+          <ellipse cx="118" cy="32" rx="24" ry="17" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.6"/>
+          <text x="118" y="36" text-anchor="middle" font-size="11" fill="#2E7D6F" font-weight="600">Y</text>
+        </svg>
+        <p class="judul">Satu hal pengaruhi satu hal</p>
+        <p class="tujuan">Mau tahu seberapa besar pengaruh 1 variabel ke
+          1 variabel lain?</p>
+        <div class="kaki">
+          <span class="pita-kecil s1">S1</span>
+          <span class="alat">Regresi sederhana</span>
+        </div>
+      </div>
+
+      <div class="kartu-model">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="26" cy="16" rx="20" ry="11" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.4"/>
+          <text x="26" y="19.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">X1</text>
+          <ellipse cx="26" cy="48" rx="20" ry="11" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.4"/>
+          <text x="26" y="51.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">X2</text>
+          <line x1="46" y1="16" x2="94" y2="30" stroke="#6B6259" stroke-width="1.4"/>
+          <polygon points="96,31 88.5,28 90,34.5" fill="#6B6259"/>
+          <line x1="46" y1="48" x2="94" y2="34" stroke="#6B6259" stroke-width="1.4"/>
+          <polygon points="96,33 88.5,36 90,29.5" fill="#6B6259"/>
+          <ellipse cx="118" cy="32" rx="24" ry="14" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.6"/>
+          <text x="118" y="36" text-anchor="middle" font-size="11" fill="#2E7D6F" font-weight="600">Y</text>
+        </svg>
+        <p class="judul">Beberapa hal, bersama-sama</p>
+        <p class="tujuan">Beberapa variabel sekaligus menerangkan satu
+          variabel?</p>
+        <div class="kaki">
+          <span class="pita-kecil s1">S1</span>
+          <span class="alat">Regresi berganda</span>
+        </div>
+      </div>
+
+      <div class="kartu-model">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="22" cy="32" rx="18" ry="13" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.4"/>
+          <text x="22" y="35.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">X</text>
+          <line x1="40" y1="32" x2="58" y2="32" stroke="#6B6259" stroke-width="1.4"/>
+          <polygon points="60,32 53,28.5 53,35.5" fill="#6B6259"/>
+          <ellipse cx="80" cy="20" rx="19" ry="12" fill="#FBEFDC" stroke="#B5762A" stroke-width="1.5"/>
+          <text x="80" y="23.5" text-anchor="middle" font-size="10" fill="#B5762A" font-weight="600">M</text>
+          <line x1="77" y1="32" x2="96" y2="32" stroke="#6B6259" stroke-width="1.4"/>
+          <polygon points="98,32 91,28.5 91,35.5" fill="#6B6259"/>
+          <ellipse cx="120" cy="32" rx="20" ry="13" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.5"/>
+          <text x="120" y="35.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">Y</text>
+          <line x1="22" y1="45" x2="120" y2="45" stroke="#9A9086" stroke-width="1.2" stroke-dasharray="4 3"/>
+        </svg>
+        <p class="judul">Ada perantara</p>
+        <p class="tujuan">Pengaruhnya lewat sesuatu dulu — X ke perantara,
+          baru ke Y?</p>
+        <div class="kaki">
+          <span class="pita-kecil s2">S1–S2</span>
+          <span class="alat">Mediasi</span>
+        </div>
+      </div>
+
+      <div class="kartu-model">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="24" cy="38" rx="19" ry="13" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.4"/>
+          <text x="24" y="41.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">X</text>
+          <line x1="43" y1="38" x2="94" y2="38" stroke="#6B6259" stroke-width="1.5"/>
+          <polygon points="96,38 89,34.5 89,41.5" fill="#6B6259"/>
+          <ellipse cx="118" cy="38" rx="20" ry="13" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.5"/>
+          <text x="118" y="41.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">Y</text>
+          <!-- Z nempel DI GARIS, bukan kotak -->
+          <ellipse cx="70" cy="13" rx="18" ry="11" fill="#F7E7E7" stroke="#A85A5A" stroke-width="1.5"/>
+          <text x="70" y="16.5" text-anchor="middle" font-size="10" fill="#A85A5A" font-weight="600">Z</text>
+          <line x1="70" y1="24" x2="70" y2="38" stroke="#A85A5A" stroke-width="1.4" stroke-dasharray="3 2"/>
+          <polygon points="70,38 66.5,32 73.5,32" fill="#A85A5A"/>
+        </svg>
+        <p class="judul">Ada yang memperkuat / melemahkan</p>
+        <p class="tujuan">Ada variabel yang bikin pengaruhnya jadi lebih kuat
+          atau lemah?</p>
+        <div class="kaki">
+          <span class="pita-kecil s2">S2</span>
+          <span class="alat">Moderasi</span>
+        </div>
+      </div>
+
+      <div class="kartu-model">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="22" cy="24" rx="17" ry="11" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.3"/>
+          <text x="22" y="27.5" text-anchor="middle" font-size="9.5" fill="#2E7D6F" font-weight="600">X1</text>
+          <line x1="22" y1="35" x2="22" y2="47" stroke="#2E7D6F" stroke-width="1.6"/>
+          <ellipse cx="22" cy="55" rx="17" ry="8" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.2"/>
+          <text x="22" y="57.5" text-anchor="middle" font-size="8.5" fill="#2E7D6F">Xn</text>
+          <line x1="39" y1="24" x2="86" y2="30" stroke="#6B6259" stroke-width="1.3"/>
+          <line x1="39" y1="55" x2="86" y2="36" stroke="#6B6259" stroke-width="1.3"/>
+          <polygon points="88,32 80.5,30 83,36" fill="#6B6259"/>
+          <ellipse cx="112" cy="32" rx="21" ry="14" fill="#E4F0EC" stroke="#2E7D6F" stroke-width="1.5"/>
+          <text x="112" y="35.5" text-anchor="middle" font-size="10" fill="#2E7D6F" font-weight="600">Y</text>
+          <ellipse cx="112" cy="9" rx="15" ry="8" fill="#FBEFDC" stroke="#B5762A" stroke-width="1.2"/>
+          <text x="112" y="11.5" text-anchor="middle" font-size="9" fill="#B5762A" font-weight="600">M/Z</text>
+        </svg>
+        <p class="judul">Campuran</p>
+        <p class="tujuan">Modelnya lengkap — ada perantara, penguat, atau
+          berantai sekaligus?</p>
+        <div class="kaki">
+          <span class="pita-kecil s3">S2–S3</span>
+          <span class="alat">Gabungan</span>
+        </div>
+      </div>
+
+      <div class="kartu-model terkunci">
+        <svg class="denah" viewBox="0 0 150 64">
+          <ellipse cx="30" cy="18" rx="17" ry="10" fill="#EDE6D8" stroke="#9A9086" stroke-width="1.2"/>
+          <ellipse cx="30" cy="46" rx="17" ry="10" fill="#EDE6D8" stroke="#9A9086" stroke-width="1.2"/>
+          <ellipse cx="112" cy="32" rx="19" ry="12" fill="#EDE6D8" stroke="#9A9086" stroke-width="1.2"/>
+          <line x1="47" y1="18" x2="93" y2="27" stroke="#9A9086" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <line x1="47" y1="46" x2="93" y2="37" stroke="#9A9086" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <circle cx="75" cy="32" r="11" fill="none" stroke="#9A9086" stroke-width="1.4"/>
+          <path d="M71 32h8M75 28v8" stroke="#9A9086" stroke-width="1.6"/>
+        </svg>
+        <p class="judul">Susun sendiri (expert)</p>
+        <p class="tujuan">Punya model sendiri dan mau menyusunnya bebas?</p>
+        <div class="kaki">
+          <span class="pita-kecil" style="background:var(--kertas-3);color:var(--tinta-3)">
+            nanti
+          </span>
+          <span class="alat">diskusi dulu</span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="samar" style="margin:16px 0 0;font-size:12.5px">
+      ℹ️ Setelah pilih salah satu, baru masuk halaman isi angka — dan
+      <b>formnya beda tiap model</b>. Regresi sederhana tidak akan melihat
+      menu mediasi sama sekali.
+    </p>
+  </div>
+
+  <!-- ═══════════ HALAMAN 3 ═══════════ -->
+  <div class="halaman">
+    <h2>③ Halaman Periksa Syarat — grafik SPSS + khas PLS</h2>
+    <p class="ket">Menu tersendiri di navigasi atas. Tiap grafik diberi
+      kalimat tafsir + cara cek di SPSS/PLS sendiri.</p>
+
+    <div class="grid-syarat">
+
+      <div class="kartu-syarat">
+        <div class="kepala">
+          <div>
+            <h4>Sisa tersebar rata?</h4>
+            <span class="alat">Heteroskedastisitas · SPSS &amp; PLS</span>
+          </div>
+          <span class="pita pita-hijau">Aman</span>
+        </div>
+        <div class="kotak-gambar">
+          <svg viewBox="0 0 260 110" style="width:100%;height:96px">
+            <line x1="26" y1="96" x2="246" y2="96" stroke="#E0D8C8" stroke-width="1"/>
+            <line x1="26" y1="96" x2="26" y2="10" stroke="#E0D8C8" stroke-width="1"/>
+            <line x1="26" y1="52" x2="246" y2="52" stroke="#EDE6D8" stroke-width="1" stroke-dasharray="3 3"/>
+            <!-- sebaran RATA (lebar seragam) -->
+            <g fill="#2E7D6F" opacity=".55">
+              <circle cx="40" cy="46" r="2.4"/><circle cx="48" cy="58" r="2.4"/>
+              <circle cx="56" cy="44" r="2.4"/><circle cx="64" cy="60" r="2.4"/>
+              <circle cx="72" cy="50" r="2.4"/><circle cx="80" cy="42" r="2.4"/>
+              <circle cx="88" cy="62" r="2.4"/><circle cx="96" cy="48" r="2.4"/>
+              <circle cx="104" cy="56" r="2.4"/><circle cx="112" cy="44" r="2.4"/>
+              <circle cx="120" cy="60" r="2.4"/><circle cx="128" cy="50" r="2.4"/>
+              <circle cx="136" cy="42" r="2.4"/><circle cx="144" cy="58" r="2.4"/>
+              <circle cx="152" cy="46" r="2.4"/><circle cx="160" cy="62" r="2.4"/>
+              <circle cx="168" cy="44" r="2.4"/><circle cx="176" cy="56" r="2.4"/>
+              <circle cx="184" cy="48" r="2.4"/><circle cx="192" cy="60" r="2.4"/>
+              <circle cx="200" cy="42" r="2.4"/><circle cx="208" cy="58" r="2.4"/>
+              <circle cx="216" cy="50" r="2.4"/><circle cx="224" cy="46" r="2.4"/>
+            </g>
+            <text x="132" y="108" text-anchor="middle" font-size="9" fill="#9A9086">nilai prediksi (ZPRED)</text>
+          </svg>
+        </div>
+        <p class="tafsir">Sebaran titiknya <b>rata</b> dari kiri ke kanan —
+          syarat regresi terpenuhi. Tidak perlu tindakan.</p>
+        <div class="spss-cara">
+          <b>Cara cek sendiri:</b> <span class="kd">Analyze → Regression → Linear → Plots</span>
+          → pindahkan ZPRED ke X dan ZRESID ke Y.
+        </div>
+      </div>
+
+      <div class="kartu-syarat">
+        <div class="kepala">
+          <div>
+            <h4>Sisa menyebar normal?</h4>
+            <span class="alat">Normalitas · SPSS &amp; PLS</span>
+          </div>
+          <span class="pita pita-hijau">Aman</span>
+        </div>
+        <div class="kotak-gambar">
+          <svg viewBox="0 0 260 110" style="width:100%;height:96px">
+            <line x1="34" y1="98" x2="240" y2="14" stroke="#E0D8C8" stroke-width="1.4"/>
+            <g fill="#2E7D6F" opacity=".6">
+              <circle cx="48" cy="90" r="2.3"/><circle cx="62" cy="86" r="2.3"/>
+              <circle cx="78" cy="78" r="2.3"/><circle cx="94" cy="72" r="2.3"/>
+              <circle cx="108" cy="66" r="2.3"/><circle cx="124" cy="58" r="2.3"/>
+              <circle cx="140" cy="52" r="2.3"/><circle cx="154" cy="45" r="2.3"/>
+              <circle cx="170" cy="38" r="2.3"/><circle cx="186" cy="31" r="2.3"/>
+              <circle cx="202" cy="25" r="2.3"/><circle cx="216" cy="19" r="2.3"/>
+            </g>
+            <text x="132" y="108" text-anchor="middle" font-size="9" fill="#9A9086">sisa teramati (observed)</text>
+          </svg>
+        </div>
+        <p class="tafsir">Titiknya <b>menempel garis</b> — sisa menyebar normal.
+          Aman untuk uji hipotesis.</p>
+        <div class="spss-cara">
+          <b>Cara cek sendiri:</b> <span class="kd">Analyze → Regression → Linear → Plots</span>
+          → centang <span class="kd">Normal probability plot</span>.
+        </div>
+      </div>
+
+      <div class="kartu-syarat">
+        <div class="kepala">
+          <div>
+            <h4>Sisa ikut garis normal?</h4>
+            <span class="alat">Normal P-P · versi garis</span>
+          </div>
+          <span class="pita pita-hijau">Aman</span>
+        </div>
+        <div class="kotak-gambar">
+          <svg viewBox="0 0 260 110" style="width:100%;height:96px">
+            <rect x="30" y="8" width="212" height="80" rx="4" fill="#F5F0E6"/>
+            <path d="M40 88 Q 90 84 130 62 T 236 14" fill="none" stroke="#2E7D6F" stroke-width="1.8"/>
+            <line x1="30" y1="88" x2="242" y2="8" stroke="#9A9086" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="132" y="103" text-anchor="middle" font-size="9" fill="#9A9086">kurva normal (kumulatif)</text>
+          </svg>
+        </div>
+        <p class="tafsir">Garis data <b>mengikuti</b> garis lurus acuan —
+          tidak ada penyimpangan ekor.</p>
+        <div class="spss-cara">
+          <b>Khas PLS:</b> SmartPLS tidak menyediakan P-P plot —
+          pakai aplikasi ini sebagai pengganti cepat.
+        </div>
+      </div>
+
+      <div class="kartu-syarat">
+        <div class="kepala">
+          <div>
+            <h4>Bobot tiap item cukup kuat?</h4>
+            <span class="alat">Outer Loading · khas PLS</span>
+          </div>
+          <span class="pita pita-hijau">Aman</span>
+        </div>
+        <div class="kotak-gambar">
+          <svg viewBox="0 0 260 110" style="width:100%;height:96px">
+            <line x1="46" y1="10" x2="46" y2="100" stroke="#E0D8C8" stroke-width="1"/>
+            <line x1="130" y1="10" x2="130" y2="100" stroke="#A85A5A" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="130" y="108" text-anchor="middle" font-size="8.5" fill="#A85A5A">batas 0,70</text>
+            <g font-size="9" fill="#6B6259">
+              <text x="12" y="22">KP1</text><text x="12" y="40">KP2</text>
+              <text x="12" y="58">KP3</text><text x="12" y="76">H1</text>
+              <text x="12" y="94">Y1</text>
+            </g>
+            <g fill="#4E8A5A" opacity=".8">
+              <rect x="46" y="16" width="66" height="9" rx="2"/>
+              <rect x="46" y="34" width="58" height="9" rx="2"/>
+              <rect x="46" y="52" width="72" height="9" rx="2"/>
+              <rect x="46" y="70" width="52" height="9" rx="2"/>
+              <rect x="46" y="88" width="61" height="9" rx="2"/>
+            </g>
+          </svg>
+        </div>
+        <p class="tafsir">Semua batang <b>melewati garis 0,70</b> — tiap item
+          layak mewakili konstruknya.</p>
+        <div class="spss-cara">
+          <b>Di SmartPLS:</b> <span class="kd">Calculate → Outer Loadings</span>.
+          Di bawah 0,70 → item itu perlu diperiksa.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sketsa-note" style="margin:20px 0 0">
+      <b>Rencana grafik lengkap:</b> 6 untuk SPSS (hetero, normalitas,
+      histogram sisa, linearitas, VIF, p-value) + 4 khas PLS (outer loading,
+      AVE, reliabilitas, VIF inner). Yang mulai dikerjakan:
+      <b>heteroskedastisitas + normalitas</b> sesuai ACC Bos.
+      <br><br>
+      ⚠️ <b>Catatan jujur:</b> karena datanya kita <i>buat sendiri</i>,
+      grafik hampir selalu "aman". Supaya mahasiswa tetap belajar mengenali
+      yang rusak, nanti ditambah tombol <b>"buat data sakit"</b> (bareng
+      modul KLINIK).
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

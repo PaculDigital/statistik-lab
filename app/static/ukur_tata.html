@@ -1,0 +1,70 @@
+<!DOCTYPE html><meta charset="utf-8"><title>ukur</title>
+<style>html,body{margin:0;font:14px system-ui}iframe{display:block;border:0}</style>
+<!--
+  Halaman pengukur TATA LETAK.
+
+  ⚠️ PELAJARAN (17Sep26): iframe di sini HARUS mengikuti lebar yang diminta
+  lewat ?lebar=NNN. Sebelum ini iframe dipatok 1264px, sehingga menguji
+  "5 lebar berbeda" sebenarnya menguji SATU lebar yang sama 5 kali —
+  gerbangnya lolos padahal tampilan di lebar lain rusak.
+
+  Cara pakai: /static/ukur_tata.html?lebar=1000
+  Hasil ukur ditulis ke <title> sebagai JSON (TA::...).
+-->
+<iframe id="f"></iframe>
+<script>
+const P = new URLSearchParams(location.search);
+const LEBAR = parseInt(P.get('lebar') || '1264', 10);
+const TINGGI = parseInt(P.get('tinggi') || '1500', 10);
+
+const f = document.getElementById('f');
+f.style.width = LEBAR + 'px';
+f.style.height = TINGGI + 'px';
+
+// ⚠️ WAJIB ADA ?model= (20Sep26) — JANGAN dihapus!
+//    Sejak Tahap 1.4, /buat-data TANPA ?model= SENGAJA dialihkan ke
+//    /kuantitatif (lihat terapkanJalurModel() di buat_data.html). Akibatnya
+//    iframe ini pindah ke halaman KUANTITATIF, lalu pengukur mencari
+//    #x-slider / #x-kurang / #x-tambah di sana — ketiganya TIDAK ADA di
+//    halaman itu → gerbang melaporkan "tombol tidak ditemukan" PADAHAL
+//    tata letaknya sehat. Itu GAGAL PALSU yang menyamar sebagai cacat UI.
+//    ?uji=x8 tetap dipakai untuk menyiapkan keadaan 8 variabel + jejak.
+f.src = '/buat-data?model=sederhana&uji=x8';
+
+f.addEventListener('load', () => {
+  setTimeout(() => {
+    try {
+      const w = f.contentWindow, d = f.contentDocument;
+      const rect = el => { const r = el.getBoundingClientRect();
+        return {x: r.x, y: r.y, w: r.width, h: r.height,
+                cy: r.y + r.height / 2, cx: r.x + r.width / 2}; };
+
+      const kurang = d.getElementById('x-kurang');
+      const tambah = d.getElementById('x-tambah');
+      const slider = d.getElementById('x-slider');
+      const presets = [...d.querySelectorAll('.pilih-kecil')];
+      const nama = [...d.querySelectorAll('.nama-var')];
+
+      const out = {
+        diminta: LEBAR,
+        kurang: kurang ? rect(kurang) : null,
+        tambah: tambah ? rect(tambah) : null,
+        slider: slider ? rect(slider) : null,
+        preset: presets.map(p => ({teks: p.textContent.trim(), ...rect(p)})),
+        namaJumlah: nama.length,
+        namaNilai: nama.map(n => n.value),
+        lebarLayar: w.innerWidth,
+        scrollW: d.documentElement.scrollWidth
+      };
+      if (presets.length) {
+        const cs = w.getComputedStyle(presets[0]);
+        out.preset_arah = cs.flexDirection;
+        out.preset_display = cs.display;
+      }
+      document.title = 'TA::' + JSON.stringify(out);
+    } catch (e) {
+      document.title = 'TA::GALAT ' + e.message;
+    }
+  }, 2500);
+});
+</script>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKETSA — Keterangan Ambang Sig. 0,05 (Kartu Uji t)</title>
+<style>
+  :root{
+    --kertas:#FBF7F0; --kertas-2:#F5EFE5; --kertas-3:#EDE4D6; --putih:#fff;
+    --garis:#E4DACA; --tinta:#3B322A; --tinta-2:#6B6259; --tinta-3:#9A9187;
+    --teal:#0F7367; --teal-terang:#D9EDE8; --hijau:#2F7D4F; --hijau-bg:#E3F1E7;
+    --kuning:#8A6A12; --kuning-bg:#FBF0D4; --merah:#A33B32; --merah-bg:#FBE4E0;
+    --abu-bg:#EFEAE1; --r:14px; --r-s:9px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDE7DC;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--tinta);padding:18px}
+  .bingkai{max-width:420px;margin:0 auto;background:var(--kertas);border-radius:18px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.09)}
+  .tanda-sketsa{text-align:center;font-size:11px;letter-spacing:1.4px;color:var(--tinta-3);margin-bottom:12px;text-transform:uppercase}
+
+  .papan{background:var(--putih);border:1px solid var(--garis);border-radius:var(--r);padding:16px;margin-bottom:14px}
+  .kepala{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .kepala h2{margin:0;font-size:16px}
+  .pita{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--teal-terang);color:var(--teal);font-weight:600}
+  .pita.abu{background:var(--abu-bg);color:var(--tinta-2)}
+
+  /* ── kotak isi angka ── */
+  .isi-angka{display:flex;align-items:center;gap:10px;background:var(--kertas-2);border:1.5px solid var(--garis);border-radius:var(--r-s);padding:10px 12px;margin-bottom:14px}
+  .isi-angka label{font-size:13.5px;font-weight:600}
+  .isi-angka input{width:96px;font:inherit;font-size:17px;font-weight:800;color:var(--teal);text-align:center;border:1.5px solid var(--teal);border-radius:8px;padding:6px 8px;background:#fff}
+  .isi-angka .samar{font-size:11.5px;color:var(--tinta-3);margin-left:auto}
+
+  /* ── GARIS BILANGAN ── */
+  .garis-bilangan{margin:22px 0 6px;position:relative;height:74px}
+  .jalur{position:absolute;top:26px;left:0;right:0;height:9px;border-radius:6px;
+    background:linear-gradient(90deg,#CFE8DA 0%,#CFE8DA 9.9%,#F6DCC8 10%,#F6DCC8 19.9%,#E8E1D6 20%,#E8E1D6 100%)}
+  .batas{position:absolute;top:12px;width:3px;height:37px;background:var(--teal);border-radius:2px}
+  .batas span{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:800;color:var(--teal);white-space:nowrap;background:var(--teal-terang);padding:1px 6px;border-radius:5px}
+  .skala{position:absolute;top:40px;font-size:10px;color:var(--tinta-3);transform:translateX(-50%)}
+  .penanda{position:absolute;top:-8px;transform:translateX(-50%);text-align:center}
+  .tangkai{width:2px;height:34px;background:var(--tinta-2);margin:0 auto}
+  .nilai{font-size:12.5px;font-weight:800;background:var(--tinta);color:#fff;padding:2px 8px;border-radius:6px}
+
+  /* ── kotak jawaban ── */
+  .jawab{border-left:3px solid var(--teal);background:var(--hijau-bg);border-radius:0 var(--r-s) var(--r-s) 0;padding:10px 13px;margin-top:12px}
+  .jawab .besar{font-size:14.5px;font-weight:800}
+  .jawab .ket{font-size:12.5px;color:var(--tinta-2);margin-top:4px}
+  .jawab.kuning{border-color:#C99A22;background:var(--kuning-bg)}
+  .jawab.abu{border-color:#B9B0A4;background:var(--abu-bg)}
+
+  /* ── kartu 3 contoh ── */
+  .tiga{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+  .contoh{border:1px solid var(--garis);border-radius:var(--r-s);padding:8px;text-align:center;background:var(--kertas)}
+  .contoh .angka{font-size:13px;font-weight:800}
+  .contoh .lbl{font-size:10px;margin-top:3px;padding:2px 6px;border-radius:10px;display:inline-block}
+  .hijau{color:var(--hijau);background:var(--hijau-bg)}
+  .kuning2{color:var(--kuning);background:var(--kuning-bg)}
+  .abu2{color:var(--tinta-2);background:var(--abu-bg)}
+
+  /* ── tanda B ── */
+  .baris-tanda{display:flex;gap:8px;margin:10px 0}
+  .tanda-tbl{flex:1;border:1.5px solid var(--garis);border-radius:var(--r-s);padding:9px;text-align:center;background:var(--kertas);font-weight:700;font-size:14px}
+  .tanda-tbl.aktif{border-color:var(--teal);background:var(--teal-terang);color:var(--teal)}
+
+  table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+  table.tbl th,table.tbl td{border:1px solid var(--garis);padding:7px 9px;text-align:left;vertical-align:top}
+  table.tbl th{background:var(--kertas-2);font-size:11.5px}
+  .teori{border:1px solid var(--garis);border-radius:var(--r-s);padding:11px;margin-top:10px;background:var(--kertas)}
+  .teori h4{margin:0 0 5px;font-size:13px;color:var(--teal)}
+  .teori p{margin:0;font-size:12.5px;color:var(--tinta-2);line-height:1.55}
+  .kutip{font-style:italic;color:var(--tinta);border-left:2px solid var(--teal);padding-left:9px;margin:7px 0 0;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="bingkai">
+  <div class="tanda-sketsa">Sketsa · Kartu Uji t · 19 Sep 2026</div>
+
+  <!-- ══════════ BAGIAN 1: SLIDER ══════════ -->
+  <div class="papan">
+    <div class="kepala">
+      <h2>Sebelum membaca hasilmu</h2>
+      <span class="pita">baca ini dulu</span>
+    </div>
+
+    <p style="font-size:13px;color:var(--tinta-2);margin:0 0 12px;line-height:1.6">
+      <strong>Patokan baku: Sig. &lt; 0,05 = signifikan.</strong>
+      Angka Sig. makin <strong>kecil</strong>, buktinya makin <strong>kuat</strong>.
+      Coba masukkan angka Sig. dari SPSS-mu di bawah.
+    </p>
+
+    <div class="isi-angka">
+      <label for="sig">Angka Sig. hasilmu</label>
+      <input id="sig" value="0,008">
+      <span class="samar">ketik atau geser ↓</span>
+    </div>
+
+    <!-- garis bilangan -->
+    <div class="garis-bilangan">
+      <div class="jalur"></div>
+      <div class="batas" style="left:10%"><span>batas 0,05</span></div>
+      <div class="skala" style="left:10%">0,05</div>
+      <div class="skala" style="left:0%">0</div>
+      <div class="skala" style="left:20%">0,10</div>
+      <div class="skala" style="left:50%">0,25</div>
+      <div class="skala" style="left:100%">0,50</div>
+
+      <div class="penanda" id="pn1" style="left:1.6%">
+        <div class="nilai">0,008</div><div class="tangkai"></div>
+      </div>
+    </div>
+
+    <!-- slider -->
+    <div style="margin-top:10px">
+      <input type="range" id="geser" min="0" max="500" value="8" style="width:100%">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tinta-3);margin-top:4px">
+        <span>0,000 (kuat)</span><span>0,05 batas</span><span>0,50 (lemah)</span>
+      </div>
+    </div>
+
+    <div class="jawab" id="kotakjawab">
+      <div class="besar">Sig. 0,008 → SIGNIFIKAN</div>
+      <div class="ket">0,008 <strong>lebih kecil</strong> dari batas 0,05 → pengaruhnya nyata, bukan kebetulan.</div>
+    </div>
+
+    <div style="font-size:11.5px;color:var(--tinta-3);margin-top:9px;line-height:1.5">
+      ⚠️ Ingat yang sering ketuker: <strong>0,5</strong> itu 10× <strong>lebih besar</strong> dari 0,05 —
+      jadi 0,5 jauh di kanan batas. Dan angka Sig. <strong>tidak pernah minus</strong> (selalu 0 s/d 1).
+    </div>
+  </div>
+
+  <!-- ══════════ BAGIAN 2: TANDA MINUS ══════════ -->
+  <div class="papan">
+    <div class="kepala">
+      <h2>Tanda B ( − ) itu BUKAN gagal</h2>
+    </div>
+    <p style="font-size:13px;color:var(--tinta-2);margin:0 0 10px;line-height:1.6">
+      Di tabel SPSS ada <strong>dua kolom berbeda</strong>. Jangan dibaca jadi satu:
+    </p>
+    <table class="tbl">
+      <tr><th>Kolom</th><th>Bisa minus?</th><th>Artinya</th></tr>
+      <tr><td><strong>Sig.</strong></td><td style="color:var(--merah)">Tidak — selalu 0…1</td><td>Peluang kebetulan → <strong>penentu signifikan</strong></td></tr>
+      <tr><td><strong>B</strong></td><td style="color:var(--hijau)">Bisa (− / +)</td><td><strong>Arah</strong> pengaruh (naik / turun) — <strong>bukan</strong> penentu signifikan</td></tr>
+    </table>
+
+    <div class="baris-tanda" style="margin-top:12px">
+      <div class="tanda-tbl">B positif ( + )<br><span style="font-weight:400;font-size:11.5px;color:var(--tinta-2)">arah naik</span></div>
+      <div class="tanda-tbl aktif">B negatif ( − )<br><span style="font-weight:400;font-size:11.5px;color:var(--teal)">arah turun</span></div>
+    </div>
+
+    <div class="jawab" style="border-color:#7BA88C">
+      <div class="besar">−0,368 · Sig. 0,008 → SIGNIFIKAN, arah turun</div>
+      <div class="ket">Ada pengaruh nyata. Makin tinggi X, makin <strong>turun</strong> Y. Tandanya minus, tapi <strong>tetap signifikan</strong>.</div>
+    </div>
+
+    <div class="tiga">
+      <div class="contoh"><div class="angka">−0,368</div><div class="lbl hijau">Sig 0,008 · SAH</div></div>
+      <div class="contoh"><div class="angka">−0,380</div><div class="lbl kuning2">Sig 0,062 · batas</div></div>
+      <div class="contoh"><div class="angka">−0,115</div><div class="lbl abu2">Sig 0,310 · tidak</div></div>
+    </div>
+    <p style="font-size:11.5px;color:var(--tinta-3);margin:9px 0 0">
+      Ketiganya <strong>minus semua</strong> — tapi nasibnya beda. Yang menentukan <strong>Sig.</strong>, bukan tandanya.
+    </p>
+  </div>
+
+  <!-- ══════════ BAGIAN 3: TEORI ══════════ -->
+  <div class="papan">
+    <div class="kepala">
+      <h2>Kenapa 0,05? Dari mana angka itu?</h2>
+    </div>
+
+    <div class="teori">
+      <h4>① R. A. Fisher (1925) — asalnya</h4>
+      <p>Dalam <em>Statistical Methods for Research Workers</em>, Fisher mengusulkan patokan
+      <strong>“1 dari 20” (0,05)</strong> sebagai alat bantu kerja agar peneliti tidak bingung
+      menentukan batas.</p>
+      <p class="kutip">“Batas 0,05 itu hanya kebiasaan — tidak ada dasar ilmiah untuk memilih
+      0,05 dibanding 0,06.”<br><span style="font-style:normal;font-size:11px;color:var(--tinta-3)">— R. A. Fisher</span></p>
+    </div>
+
+    <div class="teori">
+      <h4>② Amrhein, Greenland &amp; McShane (2019, <em>Nature</em>) — cara pakainya</h4>
+      <p>Ditandatangani 800+ ilmuwan: <strong>0,05 bukan tembok “ada / tidak ada pengaruh”.</strong>
+      Angka 0,049 dan 0,051 hampir sama saja. Nilai p juga <strong>tidak mengukur seberapa besar</strong>
+      pengaruhnya — hanya seberapa kuat buktinya.</p>
+    </div>
+
+    <p style="font-size:12.5px;color:var(--tinta-2);margin:12px 0 6px;line-height:1.6">
+      <strong>Karena itu: ambang ikut bidang penelitian.</strong>
+    </p>
+    <table class="tbl">
+      <tr><th>Bidang</th><th>Ambang lazim</th></tr>
+      <tr><td>Ekonomi, sosial, pendidikan (skripsi/tesis)</td><td><strong>0,05</strong></td></tr>
+      <tr><td>Kedokteran / uji klinis</td><td><strong>0,01</strong></td></tr>
+      <tr><td>Eksplorasi / uji pendahuluan</td><td><strong>0,10</strong></td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--tinta-2);margin:10px 0 0;line-height:1.6">
+      <strong>0,05 itu kesepakatan lapangan, bukan angka dari langit.</strong>
+      Yang salah bukan angkanya — yang salah kalau kamu <strong>geser ambangnya supaya hasilmu
+      kelihatan signifikan</strong>.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  var inp = document.getElementById('sig');
+  var ges = document.getElementById('geser');
+  var pn  = document.getElementById('pn1');
+  var kj  = document.getElementById('kotakjawab');
+
+  function gambar(v){
+    // v = angka Sig. (0 … 0.50)
+    var persen = Math.max(0, Math.min(100, (v / 0.50) * 100));
+    pn.style.left = persen + '%';
+    pn.querySelector('.nilai').textContent = v.toFixed(3).replace('.', ',');
+    var besar, ket, kelas = '';
+    if (v < 0.05) {
+      besar = 'Sig. ' + v.toFixed(3).replace('.', ',') + ' → SIGNIFIKAN';
+      ket = v.toFixed(3).replace('.', ',') + ' <strong>lebih kecil</strong> dari batas 0,05 → pengaruhnya nyata, bukan kebetulan.';
+    } else if (v <= 0.10) {
+      besar = 'Sig. ' + v.toFixed(3).replace('.', ',') + ' → MARGINAL';
+      ket = 'Hasilnya <strong>di batas</strong> (0,05–0,10). Perlu dibahas hati-hati — jangan dipaksa.';
+      kelas = ' kuning';
+    } else {
+      besar = 'Sig. ' + v.toFixed(3).replace('.', ',') + ' → TIDAK SIGNIFIKAN';
+      ket = v.toFixed(3).replace('.', ',') + ' <strong>lebih besar</strong> dari batas 0,05 → belum cukup bukti. Tandanya juga belum bisa dipakai.';
+      kelas = ' abu';
+    }
+    kj.className = 'jawab' + kelas;
+    kj.innerHTML = '<div class="besar">' + besar + '</div><div class="ket">' + ket + '</div>';
+  }
+
+  ges.addEventListener('input', function(){
+    var v = this.value / 1000;
+    inp.value = v.toFixed(3).replace('.', ',');
+    gambar(v);
+  });
+  inp.addEventListener('input', function(){
+    var v = parseFloat(this.value.replace(',', '.'));
+    if (isNaN(v)) return;
+    v = Math.max(0, Math.min(0.50, v));
+    ges.value = Math.round(v * 1000);
+    gambar(v);
+  });
+  gambar(0.008);
+</script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN PERIKSA SYARAT — grafik uji asumsi (ACC Bos 18Sep26, pilihan A)
+  ────────────────────────────────────────────────────────────────────────
+  MENGAPA HALAMAN INI ADA:
+  Di SPSS, semua grafik ini tersembunyi di Analyze → Regression → Plots.
+  Mahasiswa sering LUPA atau TIDAK TAHU cara membacanya. Halaman ini
+  menunjukkan grafik + kalimat tafsirnya + cara mengecek sendiri di SPSS.
+  Jadi bukan tandingan SPSS — ini JEMBATAN ke SPSS.
+
+  ⚠️ KEPUTUSAN BOS: tampilkan DUA-DUANYA — grafik SPSS dan yang khas PLS.
+  Tujuan Bos: mahasiswa tahu kapan pakai SPSS, kapan pakai SmartPLS.
+
+  ⚠️ CATATAN JUJUR (ditaruh APA ADANYA di halaman, bukan disembunyikan):
+  Karena datanya kita BUAT SENDIRI, grafik hampir selalu "aman". Supaya
+  mahasiswa tetap belajar mengenali yang RUSAK, nanti ditambah tombol
+  "buat data sakit" bareng modul DIAGNOSIS DATA.
+
+  ⚠️ ISI UJI: halaman ini BELUM menghitung dari data yang sedang aktif.
+  Grafiknya masih contoh tetap (contoh corong, contoh normal). Sambungan
+  ke data nyata dikerjakan setelah mesin di /buat-data selesai disambung.
+#}
+
+{% block isi %}
+
+<span class="eyebrow">{{ ikon('activity', 13) }} Periksa Syarat</span>
+<h1 style="margin:8px 0 10px">Sudah memenuhi syarat atau belum?</h1>
+<p class="besar" style="max-width:700px;margin-bottom:8px">
+  Sebelum hasil regresi dipakai, ada beberapa syarat yang sebaiknya
+  diperiksa dulu. Halaman ini menunjukkan <strong>gambarnya</strong> dan
+  <strong>cara membacanya</strong> — sama seperti di SPSS dan SmartPLS.
+</p>
+<p class="samar" style="font-size:13px;margin-bottom:8px">
+  Setiap grafik dilengkapi: gambar, tafsir, dan langkah mengeceknya sendiri.
+  Mau memahami istilahnya lebih dulu? Buka
+  <a href="/belajar" style="color:var(--teal)">BELAJAR</a>.
+</p>
+
+<div class="kartu" style="margin:18px 0 26px;border-left:3px solid var(--amber)">
+  <span class="eyebrow amber">{{ ikon('info', 13) }} Satu hal penting</span>
+  <p style="color:var(--tinta-2);font-size:13.5px;line-height:1.75;margin:9px 0 0">
+    Grafik di bawah berasal dari data yang <strong>kamu buat sendiri</strong>
+    di halaman BUAT DATA. Karena itu hasilnya biasanya <strong>aman</strong> —
+    memang dirancang begitu. Untuk belajar mengenali data yang
+    <strong>bermasalah</strong>, tunggu tombol "buat data sakit" yang sedang
+    disiapkan bersama modul DIAGNOSIS DATA.
+  </p>
+</div>
+
+<h2 style="font-size:17px;margin:0 0 4px">A. Dipakai di SPSS dan SmartPLS</h2>
+<p class="samar" style="font-size:13px;margin:0 0 16px">
+  Syarat dasar yang berlaku di kedua alat.
+</p>
+
+<div class="grid-syarat">
+
+  {# ── 1. HETEROSKEDASTISITAS ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Sisa tersebar rata?</h4>
+        <span class="alat">Heteroskedastisitas · kode grafik di SPSS: ZPRED &times; ZRESID</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="26" y1="96" x2="250" y2="96" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="26" y1="96" x2="26" y2="8" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="26" y1="52" x2="250" y2="52" stroke="#EDE6D8" stroke-width="1" stroke-dasharray="3 3"/>
+        <g fill="#2E7D6F" opacity=".55">
+          <circle cx="42" cy="45" r="2.5"/><circle cx="50" cy="59" r="2.5"/>
+          <circle cx="58" cy="43" r="2.5"/><circle cx="66" cy="61" r="2.5"/>
+          <circle cx="74" cy="51" r="2.5"/><circle cx="82" cy="41" r="2.5"/>
+          <circle cx="90" cy="63" r="2.5"/><circle cx="98" cy="47" r="2.5"/>
+          <circle cx="106" cy="57" r="2.5"/><circle cx="114" cy="43" r="2.5"/>
+          <circle cx="122" cy="61" r="2.5"/><circle cx="130" cy="50" r="2.5"/>
+          <circle cx="138" cy="41" r="2.5"/><circle cx="146" cy="59" r="2.5"/>
+          <circle cx="154" cy="46" r="2.5"/><circle cx="162" cy="63" r="2.5"/>
+          <circle cx="170" cy="44" r="2.5"/><circle cx="178" cy="57" r="2.5"/>
+          <circle cx="186" cy="47" r="2.5"/><circle cx="194" cy="61" r="2.5"/>
+          <circle cx="202" cy="42" r="2.5"/><circle cx="210" cy="59" r="2.5"/>
+          <circle cx="218" cy="50" r="2.5"/><circle cx="228" cy="45" r="2.5"/>
+        </g>
+        <text x="70" y="112" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai prediksi (ZPRED)</text>
+        <text x="16" y="55" font-size="8.5" fill="#9A9086" text-anchor="middle" transform="rotate(-90 16 55)">sisa (ZRESID)</text>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> perhatikan lebarnya sebaran titik dari
+      kiri ke kanan. Di sini lebarnya <strong>tetap</strong> — tidak meluber
+      dan tidak menyempit. Itu artinya sisa (selisih antara nilai sebenarnya
+      dan nilai dugaan) <strong>rata</strong>, jadi syarat terpenuhi.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong> (heteroskedastisitas), sebarannya
+      makin meluber seperti <strong>corong</strong>. Akibatnya uji
+      signifikansi jadi tidak bisa dipercaya. Dua jalan keluar: pakai
+      <em>robust standard error</em>, atau ubah data dengan logaritma.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SPSS → <span class="kd">Analyze</span> → <span class="kd">Regression</span>
+      → <span class="kd">Linear</span> → tombol <span class="kd">Plots</span>
+      → pindahkan <span class="kd">ZPRED</span> ke kotak X dan
+      <span class="kd">ZRESID</span> ke kotak Y → OK.<br>
+      SmartPLS → <span class="kd">Calculate</span> → periksa
+      <span class="kd">Residuals</span> / diagram sebaran sisa.
+    </div>
+  </div>
+
+  {# ── 2. NORMALITAS ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Sisa menyebar normal?</h4>
+        <span class="alat">Normalitas · kode grafik di SPSS: Normal P-P Plot</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="34" y1="98" x2="244" y2="12" stroke="#E0D8C8" stroke-width="1.4"/>
+        <g fill="#2E7D6F" opacity=".6">
+          <circle cx="48" cy="90" r="2.4"/><circle cx="62" cy="86" r="2.4"/>
+          <circle cx="78" cy="78" r="2.4"/><circle cx="94" cy="72" r="2.4"/>
+          <circle cx="108" cy="66" r="2.4"/><circle cx="124" cy="58" r="2.4"/>
+          <circle cx="140" cy="52" r="2.4"/><circle cx="154" cy="45" r="2.4"/>
+          <circle cx="170" cy="38" r="2.4"/><circle cx="186" cy="31" r="2.4"/>
+          <circle cx="202" cy="25" r="2.4"/><circle cx="216" cy="19" r="2.4"/>
+        </g>
+        <text x="132" y="113" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai sisa yang teramati</text>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> titik-titik harus
+      <strong>menempel</strong> pada garis diagonal. Di sini titiknya rapi
+      mengikuti garis, tidak ada yang membelok jauh di ujung. Artinya sisa
+      menyebar <strong>normal</strong> — aman untuk uji hipotesis.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong>, titik-titik di ujung (kiri bawah
+      atau kanan atas) akan <strong>membelok menjauh</strong> dari garis —
+      bentuknya melengkung seperti huruf S. Penyebab paling umum: ada
+      pencilan (data yang jauh berbeda) atau data terlalu miring ke satu sisi.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SPSS → <span class="kd">Analyze</span> → <span class="kd">Regression</span>
+      → <span class="kd">Linear</span> → <span class="kd">Plots</span>
+      → centang <span class="kd">Normal probability plot</span> → OK.<br>
+      Uji formal: <span class="kd">Kolmogorov-Smirnov</span> atau
+      <span class="kd">Shapiro-Wilk</span> pada nilai sisa.
+    </div>
+  </div>
+
+  {# ── 3. LINEARITAS ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Bentuknya memang garis lurus?</h4>
+        <span class="alat">Linearitas · berlaku SPSS &amp; PLS</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="26" y1="100" x2="250" y2="100" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="26" y1="100" x2="26" y2="8" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="30" y1="94" x2="244" y2="14" stroke="#4E8A5A" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <g fill="#2E7D6F" opacity=".55">
+          <circle cx="44" cy="88" r="2.5"/><circle cx="60" cy="84" r="2.5"/>
+          <circle cx="74" cy="80" r="2.5"/><circle cx="90" cy="70" r="2.5"/>
+          <circle cx="104" cy="68" r="2.5"/><circle cx="120" cy="60" r="2.5"/>
+          <circle cx="136" cy="54" r="2.5"/><circle cx="150" cy="46" r="2.5"/>
+          <circle cx="166" cy="42" r="2.5"/><circle cx="182" cy="34" r="2.5"/>
+          <circle cx="198" cy="28" r="2.5"/><circle cx="214" cy="22" r="2.5"/>
+          <circle cx="230" cy="16" r="2.5"/>
+        </g>
+        <text x="132" y="113" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai X &amp; nilai Y yang teramati</text>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> kalau titik-titiknya mengumpul mengikuti
+      satu <strong>garis lurus</strong> (garis putus-putus hijau), hubungannya
+      linear. Regresi linear hanya sah dipakai kalau bentuknya memang garis —
+      bukan melengkung.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong>, titiknya membentuk <strong>lengkung
+      atau huruf U</strong>. Solusinya: jangan pakai regresi linear untuk
+      hubungan seperti itu — hubungannya memang tidak lurus.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SPSS → <span class="kd">Graphs</span> → <span class="kd">Legacy Dialogs</span>
+      → <span class="kd">Scatter/Dot</span> → <span class="kd">Simple Scatter</span>
+      → taruh X di baris, Y di kolom → OK.<br>
+      Uji formal: <span class="kd">Test for Linearity</span> (menu Compare Means → Means).
+    </div>
+  </div>
+
+  {# ── 4. MULTIKOLINEARITAS / VIF ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Antar variabel tidak terlalu mirip?</h4>
+        <span class="alat">Multikolinearitas / VIF · berlaku SPSS &amp; PLS</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="46" y1="10" x2="46" y2="102" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="130" y1="10" x2="130" y2="102" stroke="#B5762A" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <line x1="196" y1="10" x2="196" y2="102" stroke="#A85A5A" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="130" y="113" font-size="8" fill="#B5762A" text-anchor="middle">perhatian 5</text>
+        <text x="214" y="113" font-size="8" fill="#A85A5A" text-anchor="middle">bahaya 10</text>
+        <g font-size="9" fill="#6B6259">
+          <text x="10" y="24">X1</text><text x="10" y="46">X2</text>
+          <text x="10" y="68">X3</text><text x="10" y="90">X4</text>
+        </g>
+        <g fill="#4E8A5A" opacity=".8">
+          <rect x="46" y="17" width="52" height="10" rx="2"/>
+          <rect x="46" y="39" width="44" height="10" rx="2"/>
+          <rect x="46" y="61" width="30" height="10" rx="2"/>
+          <rect x="46" y="83" width="56" height="10" rx="2"/>
+        </g>
+        <g font-size="8" fill="#4E8A5A">
+          <text x="104" y="25">1,3</text><text x="96" y="47">1,2</text>
+          <text x="82" y="69">1,1</text><text x="108" y="91">1,4</text>
+        </g>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> ini nilai VIF tiap variabel bebas.
+      Makin <strong>tinggi</strong> batangnya, makin mirip variabel itu dengan
+      variabel bebas lain — dan makin sulit mesin membedakan pengaruh
+      masing-masing. Di bawah <strong>5</strong> masih aman.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong> (VIF di atas <strong>10</strong>),
+      koefisiennya bisa berubah arah atau hilang signifikansinya tanpa sebab
+      jelas. Solusinya: gabungkan variabel yang mirip, atau buang salah satunya.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SPSS → <span class="kd">Analyze</span> → <span class="kd">Regression</span>
+      → <span class="kd">Linear</span> → tombol <span class="kd">Statistics</span>
+      → centang <span class="kd">Collinearity diagnostics</span> → lihat kolom
+      <span class="kd">VIF</span>.<br>
+      SmartPLS: nilai VIF muncul di <span class="kd">Quality Criteria</span>.
+    </div>
+  </div>
+
+</div>
+
+<h2 style="font-size:17px;margin:30px 0 4px">B. Khas SmartPLS</h2>
+<p class="samar" style="font-size:13px;margin:0 0 16px">
+  Syarat tambahan kalau datamu diolah dengan <strong>PLS-SEM</strong>
+  (SmartPLS) — bukan di SPSS.
+</p>
+
+<div class="grid-syarat">
+
+  {# ── 5. OUTER LOADING ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Bobot tiap item cukup kuat?</h4>
+        <span class="alat">Outer Loading · khas PLS</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="46" y1="10" x2="46" y2="102" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="130" y1="10" x2="130" y2="102" stroke="#A85A5A" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="135" y="113" font-size="8" fill="#A85A5A" text-anchor="middle">batas 0,70</text>
+        <g font-size="9" fill="#6B6259">
+          <text x="8" y="24">KP1</text><text x="8" y="46">KP2</text>
+          <text x="8" y="68">H1</text><text x="8" y="90">Y1</text>
+        </g>
+        <g fill="#4E8A5A" opacity=".8">
+          <rect x="46" y="17" width="70" height="10" rx="2"/>
+          <rect x="46" y="39" width="60" height="10" rx="2"/>
+          <rect x="46" y="61" width="76" height="10" rx="2"/>
+          <rect x="46" y="83" width="64" height="10" rx="2"/>
+        </g>
+        <g font-size="8" fill="#4E8A5A">
+          <text x="120" y="25">0,82</text><text x="110" y="47">0,76</text>
+          <text x="126" y="69">0,88</text><text x="114" y="91">0,79</text>
+        </g>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> tiap <strong>item pertanyaan</strong>
+      kuesionermu diukur seberapa kuat ia mewakili variabelnya. Kalau batangnya
+      melewati garis <strong>0,70</strong>, item itu layak dipakai. Semua item
+      di sini lolos — berarti kuesionermu konsisten.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong>, ada item di bawah <strong>0,70</strong>
+      — artinya pertanyaan itu tidak sejalan dengan pertanyaan lain di
+      kelompoknya. Biasanya perlu diperbaiki kalimatnya, atau dibuang.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SmartPLS → <span class="kd">Calculate</span> → buka
+      <span class="kd">Outer Loadings</span>. Di SPSS tidak ada padanannya —
+      SPSS memakai skor total, bukan per-item seperti ini.
+    </div>
+  </div>
+
+  {# ── 6. AVE ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Rata-rata item mampu mewakili variabelnya?</h4>
+        <span class="alat">AVE · khas PLS</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="46" y1="10" x2="46" y2="102" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="112" y1="10" x2="112" y2="102" stroke="#B5762A" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="118" y="113" font-size="8" fill="#B5762A" text-anchor="middle">batas 0,50</text>
+        <g font-size="9" fill="#6B6259">
+          <text x="8" y="32">KP</text><text x="8" y="58">Harga</text>
+          <text x="8" y="84">Y</text>
+        </g>
+        <g fill="#4E8A5A" opacity=".8">
+          <rect x="46" y="24" width="86" height="12" rx="2"/>
+          <rect x="46" y="50" width="76" height="12" rx="2"/>
+          <rect x="46" y="76" width="92" height="12" rx="2"/>
+        </g>
+        <g font-size="8" fill="#4E8A5A">
+          <text x="136" y="33">0,61</text><text x="126" y="59">0,57</text>
+          <text x="142" y="85">0,64</text>
+        </g>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> AVE = rata-rata seberapa besar item
+      mampu mewakili variabelnya. Batasnya <strong>0,50</strong>. Kalau semua
+      batang melewati garis itu, variabelmu sudah menerangkan isinya sendiri
+      dengan baik.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong> (AVE di bawah 0,50), ada item yang
+      tidak nyambung dengan kelompoknya. Sama seperti outer loading — item
+      itu yang perlu diperiksa dulu.
+    </p>
+    <div class="spss-cara">
+      <strong>Cara cek sendiri:</strong><br>
+      SmartPLS → <span class="kd">Calculate</span> → buka
+      <span class="kd">Quality Criteria</span> → lihat kolom
+      <span class="kd">AVE</span>. Bukan angka yang ada di SPSS.
+    </div>
+  </div>
+
+  {# ── 7. RELIABILITAS ── #}
+  <div class="kartu-syarat">
+    <div class="kepala">
+      <div>
+        <h4>Jawaban orang konsisten?</h4>
+        <span class="alat">Reliabilitas · SPSS: Cronbach's Alpha · PLS: Composite Reliability</span>
+      </div>
+      <span class="pita pita-hijau">Aman</span>
+    </div>
+    <div class="kotak-gambar">
+      <svg viewBox="0 0 260 118" style="width:100%;height:110px">
+        <line x1="46" y1="10" x2="46" y2="102" stroke="#E0D8C8" stroke-width="1"/>
+        <line x1="140" y1="10" x2="140" y2="102" stroke="#B5762A" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="146" y="113" font-size="8" fill="#B5762A" text-anchor="middle">batas 0,70</text>
+        <g font-size="9" fill="#6B6259">
+          <text x="8" y="32">Alpha</text><text x="8" y="58">CR</text>
+        </g>
+        <g fill="#4E8A5A" opacity=".8">
+          <rect x="46" y="24" width="106" height="12" rx="2"/>
+          <rect x="46" y="50" width="112" height="12" rx="2"/>
+        </g>
+        <g font-size="8" fill="#4E8A5A">
+          <text x="156" y="33">0,85</text><text x="162" y="59">0,88</text>
+        </g>
+        <text x="132" y="80" font-size="8.5" fill="#9A9086" text-anchor="middle">
+          makin tinggi = jawaban makin seirama
+        </text>
+      </svg>
+    </div>
+    <p class="tafsir">
+      <strong>Bacanya begini:</strong> dua-duanya mengukur hal yang sama —
+      <strong>seberapa seirama</strong> jawaban orang pada pertanyaan satu
+      kelompok. Batasnya <strong>0,70</strong>. Di sini 0,85 dan 0,88, jadi
+      kuesionermu tergolong <strong>konsisten</strong>.
+    </p>
+    <p class="tafsir hati">
+      <strong>Kalau bermasalah</strong> (di bawah 0,70), jawaban orang
+      cenderung tidak seirama — soal-soalnya mungkin membingungkan, atau
+      memang menanyakan hal yang berbeda-beda.
+    </p>
+    <div class="spss-cara">
+      <strong>Di SPSS:</strong> <span class="kd">Analyze</span> →
+      <span class="kd">Scale</span> → <span class="kd">Reliability Analysis</span>
+      → lihat <span class="kd">Cronbach's Alpha</span>.<br>
+      <strong>Di SmartPLS:</strong> <span class="kd">Composite Reliability</span>
+      (sedikit berbeda rumusnya, tapi cara bacanya sama).
+    </div>
+  </div>
+
+  {# ── 8. PLS: yang BELUM tersedia — jujur ── #}
+  <div class="kartu-syarat" style="border-style:dashed;opacity:.85">
+    <div class="kepala">
+      <div>
+        <h4>Masih disiapkan</h4>
+        <span class="alat">Khas PLS lanjutan</span>
+      </div>
+      <span class="pita pita-abu">{{ ikon('timer', 11) }} nanti</span>
+    </div>
+    <p style="color:var(--tinta-2);font-size:13px;line-height:1.75;margin:4px 0 0">
+      Tiga pemeriksaan berikut belum ada, karena butuh perhitungan baru
+      (bukan sekadar menggambar):
+    </p>
+    <ul style="color:var(--tinta-2);font-size:13px;line-height:1.85;
+               margin:10px 0 0;padding-left:20px">
+      <li><strong>HTMT</strong> — memastikan dua variabel benar-benar berbeda,
+          bukan kembar</li>
+      <li><strong>Q² / PLSpredict</strong> — mengukur daya prediksi model</li>
+      <li><strong>SRMR</strong> — mengukur kecocokan model secara keseluruhan</li>
+    </ul>
+    <p class="samar" style="font-size:12.5px;margin:11px 0 0">
+      Sementara ini, ketiganya bisa dilihat langsung di SmartPLS.
+    </p>
+  </div>
+
+</div>
+
+<div class="kartu" style="margin-top:26px">
+  <span class="eyebrow">{{ ikon('lightbulb', 13) }} Kapan pakai yang mana?</span>
+  <div class="dua-kolom" style="margin-top:12px">
+    <div>
+      <p style="font-weight:650;font-size:14px;margin:0 0 6px">SPSS</p>
+      <p style="color:var(--tinta-2);font-size:13px;line-height:1.75;margin:0">
+        Kalau jumlah responden <strong>kecil–sedang</strong> dan modelnya
+        <strong>sederhana</strong> (regresi, mediasi, moderasi). Analisisnya
+        berdasarkan kovarians.
+      </p>
+    </div>
+    <div>
+      <p style="font-weight:650;font-size:14px;margin:0 0 6px">SmartPLS</p>
+      <p style="color:var(--tinta-2);font-size:13px;line-height:1.75;margin:0">
+        Kalau modelnya <strong>banyak variabel &amp; indikator</strong>,
+        atau responden <strong>tidak terlalu banyak</strong>. Analisisnya
+        berdasarkan varians — tidak menuntut data normal.
+      </p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:22px">
+  <a href="/kuantitatif" class="tb tb-sekunder">{{ ikon('arrow-left', 15) }} Kembali ke pilih model</a>
+  <a href="/belajar" class="tb tb-utama" style="margin-left:9px">{{ ikon('book-open', 15) }} Pahami istilahnya</a>
+</p>
+
+{% endblock %}

@@ -1,0 +1,78 @@
+<!DOCTYPE html><meta charset="utf-8"><title>belum</title>
+<style>html,body{margin:0}iframe{border:0;display:block}</style>
+<iframe id="f"></iframe>
+<script>
+const LEBAR = new URLSearchParams(location.search).get('w') || '375';
+const JALUR = new URLSearchParams(location.search).get('p') || '/';
+const f = document.getElementById('f');
+f.style.width = LEBAR + 'px';
+f.style.height = '2000px';
+f.src = JALUR;
+
+// Elemen di dalam wadah yang MEMANG boleh discroll horizontal (nav, stepper,
+// kamus) BUKAN masalah — jangan dihitung. Yang dihitung: elemen yang memaksa
+// SELURUH HALAMAN melebar.
+function diDalamGulir(el, win) {
+  let p = el.parentElement;
+  while (p) {
+    const g = win.getComputedStyle(p);
+    if (g.overflowX === 'auto' || g.overflowX === 'scroll') return true;
+    p = p.parentElement;
+  }
+  return false;
+}
+
+f.onload = () => setTimeout(() => {
+  try {
+    const d = f.contentDocument, win = f.contentWindow;
+    const w = win.innerWidth;
+
+    // 1. GESER = halaman lebih lebar dari layar (masalah nyata)
+    const geserKanan = d.documentElement.scrollWidth - w;
+
+    // 2. Elemen keluar layar — ABAIKAN yang ada di dalam wadah bergulir
+    let jumlahLebar = 0, contohLebar = '';
+    d.querySelectorAll('*').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return;
+      if (diDalamGulir(el, win)) return;
+      if (r.right > w + 1.5) {
+        jumlahLebar++;
+        if (!contohLebar) contohLebar = el.tagName.toLowerCase() +
+          '(' + (el.className || '').toString().slice(0, 16) + ')' + Math.round(r.width);
+      }
+    });
+
+    // 3. Teks < 13px
+    let jumlahKecil = 0, contohKecil = '';
+    d.querySelectorAll('p,span,div,td,th,li,label,small,strong,em').forEach(el => {
+      if (!el.textContent.trim()) return;
+      if (el.children.length && el.childNodes.length === 1) return;
+      const px = parseFloat(win.getComputedStyle(el).fontSize);
+      if (px && px < 12.9) {
+        jumlahKecil++;
+        if (!contohKecil) contohKecil = el.tagName.toLowerCase() + Math.round(px) +
+          'px=' + el.textContent.trim().slice(0, 20);
+      }
+    });
+
+    // 4. Tombol < 44px
+    let jumlahSempit = 0, contohSempit = '';
+    d.querySelectorAll('button,input,select,[role=button]').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      if (win.getComputedStyle(el).display === 'none') return;
+      if (r.height < 44) {
+        jumlahSempit++;
+        if (!contohSempit) contohSempit = el.tagName.toLowerCase() + Math.round(r.height) +
+          'px=' + (el.textContent || '').trim().slice(0, 18);
+      }
+    });
+
+    document.title = 'W=' + w + ' GESER=' + geserKanan +
+                     ' LEBAR=' + jumlahLebar + '[' + contohLebar + ']' +
+                     ' KECIL=' + jumlahKecil + '[' + contohKecil + ']' +
+                     ' SEMPIT=' + jumlahSempit + '[' + contohSempit + ']';
+  } catch (e) { document.title = 'ERR=' + (e && e.message); }
+}, 1800);
+</script>

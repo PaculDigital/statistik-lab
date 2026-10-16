@@ -1,0 +1,39 @@
+{% extends 'dasar.html' %}
+{% block isi %}
+
+<div style="max-width:720px">
+  <span class="eyebrow amber">{{ ikon('timer', 13) }} Modul belum siap</span>
+  <h1>{{ judul }}</h1>
+  {% if m %}<p class="besar">{{ m.ringkas }}</p>{% endif %}
+</div>
+
+<div class="kartu renggang" style="max-width:720px">
+  <span class="eyebrow">{{ ikon('workflow', 13) }} Rencananya</span>
+  <p style="margin-bottom:0">
+    Modul ini sedang disiapkan. Semua modul dibangun bertahap supaya
+    masing-masing benar-benar matang sebelum ditambah yang berikutnya.
+  </p>
+  {% if slug == 'klinik' %}
+  <div class="catatan renggang">
+    {{ ikon('info', 16) }}
+    <div>Unggah <strong>data lapangan</strong> (SPSS <code>.sav</code>,
+    Excel, <code>.csv</code>) lalu alat ini memeriksa 10 hal: konsistensi jawaban,
+    validitas, normalitas, multikolinearitas, heteroskedastisitas, outlier,
+    data kosong, jawaban asal, jumlah responden — dan menghitung ulang hasilnya
+    untuk dibandingkan dengan yang kamu laporkan.</div>
+  </div>
+  {% elif slug == 'ujian' %}
+  <div class="catatan renggang">
+    {{ ikon('info', 16) }}
+    <div>Soal statistik yang bisa dikerjakan <strong>individual</strong> atau
+    <strong>kelompok</strong>, dengan penilaian otomatis dan kunci rubrik.</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="baris renggang-b">
+  <a href="/" class="tb tb-sekunder">{{ ikon('arrow-left', 15) }} Kembali ke beranda</a>
+  <a href="/belajar" class="tb tb-utama">{{ ikon('book-open', 15) }} Belajar dulu</a>
+</div>
+
+{% endblock %}

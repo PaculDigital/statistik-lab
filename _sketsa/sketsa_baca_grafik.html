@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SKETSA — Tab 3 "Baca Grafik" di BELAJAR</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   SKETSA (bukan aplikasi). Gaya disalin dari :
+     app/static/gaya.css  →  :root (warna), .pita-tab, .kartu-syarat,
+                              .grid-syarat, .kotak-gambar, .tafsir, .spss-cara
+   Tujuan: Bos melihat BENTUK ASLINYA, bukan gambar karangan.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  --kertas:#FBF7F0; --kertas-2:#FFFDF9; --kertas-3:#F1EAE0;
+  --tinta:#3A342E; --tinta-2:#5E574F; --tinta-3:#9A9086;
+  --garis:#E7DECF; --teal:#2E7D6F; --teal-terang:#E4F1EE;
+  --hijau:#4E8A5A; --hijau-terang:#EDF5EC;
+  --amber:#B5762A; --amber-terang:#FBF2E4;
+  --merah:#A85A5A; --merah-terang:#FAEFEF;
+  --r:16px; --r-s:11px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:22px 16px 60px;
+  background:var(--kertas); color:var(--tinta);
+  font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+  font-size:15px; line-height:1.6;
+}
+.bungkus{max-width:760px;margin:0 auto}
+
+/* ── penanda "ini sketsa" (HANYA di sketsa, tidak ikut ke aplikasi) ── */
+.penanda{
+  background:var(--amber-terang); border:1px dashed var(--amber);
+  border-radius:var(--r-s); padding:11px 14px; margin:0 0 20px;
+  font-size:12.5px; color:#7A5316; line-height:1.6;
+}
+.penanda b{color:#5E3F0E}
+
+h1{font-size:23px;margin:0 0 6px}
+h2{font-size:17px;margin:26px 0 12px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--teal);
+}
+.eyebrow.amber{color:var(--amber)}
+.besar{font-size:15.5px;color:var(--tinta-2)}
+.samar{color:var(--tinta-3);font-size:13px}
+
+/* ══════ PITA TAB — gaya asli proyek (gaya.css:1523) ══════ */
+.pita-tab{
+  display:flex; gap:6px; flex-wrap:wrap;
+  border-bottom:1.5px solid var(--garis); margin:18px 0 22px;
+}
+.pita-tab a{
+  display:flex; align-items:center; gap:8px;
+  padding:11px 16px 12px; font-size:14px; font-weight:650;
+  color:var(--tinta-2); text-decoration:none;
+  border-bottom:2.5px solid transparent; margin-bottom:-1.5px;
+  cursor:pointer;
+}
+.pita-tab a.aktif{color:var(--teal);border-bottom-color:var(--teal)}
+.pita-tab .biji{
+  font-size:11px;background:var(--kertas-3);color:var(--tinta-2);
+  border-radius:20px;padding:2px 8px;font-weight:700;
+}
+.pita-tab a.aktif .biji{background:var(--teal-terang);color:var(--teal)}
+.pita-tab .baru{
+  font-size:10px;background:var(--hijau);color:#fff;
+  border-radius:20px;padding:2px 7px;font-weight:700;letter-spacing:.03em;
+}
+
+/* ══════ KARTU GRAFIK — gaya asli (gaya.css:1114) ══════ */
+.grid-syarat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:640px){.grid-syarat{grid-template-columns:1fr}}
+.kartu-syarat{
+  display:flex;flex-direction:column;
+  background:var(--kertas-2);border:1.5px solid var(--garis);
+  border-radius:var(--r);padding:17px 17px 15px;
+}
+.kartu-syarat .kepala{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;margin-bottom:12px;
+}
+.kartu-syarat h4{margin:0 0 3px;font-size:15px}
+.kartu-syarat .alat{display:block;font-size:11.5px;color:var(--tinta-3);line-height:1.5}
+.pita{
+  flex:0 0 auto;font-size:11px;font-weight:700;border-radius:20px;
+  padding:3px 10px;display:inline-flex;align-items:center;gap:5px;
+}
+.pita-hijau{background:var(--hijau-terang);color:var(--hijau)}
+.pita-abu{background:var(--kertas-3);color:var(--tinta-3)}
+.kotak-gambar{
+  background:var(--kertas);border:1px solid var(--garis);
+  border-radius:var(--r-s);padding:8px 10px;margin:0 0 12px;
+}
+.kotak-gambar svg{display:block;width:100%;height:110px}
+.tafsir{
+  font-size:13px;line-height:1.72;color:var(--tinta-2);
+  background:var(--hijau-terang);border-radius:var(--r-s);
+  padding:11px 13px;margin:0 0 9px;
+}
+.tafsir strong{color:var(--tinta)}
+.tafsir.hati{background:var(--amber-terang)}
+.spss-cara{
+  font-size:12.5px;line-height:1.7;color:var(--tinta-2);
+  background:var(--kertas-3);border-radius:var(--r-s);
+  padding:10px 12px;margin:auto 0 0;
+}
+.spss-cara strong{color:var(--tinta)}
+.kd{
+  font-family:ui-monospace,Menlo,monospace;font-size:11.5px;
+  background:#fff;border:1px solid var(--garis);border-radius:4px;
+  padding:1px 5px;color:var(--tinta);
+}
+
+/* ══════ ATURAN: kartu baru untuk GRAFIK HIDUP di /klinik ══════ */
+.langkah{
+  background:var(--kertas-2);border:1.5px solid var(--garis);
+  border-radius:var(--r);padding:16px 18px;margin:0 0 13px;
+}
+.langkah .nomor{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;background:var(--teal);
+  color:#fff;font-size:12.5px;font-weight:700;margin-right:9px;
+}
+.langkah b{font-size:14.5px}
+.dua-kolom{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.dua-kolom{grid-template-columns:1fr}}
+.kartu{
+  background:var(--kertas-2);border:1.5px solid var(--garis);
+  border-radius:var(--r);padding:17px 18px;
+}
+.catatan-data{
+  font-size:12px;color:var(--tinta-3);background:var(--kertas-3);
+  border-radius:8px;padding:7px 10px;margin:0 0 10px;
+}
+.contoh-tombol{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--teal);color:#fff;border:none;border-radius:10px;
+  padding:9px 15px;font-size:13px;font-weight:650;cursor:pointer;
+}
+.contoh-tombol.sakit{background:var(--merah)}
+</style>
+</head>
+<body>
+<div class="bungkus">
+
+  <div class="penanda">
+    <b>📐 INI SKETSA — belum jadi aplikasi.</b><br>
+    Warna, kartu, pita tab, dan tafsirnya <b>disalin persis</b> dari
+    <code>app/static/gaya.css</code> supaya Bos melihat bentuk aslinya.
+    Yang <b>baru</b> cuma tulisan <span class="baru">BARU</span>, kotak
+    kuning, dan bagian paling bawah (grafik hidup).
+  </div>
+
+  <span class="eyebrow">📚 Belajar</span>
+  <h1>Pahami dulu, baru olah</h1>
+  <p class="besar" style="max-width:640px">
+    Belajar istilah lewat gambar, latih pemahamanmu, dan baca arti grafik
+    seperti yang muncul di SPSS.
+  </p>
+
+  <!-- ══════════ PITA TAB: 2 → 3 TAB ══════════ -->
+  <div class="pita-tab" role="tablist">
+    <a class="aktif">📖 Materi &amp; Kamus <span class="biji">8</span></a>
+    <a>🧪 Ruang Uji <span class="biji">2</span></a>
+    <a>📈 Baca Grafik <span class="biji">7</span> <span class="baru">BARU</span></a>
+  </div>
+
+  <div class="catatan-data">
+    📍 <b>Tab ke-3 ini isinya = 7 kartu yang sekarang ada di halaman
+    "KAMUS GRAFIK" (/syarat)</b> — dipindah ke sini utuh, tidak ada yang
+    dibuang. Halaman /syarat nanti dialihkan ke tab ini.
+  </div>
+
+  <h2 style="font-size:16px;margin:0 0 4px">A. Dipakai di SPSS dan SmartPLS</h2>
+  <p class="samar" style="margin:0 0 16px">Syarat dasar yang berlaku di kedua alat.</p>
+
+  <div class="grid-syarat">
+
+    <!-- 1. HETEROSKEDASTISITAS -->
+    <div class="kartu-syarat">
+      <div class="kepala">
+        <div>
+          <h4>Sisa tersebar rata?</h4>
+          <span class="alat">Heteroskedastisitas · kode grafik di SPSS: ZPRED &times; ZRESID</span>
+        </div>
+        <span class="pita pita-hijau">Aman</span>
+      </div>
+      <div class="kotak-gambar">
+        <svg viewBox="0 0 260 118">
+          <line x1="26" y1="96" x2="250" y2="96" stroke="#E0D8C8" stroke-width="1"/>
+          <line x1="26" y1="96" x2="26" y2="8" stroke="#E0D8C8" stroke-width="1"/>
+          <line x1="26" y1="52" x2="250" y2="52" stroke="#EDE6D8" stroke-width="1" stroke-dasharray="3 3"/>
+          <g fill="#2E7D6F" opacity=".55">
+            <circle cx="42" cy="45" r="2.5"/><circle cx="50" cy="59" r="2.5"/>
+            <circle cx="58" cy="43" r="2.5"/><circle cx="66" cy="61" r="2.5"/>
+            <circle cx="74" cy="51" r="2.5"/><circle cx="82" cy="41" r="2.5"/>
+            <circle cx="90" cy="63" r="2.5"/><circle cx="98" cy="47" r="2.5"/>
+            <circle cx="106" cy="57" r="2.5"/><circle cx="114" cy="43" r="2.5"/>
+            <circle cx="122" cy="61" r="2.5"/><circle cx="130" cy="50" r="2.5"/>
+            <circle cx="138" cy="41" r="2.5"/><circle cx="146" cy="59" r="2.5"/>
+            <circle cx="154" cy="46" r="2.5"/><circle cx="162" cy="63" r="2.5"/>
+            <circle cx="170" cy="44" r="2.5"/><circle cx="178" cy="57" r="2.5"/>
+            <circle cx="186" cy="47" r="2.5"/><circle cx="194" cy="61" r="2.5"/>
+            <circle cx="202" cy="42" r="2.5"/><circle cx="210" cy="59" r="2.5"/>
+            <circle cx="218" cy="50" r="2.5"/><circle cx="228" cy="45" r="2.5"/>
+          </g>
+          <text x="70" y="112" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai prediksi (ZPRED)</text>
+          <text x="16" y="55" font-size="8.5" fill="#9A9086" text-anchor="middle" transform="rotate(-90 16 55)">sisa (ZRESID)</text>
+        </svg>
+      </div>
+      <p class="tafsir">
+        <strong>Bacanya begini:</strong> perhatikan lebarnya sebaran titik dari
+        kiri ke kanan. Di sini lebarnya <strong>tetap</strong> — tidak meluber
+        dan tidak menyempit.
+      </p>
+      <p class="tafsir hati">
+        <strong>Kalau bermasalah</strong>, sebarannya makin meluber seperti
+        <strong>corong</strong>. Dua jalan keluar: pakai <em>robust standard
+        error</em>, atau ubah data dengan logaritma.
+      </p>
+      <div class="spss-cara">
+        <strong>Cara cek sendiri:</strong><br>
+        SPSS → <span class="kd">Analyze</span> → <span class="kd">Regression</span>
+        → <span class="kd">Linear</span> → <span class="kd">Plots</span>
+        → <span class="kd">ZPRED</span> ke X, <span class="kd">ZRESID</span> ke Y.
+      </div>
+    </div>
+
+    <!-- 2. NORMALITAS -->
+    <div class="kartu-syarat">
+      <div class="kepala">
+        <div>
+          <h4>Sisa menyebar normal?</h4>
+          <span class="alat">Normalitas · kode grafik di SPSS: Normal P-P Plot</span>
+        </div>
+        <span class="pita pita-hijau">Aman</span>
+      </div>
+      <div class="kotak-gambar">
+        <svg viewBox="0 0 260 118">
+          <line x1="34" y1="98" x2="244" y2="12" stroke="#E0D8C8" stroke-width="1.4"/>
+          <g fill="#2E7D6F" opacity=".6">
+            <circle cx="48" cy="90" r="2.4"/><circle cx="62" cy="86" r="2.4"/>
+            <circle cx="78" cy="78" r="2.4"/><circle cx="94" cy="72" r="2.4"/>
+            <circle cx="108" cy="66" r="2.4"/><circle cx="124" cy="58" r="2.4"/>
+            <circle cx="140" cy="52" r="2.4"/><circle cx="154" cy="45" r="2.4"/>
+            <circle cx="170" cy="38" r="2.4"/><circle cx="186" cy="31" r="2.4"/>
+            <circle cx="202" cy="25" r="2.4"/><circle cx="216" cy="19" r="2.4"/>
+          </g>
+          <text x="132" y="113" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai sisa yang teramati</text>
+        </svg>
+      </div>
+      <p class="tafsir">
+        <strong>Bacanya begini:</strong> titik-titik harus <strong>menempel</strong>
+        pada garis diagonal. Di sini titiknya rapi mengikuti garis.
+      </p>
+      <p class="tafsir hati">
+        <strong>Kalau bermasalah</strong>, titik di ujung akan <strong>membelok
+        menjauh</strong> — bentuknya melengkung seperti huruf S.
+      </p>
+      <div class="spss-cara">
+        <strong>Cara cek sendiri:</strong><br>
+        SPSS → <span class="kd">Plots</span> → centang
+        <span class="kd">Normal probability plot</span>.
+      </div>
+    </div>
+
+  </div>
+
+  <p class="samar" style="margin:14px 0 0;text-align:center">
+    ⋯ kartu 3 s/d 7 sama seperti sekarang (Linearitas · VIF · Outer Loading ·
+    AVE · Reliabilitas) — <b>tidak diubah</b>, cuma pindah tempat ⋯
+  </p>
+
+  <!-- ══════════ BAGIAN BARU: GRAFIK HIDUP di /KLINIK ══════════ -->
+  <h2>🔬 Ini yang BARU — grafik hidup di DIAGNOSIS DATA (/klinik)</h2>
+  <p class="samar" style="margin-bottom:14px">
+    Tab "Baca Grafik" di atas = <b>kamus</b> (gambar contoh).
+    Yang di bawah ini = <b>alat</b> (gambar dari data mahasiswa sendiri).
+  </p>
+
+  <div class="langkah">
+    <span class="nomor">1</span><b>Unggah data</b>
+    <p class="samar" style="margin:7px 0 0 33px">
+      .sav / .csv / .xlsx → tunjuk kolom X, Y, M → <b>Periksa</b>.
+      <span class="samar">(sudah jalan sekarang)</span>
+    </p>
+  </div>
+
+  <div class="langkah">
+    <span class="nomor">2</span><b>Hasil angka</b> <span class="samar">(sudah jalan)</span>
+    <p class="samar" style="margin:7px 0 0 33px">
+      Benar / salah + 11 nasihat cara membetulkan. Tidak diubah, tetap.
+    </p>
+  </div>
+
+  <div class="langkah" style="border-color:var(--teal);border-width:2px">
+    <span class="nomor">3</span><b>Hasil GRAFIK dari data mahasiswa</b>
+    <span class="baru" style="margin-left:7px">BARU</span>
+    <p class="samar" style="margin:7px 0 0 33px">
+      Di bawah tabel angka, muncul grafik yang digambar dari data yang
+      diunggah — bukan contoh.
+    </p>
+  </div>
+
+  <div class="catatan-data">
+    📄 <b>Grafik ini dari berkas <code>kuesioner_skripsi.xlsx</code> yang kamu
+    unggah · 20 Sep 2026, 14:32</b> — supaya selalu jelas dari mana gambarnya.
+  </div>
+
+  <div class="dua-kolom">
+
+    <div class="kartu-syarat" style="border-color:var(--teal)">
+      <div class="kepala">
+        <div>
+          <h4>Sisa tersebar rata?</h4>
+          <span class="alat">Heteroskedastisitas · datamu, n = 120</span>
+        </div>
+        <span class="pita pita-hijau">✓ Aman</span>
+      </div>
+      <div class="kotak-gambar">
+        <!-- ⚠️ INI CONTOH CARA GAMBARNYA — di aplikasi nanti titiknya
+             DIHITUNG dari data user, bukan ditulis tangan seperti ini. -->
+        <svg viewBox="0 0 260 118">
+          <line x1="26" y1="96" x2="250" y2="96" stroke="#E0D8C8" stroke-width="1"/>
+          <line x1="26" y1="96" x2="26" y2="8" stroke="#E0D8C8" stroke-width="1"/>
+          <line x1="26" y1="52" x2="250" y2="52" stroke="#EDE6D8" stroke-width="1" stroke-dasharray="3 3"/>
+          <g fill="#A85A5A" opacity=".5">
+            <circle cx="40" cy="60" r="2"/><circle cx="48" cy="48" r="2"/>
+            <circle cx="55" cy="64" r="2"/><circle cx="62" cy="42" r="2"/>
+            <circle cx="70" cy="58" r="2"/><circle cx="77" cy="52" r="2"/>
+            <circle cx="85" cy="66" r="2"/><circle cx="92" cy="38" r="2"/>
+            <circle cx="100" cy="60" r="2"/><circle cx="108" cy="47" r="2"/>
+            <circle cx="116" cy="70" r="2"/><circle cx="124" cy="40" r="2"/>
+            <circle cx="132" cy="57" r="2"/><circle cx="140" cy="45" r="2"/>
+            <circle cx="148" cy="30" r="2"/><circle cx="156" cy="62" r="2"/>
+            <circle cx="164" cy="80" r="2"/><circle cx="172" cy="24" r="2"/>
+            <circle cx="180" cy="72" r="2"/><circle cx="190" cy="50" r="2"/>
+            <circle cx="200" cy="18" r="2"/><circle cx="218" cy="34" r="2"/>
+            <circle cx="232" cy="44" r="2"/>
+          </g>
+          <text x="120" y="112" font-size="8.5" fill="#9A9086" text-anchor="middle">nilai prediksi (ZPRED)</text>
+        </svg>
+      </div>
+      <p class="tafsir hati" style="margin:0">
+        <strong>Corong terbaca jelas:</strong> makin ke kanan, titik makin
+        menyebar lebar. <strong>Ini artinya heteroskedastisitas ADA</strong> —
+        uji signifikansimu belum bisa dipercaya.
+      </p>
+    </div>
+
+    <div class="kartu" style="display:flex;flex-direction:column;justify-content:center;
+                              text-align:center;border-color:var(--amber);
+                              background:var(--amber-terang)">
+      <span class="eyebrow amber" style="justify-content:center">
+        📈 Grafik bekerja dengan data yang diunggah
+      </span>
+      <svg viewBox="0 0 240 96" style="width:100%;height:96px;margin-top:12px">
+        <rect x="18" y="66" width="34" height="14" rx="3" fill="#C9BFB0"/>
+        <rect x="66" y="52" width="34" height="28" rx="3" fill="#B5762A"/>
+        <rect x="114" y="30" width="34" height="50" rx="3" fill="#A85A5A"/>
+        <rect x="162" y="10" width="34" height="70" rx="3" fill="#8C4040"/>
+        <text x="35" y="92" font-size="7.5" fill="#9A9086" text-anchor="middle">aman</text>
+        <text x="83" y="92" font-size="7.5" fill="#9A9086" text-anchor="middle">ringan</text>
+        <text x="131" y="92" font-size="7.5" fill="#9A9086" text-anchor="middle">sedang</text>
+        <text x="179" y="92" font-size="7.5" fill="#9A9086" text-anchor="middle">berat</text>
+        <text x="120" y="20" font-size="9" fill="#3A342E" text-anchor="middle"
+              font-weight="700">1 grafik ≠ 1 gambar tetap</text>
+      </svg>
+      <p style="font-size:12.5px;color:#7A5316;margin:10px 0 0;line-height:1.7">
+        Data yang sama sekali berbeda → grafik yang <strong>JELAS BERBEDA</strong>.
+        Ini inti Tahap 2: gambar yang <em>mengikuti</em> data, bukan gambar
+        hiasan.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="catatan-data" style="margin-top:18px">
+    🗂️ <b>Jujur soal batas:</b> untuk n &gt; 500, digambar
+    <b>500 titik yang diambil MENYEBAR</b> (bukan 500 pertama — itu akan
+    menipu). Angka (p-value, VIF, R²) tetap dihitung dari <b>SEMUA</b> baris.
+  </div>
+
+  <!-- ══════════ FOOTER: apa yang terjadi pada /syarat ══════════ -->
+  <h2>🔀 Nasib halaman /syarat (KAMUS GRAFIK)</h2>
+  <div class="kartu">
+    <p style="font-size:13.5px;color:var(--tinta-2);line-height:1.8;margin:0">
+      1. Isinya <b>pindah utuh</b> ke tab "Baca Grafik" di atas.<br>
+      2. Halaman <code>/syarat</code> <b>dialihkan</b> ke tab itu
+         (tautan lama tidak patah).<br>
+      3. Menu di navigasi atas: <b>8 → 7</b>. Tidak ada lagi menu yang
+         isinya dobel dengan halaman lain.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

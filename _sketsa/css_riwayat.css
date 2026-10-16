@@ -1,0 +1,74 @@
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HASIL DETEKSI JUDUL + RIWAYAT JUDUL (ACC Bos 18Sep26)
+   ══════════════════════════════════════════════════════════════════════════
+   ⚠️ ACC BOS: riwayat judul = KARTU TERSENDIRI, tampil 5 judul, sisanya
+   bisa di-SCROLL (bukan halaman terpisah, bukan daftar memanjang).
+
+   ⚠️ WAJIB: cegah ISI meluber keluar kartu. Terukur 18Sep26: tanpa
+   minmax(0,1fr)/min-width:0, judul panjang mendorong kolom BESAR &
+   PERANNYA rusak. Judul penelitian sering SANGAT panjang (15-25 kata),
+   jadi aturan ini wajib ada di tiap elemen yang memuat judul.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── kotak hasil rekomendasi ─────────────────────────────────────────── */
+.hasil-judul {
+  margin-top: 18px; padding: 16px 17px;
+  background: var(--teal-lembut, #EAF6F4);
+  border: 1.5px solid var(--teal);
+  border-radius: var(--r-s);
+}
+.baris-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+
+/* ── kartu riwayat judul ─────────────────────────────────────────────── */
+.kartu-riwayat {
+  margin: 0 0 26px;
+  border-left: 3px solid var(--tinta-3);
+}
+
+/* ⚠️ 5 judul terlihat, sisanya di-scroll.
+   Tinggi baris 62px × 5 + celah 8px × 4 = 342px. Disengaja TETAP, supaya
+   kartu tidak memanjang kalau user mencoba puluhan judul. */
+.daftar-riwayat {
+  margin-top: 14px;
+  max-height: 342px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-right: 5px;                 /* ruang scrollbar, jangan menutupi teks */
+}
+.daftar-riwayat::-webkit-scrollbar { width: 8px; }
+.daftar-riwayat::-webkit-scrollbar-thumb {
+  background: var(--garis); border-radius: 4px;
+}
+
+.baris-riwayat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;   /* minmax(0,…) = WAJIB */
+  gap: 10px; align-items: center;
+  width: 100%; text-align: left;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r-s);
+  padding: 11px 13px;
+  min-height: 62px;
+  font-family: inherit; font-size: 13px; color: var(--tinta);
+  cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.baris-riwayat:hover { border-color: var(--teal); background: var(--kertas); }
+
+/* ⚠️ min-width:0 + potong 2 baris — judul panjang tidak boleh merusak kartu */
+.riwayat-judul {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+  color: var(--tinta-2);
+}
+
+@media (max-width: 620px) {
+  .daftar-riwayat { max-height: 296px; }
+  .baris-riwayat { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+}

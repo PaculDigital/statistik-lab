@@ -1,0 +1,2156 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>u</title><style>/* ═══════════════════════════════════════════════════════════════════════════
+   Penelitian STATISTIK Lab. — tema TERANG & WARM (bukan gelap-cinematic)
+   Palet: kertas hangat, tinta coklat-tua, aksen teal & amber.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --kertas:      #FBF8F3;   /* latar utama — kertas hangat */
+  --kertas-2:    #F5F0E6;   /* latar kartu */
+  --kertas-3:    #EDE6D8;   /* latar tenggelam */
+  --tinta:       #2B2722;   /* teks utama */
+  --tinta-2:     #6B6259;   /* teks kedua */
+  --tinta-3:     #9A9086;   /* teks samar */
+  --garis:       #E0D8C8;
+  --teal:        #2E7D6F;   /* aksen utama */
+  --teal-terang: #E4F0EC;
+  --amber:       #B5762A;   /* aksen kedua */
+  --amber-terang:#FBEFDC;
+  --merah:       #A85A5A;
+  --merah-terang:#F7E7E7;
+  --hijau:       #4E8A5A;
+  --hijau-terang:#E5F0E7;
+
+  --r:  14px;   /* radius kartu */
+  --r-s: 9px;
+  --bayang: 0 1px 2px rgba(43,39,34,.05), 0 8px 24px -12px rgba(43,39,34,.16);
+  --bayang-h: 0 2px 4px rgba(43,39,34,.06), 0 16px 32px -14px rgba(43,39,34,.22);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               'Helvetica Neue', Arial, sans-serif;
+  background: var(--kertas);
+  color: var(--tinta);
+  font-size: 15.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Ikon Lucide ──────────────────────────────────────────────────────── */
+.ik {
+  display: inline-block;
+  vertical-align: -0.155em;
+  flex: 0 0 auto;
+  color: inherit;
+  stroke-width: 2;
+}
+
+/* ── Kerangka ─────────────────────────────────────────────────────────── */
+.bungkus { max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+
+header.puncak {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(251,248,243,.9);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--garis);
+}
+.puncak-isi {
+  display: flex; align-items: center; gap: 18px;
+  height: 62px;
+}
+.merek {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 15.5px; letter-spacing: -.2px;
+  text-decoration: none; color: var(--tinta);
+  white-space: nowrap;
+}
+.merek .lambang {
+  width: 33px; height: 33px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--teal) 0%, #23655A 100%);
+  color: #fff; display: grid; place-items: center; flex: 0 0 auto;
+}
+.merek .lambang .ik { stroke-width: 2.2; }
+
+nav.utama { display: flex; gap: 3px; margin-left: auto; flex-wrap: wrap;
+             min-width: 0; max-width: 100%; }
+.nav-gulir { display: flex; gap: 3px; flex-wrap: wrap; }
+nav.utama a {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: var(--r-s);
+  font-size: 13.5px; font-weight: 500; text-decoration: none;
+  color: var(--tinta-2); white-space: nowrap;
+  transition: background .14s, color .14s;
+}
+nav.utama a:hover { background: var(--kertas-3); color: var(--tinta); }
+nav.utama a.aktif { background: var(--teal-terang); color: var(--teal); font-weight: 600; }
+
+/* ── Tombol ───────────────────────────────────────────────────────────── */
+.tb {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 17px; border-radius: var(--r-s);
+  border: 1px solid transparent; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 600;
+  text-decoration: none; transition: all .14s;
+}
+.tb-utama { background: var(--teal); color: #fff; box-shadow: var(--bayang); }
+.tb-utama:hover { background: #23655A; transform: translateY(-1px); box-shadow: var(--bayang-h); }
+.tb-sekunder { background: var(--kertas); color: var(--tinta); border-color: var(--garis); }
+.tb-sekunder:hover { background: var(--kertas-3); }
+.tb-kecil { padding: 6px 11px; font-size: 12.5px; }
+.tb:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* ── Kartu ────────────────────────────────────────────────────────────── */
+.kartu {
+  background: var(--kertas-2);
+  border: 1px solid var(--garis);
+  border-radius: var(--r);
+  padding: 22px;
+  box-shadow: var(--bayang);
+}
+
+/* ── Label kecil (eyebrow) ────────────────────────────────────────────── */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .8px;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 10px;
+}
+.eyebrow.amber { color: var(--amber); }
+.eyebrow.merah { color: var(--merah); }
+
+h1 { font-size: 34px; line-height: 1.2; letter-spacing: -.7px; margin: 0 0 12px; font-weight: 800; }
+h2 { font-size: 22px; line-height: 1.3; letter-spacing: -.3px; margin: 34px 0 12px; font-weight: 700; }
+h3 { font-size: 16.5px; margin: 0 0 8px; font-weight: 700; }
+p  { margin: 0 0 13px; color: var(--tinta-2); }
+p.besar { font-size: 17px; line-height: 1.66; }
+
+/* ── Pita status ──────────────────────────────────────────────────────── */
+.pita {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .2px;
+}
+.pita-hijau  { background: var(--hijau-terang);  color: var(--hijau); }
+.pita-amber  { background: var(--amber-terang);  color: var(--amber); }
+.pita-merah  { background: var(--merah-terang);  color: var(--merah); }
+.pita-teal   { background: var(--teal-terang);   color: var(--teal); }
+.pita-abu    { background: var(--kertas-3);      color: var(--tinta-2); }
+
+/* ── Kisi modul ───────────────────────────────────────────────────────── */
+.kisi-modul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+  gap: 16px;
+}
+.modul-kartu {
+  background: var(--kertas-2);
+  border: 1px solid var(--garis);
+  border-radius: var(--r);
+  padding: 20px;
+  text-decoration: none; color: inherit;
+  box-shadow: var(--bayang);
+  transition: transform .16s, box-shadow .16s, border-color .16s;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+.modul-kartu::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: var(--aksen, var(--teal)); opacity: .85;
+}
+.modul-kartu:hover {
+  transform: translateY(-3px); box-shadow: var(--bayang-h);
+  border-color: var(--aksen, var(--teal));
+}
+.modul-ikon {
+  width: 42px; height: 42px; border-radius: 11px;
+  display: grid; place-items: center; margin-bottom: 13px;
+  background: color-mix(in srgb, var(--aksen, #2E7D6F) 13%, var(--kertas));
+  color: var(--aksen, var(--teal));
+}
+.modul-kartu h3 { display: flex; align-items: center; gap: 9px; }
+.modul-kartu p  { font-size: 13.5px; margin: 0; flex: 1; color: var(--tinta-2); }
+.modul-kaki {
+  display: flex; align-items: center; gap: 6px; margin-top: 15px;
+  font-size: 12.5px; font-weight: 600; color: var(--aksen, var(--teal));
+}
+
+/* ── Langkah (wizard) ─────────────────────────────────────────────────── */
+.langkah {
+  display: flex; align-items: center; gap: 0; margin: 26px 0;
+  overflow-x: auto; padding-bottom: 4px;
+}
+.langkah-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 0; white-space: nowrap;
+}
+.langkah-nomor {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; flex: 0 0 auto;
+  font-size: 12.5px; font-weight: 700;
+  background: var(--kertas-3); color: var(--tinta-3);
+  border: 1.5px solid var(--garis);
+}
+.langkah-item.aktif .langkah-nomor { background: var(--teal); color: #fff; border-color: var(--teal); }
+.langkah-item.selesai .langkah-nomor { background: var(--hijau-terang); color: var(--hijau); border-color: var(--hijau); }
+.langkah-teks { font-size: 13.5px; font-weight: 600; color: var(--tinta-3); }
+.langkah-item.aktif .langkah-teks { color: var(--tinta); }
+.langkah-item.selesai .langkah-teks { color: var(--tinta-2); }
+.langkah-garis { width: 26px; height: 1.5px; background: var(--garis); margin: 0 11px; flex: 0 0 auto; }
+
+/* ── Form ─────────────────────────────────────────────────────────────── */
+.medan { margin-bottom: 20px; }
+.medan label {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 600; margin-bottom: 8px; color: var(--tinta);
+}
+.medan .petunjuk { font-size: 12.5px; color: var(--tinta-3); font-weight: 400; }
+
+input[type=number], input[type=text], select {
+  width: 100%; padding: 10px 13px;
+  border: 1px solid var(--garis); border-radius: var(--r-s);
+  font: inherit; font-size: 14.5px;
+  background: var(--kertas); color: var(--tinta);
+}
+input[type=number]:focus, input[type=text]:focus, select:focus {
+  outline: 2px solid var(--teal-terang); border-color: var(--teal);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SLIDER — WAJIB punya tinggi yang memuat kenopnya.
+   🚨 BUG (17Sep26): dulu `height: 5px` sedangkan kenopnya 19px. Kenopnya
+   MELUBER keluar dari kotak slider → garis jalur tenggelam & tidak terlihat,
+   kenop tampak "nempel" tanpa jalur (dilingkari merah oleh Bos di HP).
+   Aturan: tinggi kotak slider >= tinggi kenop + 2×(border kenop) + margin.
+   19 + 2×3 = 25px → pakai 28px supaya ada ruang napas.
+   ═══════════════════════════════════════════════════════════════════════ */
+input[type=range] {
+  width: 100%;
+  height: 28px;                 /* cukup memuat kenop 19px + border 3px */
+  border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;       /* jalur digambar oleh ::-webkit-slider-runnable-track */
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+/* Jalur slider — garis yang DILIHAT user sebagai "jalan" kenop */
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: var(--kertas-3);
+  border: 1px solid var(--garis);
+}
+input[type=range]::-moz-range-track {
+  height: 6px; border-radius: 999px;
+  background: var(--kertas-3);
+  border: 1px solid var(--garis);
+}
+input[type=range]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--teal); border: 3px solid var(--kertas);
+  box-shadow: 0 1px 4px rgba(43,39,34,.3); cursor: grab;
+  /* tarik kenop ke tengah jalur (jalur 6px, kenop 22px → -8px) */
+  margin-top: -8px;
+}
+input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--teal);
+  border: 3px solid var(--kertas); cursor: grab;
+}
+
+/* ── Keterangan slider: label ujung & nilai ─────────────────────────────
+   🚨 BUG (18Sep26 — Bos melihat "1  8" & "302.000"):
+      Versi 1 memakai `display:flex; justify-content:space-between` →
+      angka ujung tidak menempel tepi saat ruang sempit, dan dua angka
+      bisa TERBACA MENYATU ("30" + "2.000" → "302.000").
+      Versi 2 memakai grid 2 kolom — TAPI tetap gagal karena lebar kotak
+      diukur dari elemen yang salah; kata ujung tidak menempel tepi.
+      Versi 3 (ini): grid 3 kolom (kiri · pemisah · kanan) DENGAN pemisah
+      "·" yang selalu terlihat di tengah, sehingga label kiri & kanan
+      TIDAK MUNGKIN terbaca menyatu walau jaraknya rapat.           */
+.skala-slider {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  margin-top: 3px; font-size: 12px; line-height: 1.2;
+  color: var(--tinta-3);
+}
+.skala-slider > :first-child { text-align: left; }
+.skala-slider > :last-child { text-align: right; }
+/* pemisah tengah: titik tipis, hanya hiasan batas rentang */
+.skala-slider > :nth-child(2) {
+  text-align: center; padding: 0 6px; opacity: .55;
+}
+/* Teks "N variabel X" — punya barisnya SENDIRI di bawah skala, rata tengah.
+   🚨 BUG (17Sep26): dulu teks ini ditaruh dalam .baris-antara bersama label
+   1 dan 8, tepat 2px di bawah slider → ketiganya bertumpuk di garis jalur. */
+.nilai-slider {
+  text-align: center; font-size: 13.5px; margin-top: 4px;
+  color: var(--tinta-2);
+}
+.nilai-slider strong { font-size: 16px; color: var(--teal-tua); }
+
+/* Kolom tengah antara tombol − dan + : slider + keterangannya */
+.hitung-var-tengah { flex: 1 1 auto; min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KOTAK R² — simbol diperbesar & dipertebal + keterangan bahasa awam.
+   ⚠️ DIKSI (ACC Bos 18Sep26): Bos melingkari "R²" dan minta simbolnya
+   DIPERBESAR + DIPERTEBAL, lalu ditulis keterangan "Seberapa besar X
+   menerangkan Y" supaya user langsung paham tanpa bertanya.
+   ═══════════════════════════════════════════════════════════════════════ */
+.kotak-r2 { min-width: 0; }
+.r2-baris {
+  display: flex; align-items: baseline; gap: 10px; margin-top: 2px;
+}
+.r2-simbol {
+  font-size: 34px;          /* diperbesar (dulu warisan .angka-besar 28px) */
+  font-weight: 800;         /* dipertebal */
+  color: var(--teal-tua);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.r2-angka {
+  font-size: 40px;          /* angkanya juga diperbesar supaya seimbang */
+  font-weight: 800;
+  color: var(--teal-tua);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.r2-arti {
+  font-size: 13.5px; margin-top: 6px; color: var(--tinta-2); font-style: italic;
+}
+/* Tanda tanya kecil — keterangan muncul saat disentuh (ramah HP) */
+.r2-tanya {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--teal-terang); color: var(--teal-tua);
+  font-size: 11.5px; font-weight: 700; cursor: help;
+  border: 1px solid var(--teal); vertical-align: middle;
+}
+
+/* ── Tombol pilihan (kartu pilih) ─────────────────────────────────────── */
+.pilih-kisi {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px;
+}
+.pilih {
+  border: 1.5px solid var(--garis); border-radius: var(--r-s);
+  background: var(--kertas); padding: 14px 13px; cursor: pointer;
+  text-align: left; font: inherit; color: inherit;
+  transition: all .14s; display: flex; flex-direction: column; gap: 6px;
+}
+.pilih:hover { border-color: var(--teal); background: var(--teal-terang); }
+.pilih.terpilih {
+  border-color: var(--teal); background: var(--teal-terang);
+  box-shadow: 0 0 0 3px var(--teal-terang);
+}
+.pilih strong { font-size: 14px; font-weight: 700; }
+.pilih span { font-size: 12px; color: var(--tinta-2); line-height: 1.45; }
+
+/* ── Tabel ────────────────────────────────────────────────────────────── */
+table.data {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+  background: var(--kertas);
+}
+table.data th {
+  text-align: left; padding: 10px 12px; font-size: 11.5px;
+  font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--tinta-3); border-bottom: 1.5px solid var(--garis);
+  white-space: nowrap;
+}
+table.data td {
+  padding: 11px 12px; border-bottom: 1px solid var(--garis);
+  color: var(--tinta-2); vertical-align: middle;
+}
+table.data tr:last-child td { border-bottom: none; }
+table.data tr:hover td { background: var(--kertas-2); }
+td.angka { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--tinta); }
+
+/* ── Catatan ──────────────────────────────────────────────────────────── */
+.catatan {
+  display: flex; gap: 11px; padding: 14px 16px;
+  border-radius: var(--r-s); font-size: 13.5px; line-height: 1.6;
+  border-left: 3px solid var(--teal); background: var(--teal-terang);
+  color: var(--tinta-2);
+}
+.catatan .ik { margin-top: 2px; color: var(--teal); }
+.catatan.amber { background: var(--amber-terang); border-left-color: var(--amber); }
+.catatan.amber .ik { color: var(--amber); }
+.catatan.merah { background: var(--merah-terang); border-left-color: var(--merah); }
+.catatan.merah .ik { color: var(--merah); }
+.catatan strong { color: var(--tinta); }
+
+/* ── Slider kamus ─────────────────────────────────────────────────────── */
+.kamus-kisi { display: grid; grid-template-columns: 218px 1fr; gap: 20px; align-items: start; }
+.kamus-daftar { display: flex; flex-direction: column; gap: 4px; }
+.kamus-tombol {
+  display: flex; align-items: center; gap: 9px; text-align: left;
+  padding: 10px 12px; border-radius: var(--r-s); border: none;
+  background: transparent; font: inherit; font-size: 13.5px; font-weight: 500;
+  color: var(--tinta-2); cursor: pointer; transition: all .13s;
+}
+.kamus-tombol:hover { background: var(--kertas-3); color: var(--tinta); }
+.kamus-tombol.aktif { background: var(--kertas-2); color: var(--teal); font-weight: 700; box-shadow: var(--bayang); }
+
+.papan { background: var(--kertas); border: 1px solid var(--garis); border-radius: var(--r); padding: 20px; }
+.angka-besar {
+  font-variant-numeric: tabular-nums; font-weight: 800;
+  font-size: 38px; letter-spacing: -1.6px; line-height: 1;
+  color: var(--teal);
+}
+.grafik { width: 100%; height: 168px; display: block; }
+
+footer.kaki {
+  margin-top: 64px; padding: 30px 0; border-top: 1px solid var(--garis);
+  font-size: 12.5px; color: var(--tinta-3);
+}
+.kaki-isi { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: center; }
+
+/* ── Saklar AI ────────────────────────────────────────────────────────── */
+.saklar { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
+.saklar-jalur {
+  width: 40px; height: 22px; border-radius: 999px; background: var(--kertas-3);
+  position: relative; transition: background .18s; flex: 0 0 auto;
+}
+.saklar-jalur::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(43,39,34,.28); transition: transform .18s;
+}
+.saklar.nyala .saklar-jalur { background: var(--teal); }
+.saklar.nyala .saklar-jalur::after { transform: translateX(18px); }
+.saklar-teks { font-size: 12.5px; font-weight: 600; color: var(--tinta-2); }
+
+/* ── Hitung variabel (− slider +) ─────────────────────────────────────── */
+/* ── Hitung variabel (− slider +) ─────────────────────────────────────── */
+/* ⚠️ Slider HARUS boleh menyusut (min-width:0 + flex:1 1 auto), kalau tidak
+   ia mendorong tombol −/+ keluar baris dan tata letak jadi berantakan. */
+.hitung-var { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+.hitung-var > div { flex: 1 1 auto; min-width: 0; }
+.hitung-var .tb-kecil {
+  flex: 0 0 auto;
+  width: 44px; min-width: 44px; height: 44px; padding: 0;
+  display: grid; place-items: center;
+  font-size: 20px; font-weight: 700; line-height: 1;
+}
+.hitung-var .tb-kecil:disabled { opacity: .38; cursor: not-allowed; }
+.hitung-var input[type="range"] { width: 100%; display: block; }
+
+/* Preset cepat: 6 tombol angka WAJIB muat dalam SATU baris di SEMUA lebar
+   layar. Jangan pakai grid kolom tetap — kalau kolomnya terlalu sempit,
+   isi tombol meluber dan tampak bertumpuk (bug 17Sep26 yang lolos dari
+   semua uji HTTP/JS dan hanya ketahuan dari GEOMETRI + MATA).
+   Solusi: flex sebaris yang boleh MENYUSUT (min-width:0) + teks menyesuaikan. */
+.pilih-row {
+  display: flex; flex-wrap: nowrap; gap: 5px; margin-top: 10px;
+}
+.pilih.pilih-kecil {
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  gap: 0; text-align: center;
+  flex: 1 1 0; min-width: 0;
+  padding: 0 3px; font-size: 13px; min-height: 44px;
+  white-space: nowrap; overflow: hidden;
+}
+.pilih.pilih-kecil.terpilih { background: var(--teal-terang); border-color: var(--teal); }
+
+/* Di layar sempit panel jadi pendek — kecilkan sedikit agar 6 tombol tetap
+   muat sebaris (44px tetap dijaga sebagai target sentuh). */
+@media (max-width: 1000px) {
+  .pilih-row { gap: 4px; }
+  .pilih.pilih-kecil { padding: 0 2px; font-size: 12.5px; }
+}
+
+/* ── Utilitas ─────────────────────────────────────────────────────────── */
+.baris { display: flex; gap: 11px; flex-wrap: wrap; align-items: center; }
+.baris-antara { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: center; }
+.renggang { margin-top: 22px; }
+.renggang-b { margin-top: 34px; }
+.samar { color: var(--tinta-3); font-size: 12.5px; }
+.sembunyi { display: none !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE FRIENDLY — diuji di lebar nyata HP
+   Acuan: iPhone SE 375 · iPhone 14 390 · Android umum 360 · tablet 768
+   Aturan induk:
+     1. TIDAK ADA ukuran tetap yang lebih lebar dari layar (tanpa geser kiri-kanan).
+     2. Font minimum 15px untuk isi, 13px untuk keterangan (jangan lebih kecil).
+     3. Target sentuh minimum 44px (standar jari).
+     4. Tabel lebar → jadi KARTU bertumpuk, bukan di-scroll ke samping.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Grid 2 kolom (setelan|hasil) menumpuk jadi 1 kolom */
+@media (max-width: 900px) {
+  div[style*="grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+  .kamus-kisi { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 820px) {
+  /* ── 0. MINIMUM TERBACA: tidak ada teks di bawah 13px ──────────────── */
+  /* Naikkan semua ukuran kecil bawaan desktop ke ambang terbaca di HP */
+  .eyebrow, .pita, .tb-kecil, .modul-kartu .kategori, .medan .petunjuk,
+  .pilih span, .saklar-teks, .samar, table.data td::before,
+  nav.utama .tanda, .kaki, .kaki-isi, .angka-kecil, .catatan,
+  .modul-kaki, .langkah-nomor, .eyebrow, .pita, .tb-kecil, .langkah-teks {
+    font-size: 13px !important;
+  }
+  /* Ikon & simbol boleh tetap kecil — bukan teks */
+  .pita svg, .eyebrow svg { width: 12px; height: 12px; }
+
+  /* ── 1. Ukuran dasar ───────────────────────────────────────────────── */
+  html { font-size: 16px; }
+  body { font-size: 15px; }
+  .papan, .kartu { padding: 18px 16px; }
+  h1 { font-size: 25px; line-height: 1.25; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+  p.besar { font-size: 15px; }
+
+  /* ── 2. Navigasi: 1 baris, boleh digeser HORIZONTAL di dalam dirinya ── */
+  nav.utama { padding: 0; width: 100%; margin-left: 0; max-width: 100%; }
+  nav.utama .tanda { font-size: 13px; }
+  .nav-gulir {
+    display: flex; flex-wrap: nowrap; gap: 3px;
+    width: 100%; max-width: 100%;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav-gulir::-webkit-scrollbar { display: none; }
+  nav.utama a {
+    padding: 10px 10px;
+    font-size: 13px;
+    min-height: 44px;
+    display: flex; align-items: center;
+  }
+  /* Di HP: ikon + teks tetap tampil supaya tidak membingungkan */
+  nav.utama a span.teks-nav { display: inline; }
+
+  /* ── 3. Tombol & tautan: jempol-friendly (minimum 44px) ────────────── */
+  .tb { min-height: 46px; padding: 12px 18px; font-size: 15px; }
+  .tb-kecil { min-height: 44px; padding: 11px 14px; font-size: 13.5px; }
+  .baris .tb { flex: 1 1 auto; justify-content: center; }
+  .baris .tb-kecil { flex: 0 1 auto; }
+  /* Tautan yang bisa dipencet harus cukup tinggi */
+  a.merek, .kaki a, .tautan { min-height: 44px; display: inline-flex; align-items: center; }
+
+  /* ── 3b. Hitung variabel & preset di HP ───────────────────────────── */
+  /* ⚠️ Di HP panel jadi sangat pendek. Tombol −/+ harus tetap 44px tetapi
+     slider dikecilkan, dan 6 tombol preset WAJIB tetap SEBARIS.
+     (Bug 17Sep26: di 390px preset bertumpuk vertikal memakan layar.) */
+  .hitung-var { gap: 7px; }
+  .hitung-var .tb-kecil { width: 44px; min-width: 44px; height: 44px; font-size: 20px; }
+  .pilih-row { gap: 4px; }
+  .pilih.pilih-kecil { padding: 0 1px; font-size: 12.5px; min-height: 44px; }
+
+  /* ── 3c. ANTI MEBER KE KANAN ──────────────────────────────────────── */
+  /* ⚠️ Pelajaran 17Sep26: di 390px halaman meluber (judul & input
+     terpotong di tepi kanan). Semua wadah WAJIB dibatasi supaya tidak
+     ada elemen yang mendorong lebar dokumen melebihi layar. */
+  html, body { max-width: 100%; overflow-x: hidden; }
+  .papan, .kartu, main, section, .baris, .baris-antara,
+  .medan, .medan > *, .hitung-var, .pilih-row { max-width: 100%; min-width: 0; }
+  /* ⚠️ `overflow-wrap: anywhere` MEMOTONG KATA DI TENGAH.
+     🚨 BUG (18Sep26 — Bos melihat "Tampilk an" dan angka slider "1  8"
+        melayang di tengah): aturan lama memasang `anywhere` ke SEMUA
+        `span`, termasuk label ujung slider dan potongan teks di dalam
+        elemen flex. Akibatnya browser memotong "[Tampilk][an]" dan
+        "[1]" jadi potongan-potongan di tengah kotak.
+     PERBAIKAN: pakai `break-word` (hanya memotong kalau SATU KATA lebih
+     panjang dari kotaknya — kejadian langka), dan JANGAN pernah memotong
+     label slider / angka. */
+  h1, h2, h3, p, label { overflow-wrap: break-word; }
+  .skala-slider, .skala-slider *, .angka, .angka-besar,
+  .pita, .nilai-slider, .nilai-slider * {
+    overflow-wrap: normal; word-break: keep-all; white-space: nowrap;
+  }
+  .langkah, .langkah-teks { min-width: 0; overflow-wrap: anywhere; }
+  input, select, textarea, button { max-width: 100%; }
+
+  /* ── 4. Modul BELAJAR ──────────────────────────────────────────────── */
+  .kamus-daftar {
+    flex-direction: row; flex-wrap: nowrap;
+    overflow-x: auto; padding-bottom: 8px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .kamus-daftar::-webkit-scrollbar { display: none; }
+  .kamus-tombol {
+    white-space: nowrap; flex: 0 0 auto;
+    min-height: 44px; padding: 10px 14px; font-size: 14px;
+  }
+  .grafik { height: auto; min-height: 170px; }
+  .angka-besar { font-size: 30px; }
+
+  /* ── 5. Tabel lebar → KARTU bertumpuk (tanpa geser samping) ────────── */
+  table.data thead { display: none; }
+  table.data th { font-size: 13px; }   /* jaga-jaga: header tetap terbaca */
+  table.data, table.data tbody, table.data tr, table.data td {
+    display: block; width: 100%;
+  }
+  table.data tr {
+    border: 1px solid var(--garis);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--kertas-2, #FBF8F1);
+  }
+  table.data td {
+    border: 0; padding: 5px 0; text-align: left;
+    display: flex; justify-content: space-between;
+    align-items: center; gap: 12px;
+    font-size: 14.5px;
+  }
+  table.data td::before {
+    content: attr(data-label);
+    font-weight: 600; color: var(--tinta-3);
+    font-size: 12.5px; flex: 0 0 auto;
+  }
+  table.data td:first-child {
+    font-size: 15.5px; font-weight: 700;
+    border-bottom: 1px solid var(--garis);
+    padding-bottom: 9px; margin-bottom: 5px;
+  }
+  table.data td:first-child::before { content: none; }
+  table.data input.nilai-beta { width: 84px; text-align: center; }
+
+  /* ── 6. Pilihan kartu (X / mode) ───────────────────────────────────── */
+  .pilih-kisi { grid-template-columns: 1fr !important; }
+  .pilih { min-height: 56px; padding: 13px 15px; }
+  .pilih strong { font-size: 15px; }
+  .pilih span { font-size: 13px; }
+
+  /* ── 7. Slider: jalur lebih tinggi supaya mudah digeser ───────────── */
+  /* ⚠️ Urutan WAJIB: input[type=range] ditulis SETELAH aturan `input`
+     di bawah, atau `min-height: 44px` akan menimpanya dan kenop meluber. */
+  input, select, input[type="number"] {
+    min-height: 44px; font-size: 16px;   /* 16px = cegah zoom otomatis di iOS */
+  }
+  input[type="range"] {
+    min-height: 0; height: 34px;         /* slider tidak ikut aturan 44px */
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 26px; height: 26px; margin-top: -10px;
+  }
+  input[type="range"]::-webkit-slider-runnable-track { height: 6px; }
+
+  /* ── 8. Langkah alur (stepper) ─────────────────────────────────────── */
+  /* Di HP: VERTIKAL ke bawah — supaya semua langkah terlihat, tidak ada
+     yang terpotong dan user tidak perlu tahu bahwa bisa digeser. */
+  .langkah {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    margin: 20px 0;
+    overflow-x: visible;
+  }
+  .langkah-item {
+    gap: 10px;
+    padding: 7px 0;
+    white-space: normal;
+    width: 100%;
+  }
+  .langkah-nomor { width: 26px; height: 26px; font-size: 13px; }
+  .langkah-teks { font-size: 14.5px; }
+  /* Garis penghubung diputar jadi turun ke bawah */
+  .langkah-garis { width: 1.5px; height: 14px; margin: 0 0 0 12px; }
+
+  /* ── 9. Beranda: kartu modul 1 kolom penuh ─────────────────────────── */
+  .kisi-modul { grid-template-columns: 1fr !important; }
+  .modul-kartu { padding: 16px; }
+  .puncak-isi { gap: 10px; }
+
+  /* ── 10. Sembunyikan dekorasi yang bikin sempit ────────────────────── */
+  .dekorasi { display: none; }
+}
+
+/* HP kecil (iPhone SE 375px dan sekitarnya) */
+@media (max-width: 400px) {
+  .papan, .kartu { padding: 15px 13px; }
+  h1 { font-size: 22px; }
+  .angka-besar { font-size: 26px; }
+  .tb { padding: 11px 14px; font-size: 14.5px; }
+  nav.utama .tanda span.terpanjang { display: none; }
+  .langkah-teks { font-size: 11.5px; }
+  table.data td { font-size: 14px; }
+}
+
+/* Layar SANGAT kecil (jarang, tapi jaga-jaga) */
+@media (max-width: 340px) {
+  .papan, .kartu { padding: 13px 11px; }
+  h1 { font-size: 20px; }
+  .tb { width: 100%; justify-content: center; }
+}
+
+/* Tahan agar tidak ada elemen melebar keluar layar */
+@media (max-width: 900px) {
+  img, svg, table, pre, code { max-width: 100%; }
+  .papan, .kartu { max-width: 100%; overflow-wrap: break-word; }
+  pre, code { overflow-x: auto; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KARTU "BAGAIMANA X DIUJI KE Y?" (ACC Bos 18Sep26, opsi 1+3 digabung).
+   Pilihan ini TERPISAH dari jumlah X: 3 X boleh diuji sendiri-sendiri
+   (3 uji sederhana) ATAU bersama-sama (1 uji berganda).
+
+   🚨 BUG YANG DITUTUP (18Sep26 — Bos melihat radio di TENGAH ATAS, kartu
+      boros, teks terpusat):
+      Kartu ini adalah <label> di dalam `.medan`. Ada aturan lama
+      `.medan label { display:flex; align-items:center; gap:7px }` yang
+      spesifisitasnya (0,1,1) LEBIH TINGGI daripada `.pilih-cara` (0,1,0)
+      → aturan itu MENANG → kartu jadi flex-column, radio mengalir jadi
+      baris pertama di tengah, teks terpusat, tinggi boros 96px.
+      Walaupun `.pilih-cara` ditulis BELAKANGAN, ia tetap KALAH karena
+      spesifisitasnya lebih rendah (urutan hanya penentu kalau setara).
+      PERBAIKAN: naikkan spesifisitas jadi `label.pilih-cara` (0,1,1 +
+      elemen = 0,1,2) DAN susun sebagai BARIS: radio di kiri (melayang),
+      teks di kanan. Kartu jadi pendek & rapi.
+
+   CATATAN DESAIN (permintaan Bos): radio button disembunyikan, seluruh
+   kartu bisa DIKETUK. Keterpilihan ditandai warna + garis tebal + tanda
+   centang di kanan — lebih jelas daripada titik radio kecil.          */
+label.pilih-cara {
+  display: flex; flex-direction: row; align-items: flex-start; gap: 10px;
+  text-align: left; padding: 11px 13px; min-height: 0;
+  border: 1.5px solid var(--garis); border-radius: 11px;
+  background: var(--kertas-2, #FBF8F1); cursor: pointer;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+/* radio disembunyikan — SELURUH kartu bisa diketuk (permintaan Bos) */
+label.pilih-cara input[type="radio"] {
+  position: absolute; width: 1px; height: 1px; opacity: 0;
+  pointer-events: none; margin: 0;
+}
+/* teks kartu: judul + keterangan, mengalir sebagai satu kolom teks */
+label.pilih-cara .cara-teks { flex: 1 1 auto; min-width: 0; }
+label.pilih-cara .cara-judul {
+  display: block; font-weight: 700; font-size: 14.5px;
+  color: var(--tinta); margin-bottom: 2px; line-height: 1.25;
+}
+label.pilih-cara .cara-ket {
+  display: block; font-size: 12.5px; color: var(--tinta-3); line-height: 1.4;
+}
+/* tanda centang hanya muncul saat kartu terpilih */
+label.pilih-cara .cara-tanda {
+  flex: 0 0 auto; align-self: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--garis); background: var(--kertas);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: transparent;
+}
+/* kartu terpilih: tegas, bukan cuma warna pucat */
+label.pilih-cara:has(input:checked),
+label.pilih-cara.aktif {
+  border-color: var(--teal); background: var(--teal-lembut, #EAF6F4);
+  box-shadow: 0 0 0 3px var(--teal-terang);
+}
+label.pilih-cara:has(input:checked) .cara-judul,
+label.pilih-cara.aktif .cara-judul { color: var(--teal-tua); }
+label.pilih-cara:has(input:checked) .cara-tanda,
+label.pilih-cara.aktif .cara-tanda {
+  background: var(--teal); border-color: var(--teal); color: #fff;
+}
+
+/* Kotak centang "tampilkan dua-duanya"
+   🚨 BUG (18Sep26 — Bos mengotaki bagian ini: teks jadi "Tampilk an",
+      "dua- duanya"): penyebabnya teks labelnya berisi <strong> dan <em>
+      yang tersebar sebagai ANAK LANGSUNG dari elemen flex. Tiap anak jadi
+      flex-item sendiri → browser memotongnya paksa di tengah kata.
+      PERBAIKAN: hanya KOTAK CENTANG yang jadi flex-item; SEMUA teks
+      dibungkus dalam SATU <span> sehingga mengalir sebagai paragraf biasa
+      (bisa membungkus antarkata, tidak pernah memotong di tengah kata). */
+.centang-keduanya {
+  display: flex; align-items: flex-start; gap: 9px;
+  margin-top: 11px; padding: 10px 12px;
+  border: 1px dashed var(--garis); border-radius: 10px;
+  font-size: 13.5px; color: var(--tinta-2); cursor: pointer;
+  background: var(--kertas-2, #FBF8F1);
+}
+.centang-keduanya input[type="checkbox"] {
+  width: 19px; height: 19px; min-height: 0; flex: 0 0 auto;
+  accent-color: var(--teal); cursor: pointer;
+}
+.centang-keduanya:has(input:checked) {
+  border-color: var(--teal); background: var(--teal-lembut, #EAF6F4);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HALAMAN PILIH JENIS + PILIH MODEL  (ACC Bos 18Sep26)
+   ══════════════════════════════════════════════════════════════════════════
+   MENGAPA DUA HALAMAN INI ADA (akar, bukan tambalan):
+   /buat-data dulu langsung meminta angka β. Bagi orang awam itu seperti
+   mengisi formulir pajak — dia belum tahu mau model apa, tapi sudah diminta
+   mengisi koefisien. Hasilnya: bingung, dan mesin yang sebenarnya banyak
+   terasa menakutkan.
+   Solusinya: pilih JENIS dulu (dua pintu), baru pilih MODEL (kartu
+   bergambar berbahasa tujuan), baru masuk pengisian angka.
+
+   ⚠️ WAJIB: cegah ISI (tabel/svg/input) meluber keluar kartu. Terukur
+   18Sep26: tanpa ini tabel mendorong kolom BESAR & PERANNYA rusak.
+   Karena itu grid di bawah pakai minmax(0, 1fr), BUKAN 1fr.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Halaman pilih jenis: dua pintu ────────────────────────────────────── */
+.grid-jenis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* ⚠️ RUANG DIPESAN 19Sep26 — untuk KARTU KE-5: BANDING KELOMPOK (MANOVA).
+   Perintah Bos: "kamu perlu siapkan ruang untuk manova ini, agar tidak
+   bertumpuk dan menimpa." Alasan terukur: `.grid-jenis` (baris di atas)
+   terkunci `repeat(2, ...)`, jadi kartu ke-5 akan MENGGANTUNG SENDIRIAN
+   di kolom kiri dan tampak pincang. Kelas ini membuatnya melintang penuh.
+
+   ⚠️ JANGAN hapus kelas ini walau belum dipakai halaman mana pun.
+   Dipakai nanti oleh kartu "Banding Kelompok (MANOVA)" di /kuantitatif. */
+.pintu.lebar-penuh {
+  grid-column: 1 / -1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANEL SUB-PILIHAN MODEL (TAHAP 1.3, ACC Bos 19Sep26)
+   Dipakai /kuantitatif: klik kartu INDUK → panel sub-pilihan muncul di
+   TEMPAT yang sama (keputusan Bos opsi 1a), bukan pindah halaman.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.panel-sub {
+  margin-top: 26px;
+}
+
+.panel-sub[hidden] {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BAR "MODEL KAMU SEKARANG" — TAHAP 1.4 (ACC Bos 19Sep26, opsi 2A)
+
+   ⚠️⚠️ AKAR PENTING — KENAPA `sticky` GAGAL, dan kenapa dipakai `fixed` ⚠️⚠️
+   Terukur 19Sep26 di halaman SUNGGUHAN: bar ber-`position:sticky` tetap
+   TERGULUNG (`top` 258 → −1142 setelah scroll 1400).
+
+   AKAR SEJATI (bukan tebakan — dibaca dari DOM, bukan dari berkas):
+   gaya.css baris 554 punya aturan lama:
+       @media (...) { html, body { max-width: 100%; overflow-x: hidden; } }
+   `overflow-x: hidden` pada <body> MEMATIKAN `position: sticky` untuk SEMUA
+   anaknya (aturan CSS: elemen sticky menempel pada SCROLL CONTAINER terdekat;
+   begitu body jadi scroll container, sticky tidak lagi menempel ke viewport).
+   Jejak DOM: `DIV.bar-model ... pos=sticky` → `BODY overflow=hidden auto`.
+
+   MENGAPA TIDAK MENGHAPUS `overflow-x:hidden`: itu aturan LAMA yang sengaja
+   dipasang supaya halaman tidak bisa digeser ke samping di HP. Menghapusnya
+   bisa memunculkan kembali masalah melebar — menambal satu, merusak lain.
+   CARA AMAN: `position: fixed` — TIDAK terpengaruh scroll container, jadi
+   tetap menempel. Harganya: elemen `fixed` keluar dari alur → butuh
+   penyeimbang (`padding-top` pada wadah halaman) supaya konten tidak
+   tertutup. Penyeimbang itu dipasang di .bungkus (lihat di bawah).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.bar-model {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 22px;
+  background: #EAF4F1;
+  border-bottom: 1px solid #B9D9D1;
+  box-shadow: 0 2px 10px rgba(46, 125, 111, .12);
+}
+.bar-model[hidden] { display: none; }
+
+/* ⚠️ PENYEIMBANG: bar `fixed` keluar dari alur dokumen, jadi konten di
+   bawahnya akan tertutup. Terukur tinggi bar 154px di HP 390px (2 baris),
+   ~60px di layar lebar. Padding dipasang pada .bungkus HANYA saat bar ada —
+   selektor `:has()` dipakai supaya halaman lain tidak ikut terdorong.
+   ⚠️ `:has()` didukung Chrome/Safari/Firefox modern; kalau tidak didukung,
+   efeknya hanya konten sedikit tertutup (tidak merusak). */
+body:has(.bar-model:not([hidden])) .bungkus:first-of-type {
+  padding-top: 96px;
+}
+@media (max-width: 620px) {
+  body:has(.bar-model:not([hidden])) .bungkus:first-of-type {
+    padding-top: 186px;   /* terukur: 154px bar + 32px jarak */
+  }
+}
+
+.bar-model-ikon {
+  display: flex;
+  align-items: center;
+  color: var(--teal);
+  flex: 0 0 auto;
+}
+.bar-model-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.bar-model-label {
+  font-size: 11.5px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+.bar-model-nama {
+  font-size: 15px;
+  color: var(--tinta);
+  line-height: 1.35;
+}
+.bar-model-ganti {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  /* ⚠️ DI HP bar dipecah 2 baris: nama model di atas, tombol di bawah.
+     Terukur 19Sep26 di 390px: satu baris membuat nama model terpotong
+     di tengah kata dan tombol "Ganti model" meluber keluar layar. */
+  .bar-model { flex-wrap: wrap; padding: 10px 16px; }
+  .bar-model-teks { flex: 1 1 100%; }
+  .bar-model-ganti { flex: 1 1 100%; justify-content: center; }
+}
+
+.kepala-sub {
+  margin-bottom: 18px;
+}
+
+/* Grid sub-pilihan: 2 kolom (sama seperti .grid-jenis), lalu 1 kolom di HP.
+   ⚠️ SENGAJA 2 kolom, bukan 3, supaya teks kartu TIDAK terpotong di HP —
+   pelajaran 18Sep26: kartu sempit + `overflow-wrap:anywhere` memotong kata. */
+.grid-sub {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 620px) {
+  .grid-sub { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Kartu sub-pilihan yang MELINTANG PENUH (mis. berganda-berantai). */
+.kartu-pilih.lebar-penuh {
+  grid-column: 1 / -1;
+}
+
+/* Garis RANTAI antar-X: PENUH & TEBAL (2px), TANPA mata panah.
+   Sengaja beda dari .garis-panah (tipis + bermata panah) supaya mahasiswa
+   bisa membedakan "X saling berhubungan" versus "X memengaruhi Y". */
+.garis-rantai {
+  stroke: var(--tinta-3, #9A9086);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Mata panah rantai — SENGAJA warna tinta-3 (bukan teal) supaya jelas
+   bedanya: rantai ANTAR-X (abu) versus pengaruh KE-Y (tinta-2, lebih gelap). */
+.denah .mata-rantai {
+  fill: var(--tinta-3, #9A9086);
+}
+
+/* Garis SIKU 90° (tanda SIMULTAN) pada kartu "Berganda (Parsial + Simultan)".
+   ⚠️ DIBUAT 21Sep26 setelah AUDIT MATA: versi pertama memakai `.garis-rantai`
+   yang berwarna abu terang (--tinta-3) → di layar tampak seperti "bayangan
+   tebal", bukan jalur siku. Padahal garisnya ADA. ATURAN: gambar WAJIB
+   diperiksa MATA (bukan hanya diperiksa ada/tidaknya di HTML).
+   Warna sengaja = tinta-2 (sama dengan panah) supaya "semua X bersama-sama
+   ke Y" terbaca sejelas pengaruh parsial. Masih TANPA mata panah (aturan
+   18Sep26) — bedanya dari panah lurus = BENTUK siku, bukan mata panah. */
+.garis-siku {
+  stroke: var(--tinta-2, #4A423C);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.pintu {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r);
+  padding: 28px 24px 22px;
+  text-align: center;
+  text-decoration: none; color: var(--tinta);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.pintu:hover {
+  border-color: var(--teal);
+  box-shadow: var(--bayang-h);
+  transform: translateY(-2px);
+}
+.pintu-lencana { position: absolute; top: 15px; right: 15px; }
+.pintu-ikon {
+  width: 54px; height: 54px; border-radius: 50%;
+  display: grid; place-items: center; margin: 0 auto 15px;
+}
+.pintu-kuant .pintu-ikon { background: var(--teal-terang); color: var(--teal); }
+.pintu-kual  .pintu-ikon { background: var(--amber-terang); color: var(--amber); }
+.pintu h3 { margin: 0 0 10px; font-size: 20px; }
+.pintu-tanya {
+  color: var(--tinta-2); font-size: 14px; line-height: 1.75;
+  margin: 0 0 9px;
+}
+.pintu-contoh {
+  display: block; font-size: 12.5px; color: var(--tinta-3);
+  border-top: 1px solid var(--garis);
+  padding-top: 12px; margin-top: auto;
+  font-style: italic;
+}
+.pintu-aksi {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 14px; font-size: 13.5px; font-weight: 650;
+  color: var(--teal);
+}
+.pintu-kual .pintu-aksi { color: var(--amber); }
+
+/* ── Halaman pilih model: kartu bergambar ──────────────────────────────── */
+.grid-model-kartu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kartu-pilih {
+  display: flex; flex-direction: column;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r);
+  padding: 16px 16px 13px;
+  text-decoration: none; color: var(--tinta);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.kartu-pilih:hover {
+  border-color: var(--teal);
+  box-shadow: var(--bayang-h);
+  transform: translateY(-2px);
+}
+.kartu-kunci { opacity: .64; cursor: not-allowed; }
+.kartu-kunci:hover {
+  border-color: var(--garis); transform: none; box-shadow: none;
+}
+
+/* denah (gambar diagram) — tinggi TETAP supaya semua kartu sejajar */
+.denah {
+  display: block; height: 66px; margin: 0 0 11px;
+}
+.denah svg { width: 100%; height: 100%; }
+.denah ellipse {
+  fill: var(--teal-terang); stroke: var(--teal); stroke-width: 1.6;
+}
+.denah ellipse.kecil { stroke-width: 1.4; }
+.denah text {
+  font-size: 11px; fill: var(--teal); font-weight: 600;
+  text-anchor: middle;
+}
+.denah text.teks-kecil { font-size: 9.5px; }
+.denah text.teks-sangat-kecil { font-size: 8.5px; }
+.denah .garis-panah { stroke: var(--tinta-2); stroke-width: 1.5; }
+.denah polygon { fill: var(--tinta-2); }
+.denah .garis-putus {
+  stroke: var(--tinta-3); stroke-width: 1.2; stroke-dasharray: 4 3;
+}
+/* M (mediasi) vs Z (moderasi) — SENGAJA BEDA WARNA supaya tidak tertukar.
+   ⚠️ Kunci bedanya: M ada DI ANTARA (di jalur), Z menempel DI GARIS. */
+.denah .kotak-m { fill: var(--teal-terang); stroke: var(--teal); }
+.denah text.teks-m { fill: var(--teal); }
+.denah .kotak-z { fill: var(--merah-terang); stroke: var(--merah); stroke-width: 1.5; }
+.denah text.teks-z { fill: var(--merah); }
+.denah .garis-z {
+  stroke: var(--merah); stroke-width: 1.4; stroke-dasharray: 3 2;
+}
+.denah .isi-z { fill: var(--merah); }
+/* kartu terkunci */
+.denah .kotak-abu { fill: var(--kertas-3); stroke: var(--tinta-3); stroke-width: 1.2; }
+.denah .garis-abu {
+  stroke: var(--tinta-3); stroke-width: 1.2; stroke-dasharray: 4 3;
+}
+.denah .lingkar-abu { fill: none; stroke: var(--tinta-3); stroke-width: 1.4; }
+.denah .tanda-plus {
+  fill: none; stroke: var(--tinta-3); stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.kartu-judul { font-weight: 650; font-size: 14.5px; margin: 0 0 6px; }
+.kartu-tujuan {
+  color: var(--tinta-2); font-size: 12.5px; line-height: 1.68;
+  margin: 0 0 12px; flex: 1;
+}
+.kartu-kaki {
+  display: flex; gap: 7px; align-items: center;
+  border-top: 1px solid var(--garis); padding-top: 10px;
+}
+.kartu-teknis { font-size: 11.5px; color: var(--tinta-3); }
+
+.pita-kecil {
+  font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  font-weight: 650; letter-spacing: .02em;
+  display: inline-flex; align-items: center; gap: 4px;
+  flex: 0 0 auto;
+}
+.pita-s1 { background: var(--teal-terang); color: var(--teal); }
+.pita-s2 { background: var(--amber-terang); color: var(--amber); }
+.pita-s3 { background: var(--merah-terang); color: var(--merah); }
+.pita-abu2 { background: var(--kertas-3); color: var(--tinta-3); }
+
+/* ── layar kecil: satu kolom ───────────────────────────────────────────── */
+@media (max-width: 940px) {
+  .grid-jenis { grid-template-columns: minmax(0, 1fr); }
+  .grid-model-kartu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .grid-model-kartu { grid-template-columns: minmax(0, 1fr); }
+  .pintu { padding: 24px 18px 18px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HALAMAN PERIKSA SYARAT (ACC Bos 18Sep26)
+   ══════════════════════════════════════════════════════════════════════════
+   MENGAPA ADA: di SPSS grafik uji asumsi tersembunyi di Analyze → Plots.
+   Mahasiswa sering lupa atau tidak tahu cara membacanya. Halaman ini
+   menunjukkan grafik + TAFSIR + cara mengeceknya sendiri.
+
+   ⚠️ WAJIB: cegah ISI (grafik svg) meluber keluar kartu. Terukur 18Sep26:
+   tanpa ini tabel/svg mendorong kolom BESAR & PERANNYA rusak.
+   Karena itu grid pakai minmax(0, 1fr), BUKAN 1fr.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.grid-syarat {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kartu-syarat {
+  display: flex; flex-direction: column;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r);
+  padding: 17px 17px 15px;
+}
+
+.kartu-syarat .kepala {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 10px; margin-bottom: 12px;
+}
+.kartu-syarat h4 { margin: 0 0 3px; font-size: 15px; }
+.kartu-syarat .alat {
+  display: block; font-size: 11.5px; color: var(--tinta-3); line-height: 1.5;
+}
+.kartu-syarat .pita { flex: 0 0 auto; }
+
+/* kotak gambar grafik — tinggi tetap supaya kartu sejajar */
+.kotak-gambar {
+  background: var(--kertas);
+  border: 1px solid var(--garis);
+  border-radius: var(--r-s);
+  padding: 8px 10px; margin: 0 0 12px;
+}
+.kotak-gambar svg { display: block; }
+
+/* tafsir: paragraf pembacaan grafik */
+.tafsir {
+  font-size: 13px; line-height: 1.72; color: var(--tinta-2);
+  background: var(--hijau-terang);
+  border-radius: var(--r-s);
+  padding: 11px 13px; margin: 0 0 9px;
+}
+.tafsir strong { color: var(--tinta); }
+.tafsir.hati { background: var(--amber-terang); }
+
+/* cara cek sendiri di SPSS / SmartPLS */
+.spss-cara {
+  font-size: 12px; line-height: 1.72; color: var(--tinta-2);
+  background: var(--kertas-3);
+  border-radius: var(--r-s);
+  padding: 11px 13px; margin: auto 0 0;
+}
+.spss-cara strong { color: var(--tinta); }
+.kd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--kertas);
+  border: 1px solid var(--garis);
+  padding: 1px 5px; border-radius: 4px; font-size: 11.5px;
+  color: var(--tinta);
+}
+
+.dua-kolom {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 940px) {
+  .grid-syarat, .dua-kolom { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KOTAK DETEKSI JUDUL di /mulai (ACC Bos 18Sep26, pilihan B)
+   ══════════════════════════════════════════════════════════════════════════
+   MENGAPA ADA: orang awam bingung kalau langsung disuguhi pilihan model.
+   Dengan menempelkan judul, dia dapat usulan model + ALASANNYA — jadi
+   tidak perlu tahu istilah "mediasi"/"moderasi" lebih dulu.
+
+   ⚠️ WAJIB: cegah ISI (input/kotak) meluber keluar kartu. Terukur 18Sep26:
+   tanpa ini tabel/input mendorong kolom BESAR & PERANNYA rusak.
+   Karena itu baris pakai minmax(0, 1fr) dan input pakai min-width:0.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.kotak-judul { border-left: 3px solid var(--teal); }
+
+.kepala-judul {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 12px; margin-bottom: 15px;
+}
+
+.baris-judul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px; align-items: stretch;
+}
+@media (max-width: 620px) {
+  .baris-judul { grid-template-columns: minmax(0, 1fr); }
+}
+
+.isian-judul {
+  min-width: 0; width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r-s);
+  background: var(--kertas);
+  font-family: inherit; font-size: 14px; color: var(--tinta);
+}
+.isian-judul:disabled { background: var(--kertas-3); cursor: not-allowed; }
+.isian-judul::placeholder { color: var(--tinta-3); }
+
+/* contoh bentuk hasil rekomendasi */
+.contoh-rekomendasi {
+  margin-top: 18px; padding: 15px 16px;
+  background: var(--kertas);
+  border: 1px dashed var(--garis);
+  border-radius: var(--r-s);
+}
+.rekomendasi-isi { margin-top: 10px; }
+.rekomendasi-judul {
+  font-size: 13px; color: var(--tinta-3); font-style: italic;
+  margin: 0 0 9px;
+}
+.rekomendasi-model {
+  font-size: 16px; font-weight: 650; margin: 0 0 8px; color: var(--tinta);
+}
+.rekomendasi-alasan {
+  font-size: 13px; color: var(--tinta-2); line-height: 1.72; margin: 0;
+}
+
+/* tombol kecil (tampilan saja, belum aktif) */
+.tb-kecil {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 15px; border-radius: 20px;
+  border: 1.5px solid var(--garis);
+  font-size: 12.5px; font-weight: 600; color: var(--tinta-2);
+  background: var(--kertas-2);
+}
+.tb-kecil-utama {
+  background: var(--teal); border-color: var(--teal); color: #fff;
+}
+
+.eyebrow.teal { color: var(--teal); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HASIL DETEKSI JUDUL + RIWAYAT JUDUL (ACC Bos 18Sep26)
+   ══════════════════════════════════════════════════════════════════════════
+   ⚠️ ACC BOS: riwayat judul = KARTU TERSENDIRI, tampil 5 judul, sisanya
+   bisa di-SCROLL (bukan halaman terpisah, bukan daftar memanjang).
+
+   ⚠️ WAJIB: cegah ISI meluber keluar kartu. Terukur 18Sep26: tanpa
+   minmax(0,1fr)/min-width:0, judul panjang mendorong kolom BESAR &
+   PERANNYA rusak. Judul penelitian sering SANGAT panjang (15-25 kata),
+   jadi aturan ini wajib ada di tiap elemen yang memuat judul.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── kotak hasil rekomendasi ─────────────────────────────────────────── */
+.hasil-judul {
+  margin-top: 18px; padding: 16px 17px;
+  background: var(--teal-lembut, #EAF6F4);
+  border: 1.5px solid var(--teal);
+  border-radius: var(--r-s);
+}
+.baris-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+
+/* ── kartu riwayat judul ─────────────────────────────────────────────── */
+.kartu-riwayat {
+  margin: 0 0 26px;
+  border-left: 3px solid var(--tinta-3);
+}
+
+/* ⚠️ 5 judul terlihat, sisanya di-scroll.
+   Tinggi baris 62px × 5 + celah 8px × 4 = 342px. Disengaja TETAP, supaya
+   kartu tidak memanjang kalau user mencoba puluhan judul. */
+.daftar-riwayat {
+  margin-top: 14px;
+  max-height: 342px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-right: 5px;                 /* ruang scrollbar, jangan menutupi teks */
+}
+.daftar-riwayat::-webkit-scrollbar { width: 8px; }
+.daftar-riwayat::-webkit-scrollbar-thumb {
+  background: var(--garis); border-radius: 4px;
+}
+
+.baris-riwayat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;   /* minmax(0,…) = WAJIB */
+  gap: 10px; align-items: center;
+  width: 100%; text-align: left;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r-s);
+  padding: 11px 13px;
+  min-height: 62px;
+  font-family: inherit; font-size: 13px; color: var(--tinta);
+  cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.baris-riwayat:hover { border-color: var(--teal); background: var(--kertas); }
+
+/* ⚠️ min-width:0 + potong 2 baris — judul panjang tidak boleh merusak kartu */
+.riwayat-judul {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+  color: var(--tinta-2);
+}
+
+@media (max-width: 620px) {
+  .daftar-riwayat { max-height: 296px; }
+  .baris-riwayat { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BELAJAR — PERBAIKAN 18Sep26 (temuan Bos dari tangkapan layar HP)
+   ══════════════════════════════════════════════════════════════════════════
+   AKAR TERPOTONG DI HP (bukan tambalan):
+   SVG sebelumnya memakai preserveAspectRatio="none" dan tinggi tetap 168px.
+   Artinya gambar DIPAKSA melar mengikuti lebar kotak. Di layar lebar jadi
+   gepeng, di layar HP jadi penyok/terpotong — padahal halaman HTTP 200 dan
+   "tampak hidup". Bos menemukannya dengan MATA, bukan dari uji otomatis.
+   PERBAIKAN: rasio gambar dijaga (xMidYMid meet) + tinggi mengikuti lebar
+   lewat aspect-ratio, jadi gambar selalu UTUH di lebar layar apa pun.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+svg.grafik {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 400 / 200;      /* jaga bentuk, jangan melar */
+  max-height: 320px;            /* jangan terlalu tinggi di layar besar */
+  background: var(--kertas);
+  border-radius: var(--r-s);
+}
+
+@media (max-width: 620px) {
+  svg.grafik {
+    aspect-ratio: 400 / 210;    /* sedikit lebih tinggi di HP agar teks lega */
+  }
+}
+
+/* ── kotak "Kenapa bisa terjadi?" ─────────────────────────────────────── */
+.kenapa-kotak { align-items: flex-start; }
+
+.daftar-kenapa {
+  margin: 7px 0 0;
+  padding-left: 17px;
+  list-style: disc;
+}
+.daftar-kenapa li {
+  font-size: 13px;
+  line-height: 1.72;
+  color: var(--tinta-2);
+  margin-bottom: 5px;
+  overflow-wrap: break-word;    /* ⚠️ break-word, BUKAN anywhere — kalau
+                                   anywhere, kata terpotong di tengah */
+}
+.daftar-kenapa li:last-child { margin-bottom: 0; }
+/* ══════════════════════════════════════════════════════════════════════════
+   KARTU UJI t — 3 LAPIS (18Sep26, ACC Bos)
+
+   MENGAPA BAGIAN INI ADA:
+   Di halaman BELAJAR, istilah keenam (hetero/β/p-value/R²/VIF/alpha) mudah
+   dipahami, TAPI mahasiswa tersandung hal lain: mereka melihat hasil uji t
+   yang SIG. < 0,05 tapi nilainya NEGATIF, lalu panik dan menyangka tidak
+   berpengaruh. Ada juga yang salah arah sebaliknya — menganggap "tidak
+   signifikan tapi positif" berarti "berpengaruh positif lemah".
+
+   Permintaan Bos (verbatim): "1 kartu khusus untuk simulasi menjelaskan uji t
+   yang sering dialami mahasiswa dan mereka bingung, signifikan kok hasilnya
+   negatif disertai penjelasan dan buat interaktif agar menarik dilengkapi
+   beberapa skenario uji t".
+
+   KEPUTUSAN BOS yang menentukan bentuk akhir:
+     · 1A — tambahkan miskonsepsi kedua (tidak signifikan, tanda tak bermakna)
+     · 2A — masukkan keadaan "marginal" (Sig. 0,05–0,10)
+     · 3A — susunan 2 tingkat: pilih HASIL dulu, baru keluar artinya
+     · Bahasan sebab + cara memperbaiki + label ✅SAH/⚠️HATI-HATI/❌CURANG
+     · 5 cara curang ditampilkan
+     · Tombol "Belum yakin datanya benar?" → daftar periksa
+     · Kartu hack: "5 CARA HACK" — strip GELAP warna MERAH (bukan coklat)
+   ═════════════════════════════════════════════════════════════════════════ */
+/* ⚠️ AKAR (19Sep26) — Bos: "klik uji t malah pindah ke bawah. Dia itu posisinya
+   sama seperti tab tab disampingnya."
+   .kamus-kisi adalah GRID `218px 1fr`. Tanpa aturan di bawah ini, <section
+   kartu-ujit> otomatis MENDARAT KE BARIS KE-2 (di bawah .papan) = TURUN.
+   Dengan menempatkannya di grid-column 2 / grid-row 1, kartu MENEMPATI KOLOM ISI
+   pada baris yang SAMA — jadi terlihat "punya halaman sendiri", menggantikan
+   panel kamus di tempat yang sama. Di HP (1 kolom) aturan ini netral. */
+.kartu-ujit { margin-top: 4px; grid-column: 2; grid-row: 1; }
+@media (max-width: 820px) { .kartu-ujit { grid-column: auto; grid-row: auto; } }
+
+/* ── Kotak pilih hasil (Tingkat ①) ─────────────────────────────────────── */
+.ujit-empat { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+@media (max-width: 560px) { .ujit-empat { grid-template-columns: 1fr; } }
+
+.ujit-pilih {
+  background: #fff; border: 1px solid var(--garis); border-radius: 11px;
+  padding: 11px 12px; text-align: left; font: inherit; color: inherit;
+  cursor: pointer; width: 100%; display: block;
+}
+.ujit-pilih:hover { border-color: #C9BEB1; }
+.ujit-pilih.aktif { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-muda); }
+.ujit-kepala { display: flex; justify-content: space-between; gap: 7px;
+               align-items: center; margin-bottom: 5px; }
+.ujit-nilai { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ujit-nama { font-size: 13px; font-weight: 700; display: block; margin-bottom: 2px; }
+.ujit-kecil { font-size: 12px; color: var(--lembut); }
+
+/* ── Pita penanda hasil ────────────────────────────────────────────────── */
+.ujit-pita { display: inline-block; font-size: 11px; font-weight: 700;
+             padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.ujit-pita.hijau  { background: var(--hijau-muda); color: var(--hijau); }
+.ujit-pita.merah  { background: var(--merah-muda); color: var(--merah); }
+.ujit-pita.amber  { background: var(--amber-muda); color: var(--amber); }
+.ujit-pita.abu    { background: #EFEBE3; color: var(--lembut); }
+
+/* ── Dua kolom: gambar + penjelasan ────────────────────────────────────── */
+.ujit-dua { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .ujit-dua { grid-template-columns: 1fr; } }
+
+/* ── Kotak contoh penulisan ────────────────────────────────────────────── */
+.ujit-tulis { background: #F6F3EC; border-left: 3px solid var(--teal);
+              border-radius: 8px; padding: 12px 14px; margin-top: 12px;
+              font-size: 13.5px; }
+.ujit-tulis .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+                   text-transform: uppercase; color: var(--lembut);
+                   margin-bottom: 7px; }
+.ujit-tulis p { margin: 0 0 8px; }
+.ujit-tulis p:last-child { margin-bottom: 0; }
+.ujit-salah { color: var(--merah); font-weight: 600; }
+.ujit-benar { color: var(--hijau); font-weight: 600; }
+
+/* ── Tabel sebab & cara memperbaiki (Tingkat ③) ──────────────────────────
+   ⚠️ WAJIB: cegah ISI (tabel/svg/input) meluber keluar kartu.
+   Terukur 18Sep26: tanpa ini tabel mendorong kolom BESAR & PERANNYA
+   hancur di layar HP — kolom "Boleh?" terdorong keluar layar.
+   Dipakai `word-break: break-word` (BUKAN `anywhere`) karena `anywhere`
+   MEMOTONG KATA DI TENGAH ("Tampilkan" → "Tampilk"+"an"). */
+.ujit-tabel { border-collapse: collapse; width: 100%; font-size: 13px;
+              table-layout: fixed; word-break: break-word; }
+.ujit-tabel th, .ujit-tabel td {
+  padding: 9px 7px; border-bottom: 1px solid var(--garis); text-align: left;
+  vertical-align: top; overflow-wrap: break-word; }
+.ujit-tabel th { font-size: 10.5px; text-transform: uppercase;
+                 letter-spacing: .06em; color: var(--lembut); font-weight: 700; }
+.ujit-tabel tr:last-child td { border-bottom: 0; }
+.ujit-tabel .kol-sebab { width: 34%; }
+.ujit-tabel .kol-boleh { width: 86px; }
+.ujit-tabel .sebab-ket { font-size: 12.5px; color: var(--lembut); margin-top: 3px; }
+
+/* Label SAH / HATI-HATI / CURANG */
+.ujit-tag { font-size: 10.5px; font-weight: 700; padding: 3px 8px;
+            border-radius: 999px; white-space: nowrap; display: inline-block; }
+.ujit-tag.sah    { background: var(--hijau-muda); color: var(--hijau); }
+.ujit-tag.hati   { background: var(--amber-muda); color: var(--amber); }
+.ujit-tag.curang { background: var(--merah-muda); color: var(--merah); }
+
+/* ── Kartu "5 CARA HACK" — STRIP GELAP WARNA MERAH (ACC Bos 18Sep26) ─────
+   Bos memilih V3 "strip gelap" TAPI stripnya MERAH (bukan coklat tinta).
+   Alasan bentuk ini: kartu lain berlatar putih kertas, jadi hanya bagian
+   kepala yang gelap-merah supaya tetap kontras tanpa merusak irama halaman. */
+.hack-kartu { border: 0; border-radius: 14px; overflow: hidden; padding: 0;
+              background: #fff; box-shadow: 0 4px 18px rgba(43,39,34,.10); }
+.hack-kepala { background: var(--merah); color: #fff; padding: 15px 18px;
+               display: flex; justify-content: space-between; align-items: center;
+               gap: 10px; }
+.hack-kepala h3 { color: #fff; font-size: 15.5px; margin: 0; }
+.hack-lencana { background: rgba(255,255,255,.22); color: #fff; font-size: 10.5px;
+                font-weight: 800; letter-spacing: .1em; padding: 4px 10px;
+                border-radius: 999px; white-space: nowrap; }
+.hack-badan { padding: 16px 18px; }
+.hack-ket { color: var(--lembut); font-size: 12.5px; margin: 0 0 12px; }
+.hack-item { display: flex; gap: 11px; align-items: flex-start; padding: 10px 12px;
+             background: #F6F3EC; border-radius: 10px; margin-bottom: 7px; }
+.hack-item:last-of-type { margin-bottom: 0; }
+.hack-n { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+          background: #fff; border: 1px solid var(--garis); font-size: 11.5px;
+          font-weight: 700; display: flex; align-items: center;
+          justify-content: center; }
+.hack-item b { display: block; font-size: 13.5px; }
+.hack-item span { color: var(--lembut); font-size: 12.5px; }
+.hack-kaki { margin-top: 12px; background: var(--hijau-muda); border-radius: 10px;
+             padding: 12px 13px; font-size: 13px; }
+
+/* ── Daftar periksa ("Belum yakin datanya benar?") ─────────────────────── */
+.cek-tombol { display: inline-flex; gap: 9px; align-items: center;
+              background: var(--teal); color: #fff; border: 0; border-radius: 11px;
+              padding: 12px 16px; font: inherit; font-size: 13.5px;
+              font-weight: 700; cursor: pointer; margin-top: 4px; }
+.cek-tombol:hover { background: #26695E; }
+.cek-daftar { display: grid; gap: 8px; margin-top: 12px; }
+.cek-daftar[hidden] { display: none; }
+.cek-butir { display: flex; gap: 10px; align-items: flex-start;
+             background: #F6F3EC; border-radius: 9px; padding: 10px 12px;
+             font-size: 13px; }
+.cek-butir .n { background: #fff; border: 1px solid var(--garis); width: 22px;
+                height: 22px; border-radius: 50%; display: flex;
+                align-items: center; justify-content: center; font-size: 11.5px;
+                font-weight: 700; flex: 0 0 auto; }
+
+/* ══════ PITA TAB (19Sep26) ══════ */
+/* ⚠️ Pita tab di halaman BELAJAR (Materi & Kamus | Ruang Uji).
+   Dirancang 19Sep26 dari sketsa _sketsa/belajar_tab_sketsa.html.
+   Variasi dari .pilih yang SUDAH ADA — tidak bikin bahasa gaya baru.
+   margin-bottom:-1.5px pada <a> supaya garis tab MENEMPEL garis bawah pita
+   (kalau tidak, ada celah 1,5px yang terlihat seperti garis putus). */
+.pita-tab {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--garis); margin: 18px 0 22px;
+}
+.pita-tab a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 16px 12px; font-size: 14px; font-weight: 650;
+  color: var(--tinta-2); text-decoration: none;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+}
+.pita-tab a:hover { color: var(--teal); }
+.pita-tab a.aktif { color: var(--teal); border-bottom-color: var(--teal); }
+.pita-tab .biji {
+  font-size: 11px; background: var(--kertas-3); color: var(--tinta-2);
+  border-radius: 20px; padding: 2px 8px; font-weight: 700;
+}
+.pita-tab a.aktif .biji { background: var(--teal-terang); color: var(--teal); }
+
+/* ⚠️ ISI: cegah kartu meluber di dalam tab (pola sama seperti .kartu lain).
+   Kartu alat di Ruang Uji: ikon kiri · isi tengah · panah kanan. */
+.kartu-alat {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--garis); border-radius: 14px;
+  padding: 16px 18px; margin: 0 0 12px; text-decoration: none;
+  color: var(--tinta); transition: border-color .15s, background .15s;
+  overflow-wrap: break-word;
+}
+.kartu-alat:hover { border-color: var(--teal); background: var(--teal-terang); }
+.kartu-alat .ikon-alat { font-size: 26px; flex: 0 0 auto; line-height: 1; }
+.kartu-alat .isi-alat { min-width: 0; flex: 1 1 auto; }
+.kartu-alat .isi-alat b { display: block; font-size: 15px; margin-bottom: 2px; }
+.kartu-alat .isi-alat span { font-size: 13px; color: var(--tinta-2); }
+.kartu-alat .panah { font-size: 22px; color: var(--tinta-2); flex: 0 0 auto; }
+
+/* Kartu "belum jadi" di dalam Ruang Uji — jujur tapi tidak menghalangi. */
+.kartu-alat.segera { opacity: .75; }
+.kartu-alat.segera:hover { border-color: var(--garis); background: #fff; }
+
+/* ⚠️ DI HP 390px: pita tab harus tetap bisa dibaca. Tab memakai flex-wrap
+   sehingga turun baris sendiri kalau tidak muat — JANGAN dipaksa 1 baris. */
+@media (max-width: 430px) {
+  .pita-tab a { padding: 10px 12px 11px; font-size: 13.5px; gap: 6px; }
+  .pita-tab .biji { font-size: 10.5px; padding: 2px 7px; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KETERANGAN AMBANG SIG. — slider pembanding hasil temuan vs batas 0,05
+   (19Sep26, ACC Bos). Dipakai di kartu Uji t halaman /belajar.
+   Semua kelas berawalan `amb-` supaya tidak bentrok dengan kelas lama.
+   Warna memakai variabel yang SUDAH TERBUKTI ADA (grep): --hijau-terang,
+   --merah-terang, --amber, --amber-terang, --kertas-3.
+   ══════════════════════════════════════════════════════════════════════════ */
+.amb-masuk {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--kertas-2); border: 1.5px solid var(--garis);
+  border-radius: var(--r-s); padding: 10px 12px; margin-bottom: 18px;
+}
+.amb-masuk label { font-size: 13.5px; font-weight: 600; }
+.amb-masuk input {
+  width: 100px; padding: 7px 9px; text-align: center;
+  font: inherit; font-size: 17px; font-weight: 800; color: var(--teal);
+  border: 1.5px solid var(--teal); border-radius: 8px; background: #fff;
+}
+.amb-masuk .samar { margin-left: auto; font-size: 11.5px; color: var(--tinta-3); }
+
+/* ── garis bilangan: jalur + label batas (ATAS) + penanda angka (BAWAH) ── */
+.amb-garis { position: relative; height: 86px; margin: 4px 0 2px; }
+.amb-jalur {
+  position: absolute; top: 30px; left: 0; right: 0; height: 9px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    var(--hijau-terang) 0%, var(--hijau-terang) 9.9%,
+    var(--amber-terang) 10%, var(--amber-terang) 19.9%,
+    var(--kertas-3) 20%, var(--kertas-3) 100%);
+}
+.amb-batas {
+  position: absolute; top: 20px; width: 3px; height: 30px;
+  background: var(--teal); border-radius: 2px;
+}
+.amb-batas-lbl {
+  position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 800; color: var(--teal);
+  background: var(--teal-terang); padding: 1px 6px; border-radius: 5px;
+  white-space: nowrap;
+}
+.amb-tanda {
+  position: absolute; top: 42px; transform: translateX(-50%);
+  font-size: 10px; color: var(--tinta-3);
+}
+.amb-tanda:first-of-type { transform: none; }
+
+/* penanda angka user — DI BAWAH jalur, jadi tidak bisa menimpa label batas */
+.amb-pin {
+  position: absolute; top: 44px; transform: translateX(-50%);
+  text-align: center; transition: left .12s ease-out;
+}
+.amb-tangkai {
+  width: 2px; height: 18px; background: var(--tinta);
+  margin: 0 auto 2px; position: relative; top: -20px;
+}
+.amb-nilai {
+  font-size: 12.5px; font-weight: 800; background: var(--tinta); color: #fff;
+  padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+  display: inline-block;
+}
+
+/* ── kotak jawaban otomatis ── */
+.catatan.amb-jawab-hijau {
+  border-left-color: var(--hijau); background: var(--hijau-terang);
+}
+.catatan.amb-jawab-kuning {
+  border-left-color: var(--amber); background: var(--amber-terang);
+}
+.catatan.amb-jawab-abu {
+  border-left-color: var(--tinta-3); background: var(--kertas-3);
+}
+.catatan .amb-besar { font-size: 14.5px; font-weight: 800; }
+.catatan .amb-ket { font-size: 12.5px; color: var(--tinta-2); margin-top: 4px; }
+
+/* ── tabel ── */
+.amb-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.amb-tbl th, .amb-tbl td {
+  border: 1px solid var(--garis); padding: 7px 9px;
+  text-align: left; vertical-align: top; overflow-wrap: break-word;
+}
+.amb-tbl th { background: var(--kertas-2); font-size: 11.5px; }
+.amb-merah { color: var(--merah); }
+.amb-hijau { color: var(--hijau); }
+
+/* ── 3 contoh angka minus ── */
+.amb-tiga { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.amb-contoh {
+  border: 1px solid var(--garis); border-radius: var(--r-s);
+  padding: 9px 6px; text-align: center; background: var(--kertas);
+}
+.amb-angka { font-size: 13.5px; font-weight: 800; }
+.amb-lbl {
+  font-size: 10px; margin-top: 4px; padding: 2px 6px;
+  border-radius: 10px; display: inline-block; line-height: 1.5;
+}
+.amb-lbl-hijau { color: var(--hijau); background: var(--hijau-terang); }
+.amb-lbl-kuning { color: var(--amber); background: var(--amber-terang); }
+.amb-lbl-abu { color: var(--tinta-2); background: var(--kertas-3); }
+
+/* ── teori ── */
+.amb-teori {
+  border: 1px solid var(--garis); border-radius: var(--r-s);
+  padding: 12px; margin-bottom: 10px; background: var(--kertas-2);
+}
+.amb-teori h3 { margin: 0 0 6px; font-size: 13.5px; color: var(--teal); }
+.amb-teori p { margin: 0; font-size: 12.5px; color: var(--tinta-2); line-height: 1.6; }
+.amb-teori blockquote {
+  margin: 8px 0 0; padding-left: 10px; border-left: 2px solid var(--teal);
+  font-style: italic; color: var(--tinta); font-size: 12.5px; line-height: 1.55;
+}
+.amb-kutip-siapa {
+  font-style: normal; font-size: 11px; color: var(--tinta-3);
+}
+
+@media (max-width: 430px) {
+  .amb-masuk input { width: 88px; font-size: 16px; }
+  .amb-nilai { font-size: 11.5px; padding: 2px 6px; }
+  .amb-angka { font-size: 12.5px; }
+  .amb-lbl { font-size: 9.5px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOMBOL PINTASAN SEHAT/SAKIT — kartu Heteroskedastisitas (20Sep26, ACC Bos)
+   ──────────────────────────────────────────────────────────────────────────
+   MENGAPA ADA: slider memaksa mahasiswa menghayal dulu ("yang sehat itu
+   bagaimana ya?"). Dua tombol ini membuat keadaan sehat & sakit bisa DILIHAT
+   LANGSUNG dan dibandingkan dalam satu klik. Slider tetap ada (keputusan Bos:
+   variasi B) supaya user masih bisa menjelajah di antaranya.
+
+   ⚠️ TOMBOL INI HANYA UNTUK HETERO. Saat istilah lain dipilih, JS
+   menyembunyikan wadahnya (pilih() menyetel `hidden`) — JANGAN menampilkan
+   tombol yang tidak berfungsi.
+   ══════════════════════════════════════════════════════════════════════════ */
+.pintasan-baris {
+  display: flex;
+  gap: 8px;
+  background: var(--kertas-2);
+  border: 1.5px solid var(--garis);
+  border-radius: 9px;
+  padding: 5px;
+  margin-bottom: 13px;
+}
+.pintasan-baris[hidden] { display: none; }
+
+.pintasan {
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tinta-2);
+  cursor: pointer;
+}
+.pintasan:hover { background: #fff; }
+.pintasan.nyala {
+  background: var(--teal);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(15, 115, 103, .28);
+}
+</style>
+<style>
+  html,body { margin:0; background:#ddd; }
+  #kotak-uji { width:390px; background:#fff; overflow-x:hidden; }
+</style></head><body>
+<div id="kotak-uji">
+
+<div style="max-width:760px">
+  <span class="eyebrow amber">  BUAT DATA</span>
+  <h1>Rancang data, lihat hasilnya lebih dulu.</h1>
+  <p class="besar">
+    Setel koefisien setiap jalur, dan alat ini memberi tahu <strong>apakah
+    hasilnya akan signifikan</strong> — sebelum kamu buka SPSS.
+  </p>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   BAR "MODEL KAMU SEKARANG" — TAHAP 1.4 (ACC Bos 19Sep26, opsi 2A)
+
+   ⚠️ MENGAPA BARU (bukan memakai spanduk lama): spanduk versi lama ditempel
+   di dalam kartu #catatan-kelayakan lewat JavaScript. TERUKUR 19Sep26 ada
+   3 cacat: (1) kartu itu BERUBAH ISI (VIF/R²) → spanduk bisa TERTIMPA;
+   (2) gayanya ditulis INLINE di JS → spesifisitas KALAH oleh `.catatan`
+   bawaan (inilah akar cacat lama "spanduk krem padahal minta hijau");
+   (3) tidak bisa diuji gerbang karena tidak ada di DOM awal.
+   Bar ini: ditulis di HTML (bukan JS) + gayanya di gaya.css.
+
+   ⚠️ SENGAJA `hidden` SEJAK AWAL: kalau user membuka /buat-data TANPA
+   memilih model, bar TIDAK muncul — justru user diarahkan balik ke
+   /kuantitatif (keputusan Bos 19Sep26: opsi 1B). ═══════════════════════ #}
+<div class="bar-model" id="bar-model" hidden>
+  <span class="bar-model-ikon" aria-hidden="true"> </span>
+  <div class="bar-model-teks">
+    <span class="bar-model-label">Model kamu sekarang</span>
+    <strong class="bar-model-nama" id="bar-model-nama">—</strong>
+  </div>
+  <a href="/kuantitatif" class="tb tb-sekunder bar-model-ganti">
+      Ganti model
+  </a>
+</div>
+
+<div class="langkah renggang">
+  <div class="langkah-item aktif"><span class="langkah-nomor">1</span><span class="langkah-teks">Model</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">2</span><span class="langkah-teks">Responden</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">3</span><span class="langkah-teks">Koefisien</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">4</span><span class="langkah-teks">Mode hasil</span></div>
+  <span class="langkah-garis"></span>
+  <div class="langkah-item"><span class="langkah-nomor">5</span><span class="langkah-teks">Buat &amp; unduh</span></div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;align-items:start">
+
+  <!-- ══ PANEL SETELAN ══ -->
+  <div class="kartu">
+    <span class="eyebrow">  Setelan</span>
+
+    <div class="medan">
+      <label>  Jumlah responden
+        <span class="petunjuk" id="n-samar"></span></label>
+      <input type="number" id="n" min="30" max="2000" value="150" step="1">
+      <input type="range" id="n-slider" min="30" max="2000" value="150">
+      <!-- ⚠️ Sama seperti slider X: label ujung jangan menempel di garis.
+           🚨 BUG (18Sep26 — Bos melihat "302.000"): dulu ditulis "30" dan
+           "2.000". Karena tak ada pemisah dan label kanan tidak menempel
+           tepi, kedua angka TERBACA MENYATU jadi "302.000". Sekarang ada
+           titik pemisah di tengah supaya tidak mungkin terbaca menyatu. -->
+      <div class="skala-slider">
+        <span class="samar">30</span><span aria-hidden="true">·</span><span class="samar">2.000</span>
+      </div>
+    </div>
+
+    <div class="medan">
+      <label>  Jumlah variabel bebas (X)
+        <span class="petunjuk">geser untuk mengubah, 1 – 8</span></label>
+
+      <div class="hitung-var">
+        <button class="tb tb-kecil" id="x-kurang" type="button"
+                aria-label="Kurangi variabel">−</button>
+        <div class="hitung-var-tengah">
+          <input type="range" id="x-slider" min="1" max="8" value="3">
+          <!-- ⚠️ Teks "N variabel X" JANGAN ditaruh menempel di bawah slider
+               (dulu `margin-top:2px` + baris-antara) — ketiga teks jadi
+               bertumpuk di garis slider. Sekarang tiap teks punya barisnya
+               sendiri: label angka di ATAS slider, keterangan di BAWAH. -->
+          <div class="skala-slider">
+            <span class="samar">1</span><span aria-hidden="true">·</span><span class="samar">8</span>
+          </div>
+          <div class="nilai-slider"><strong id="x-nilai">3</strong> variabel X</div>
+        </div>
+        <button class="tb tb-kecil" id="x-tambah" type="button"
+                aria-label="Tambah variabel">+</button>
+      </div>
+
+      <!-- Preset cepat untuk jenis model yang sering dipakai pengajar.
+           ⚠️ Tombol preset = pintasan memilih JUMLAH X. Karena itu ia ikut
+           di dalam panel yang sama, tepat di bawah slider. -->
+      <div class="pilih-row">
+        <button class="pilih pilih-kecil" data-x="1" type="button">1</button>
+        <button class="pilih pilih-kecil" data-x="2" type="button">2</button>
+        <button class="pilih pilih-kecil" data-x="3" type="button">3</button>
+        <button class="pilih pilih-kecil" data-x="4" type="button">4</button>
+        <button class="pilih pilih-kecil" data-x="6" type="button">6</button>
+        <button class="pilih pilih-kecil" data-x="8" type="button">8</button>
+      </div>
+      <div class="samar" id="x-nama"></div>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           CARA MENGUJI — TERPISAH dari jumlah X (ACC Bos 18Sep26).
+           🚨 BUG YANG DITUTUP: dulu halaman ini MENGUNCI jenis analisis
+           dari jumlah X ("1 X = sederhana, banyak X = berganda"). Itu
+           salah — Bos benar: 3 X BOLEH diuji sendiri-sendiri (3 uji
+           sederhana) ATAU bersama-sama (1 uji berganda). Datanya sama,
+           yang beda cara menghitungnya.
+           ═══════════════════════════════════════════════════════════════ -->
+      <div id="blok-cara" style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--garis)">
+        <label>  Bagaimana X diuji ke Y?
+          <span class="petunjuk">pilih satu — ini menentukan cara menghitungnya</span></label>
+
+        <div class="pilih-kisi" id="cara-kisi" style="margin-top:9px">
+          <!-- Seluruh kartu bisa DIKETUK (permintaan Bos 18Sep26): radio
+               disembunyikan, keterpilihan ditandai warna + centang. -->
+          <label class="pilih-cara" data-cara="sederhana">
+            <input type="radio" name="cara" value="sederhana" checked>
+            <span class="cara-teks">
+              <span class="cara-judul">Parsial (Sederhana)</span>
+              <span class="cara-ket">Tiap X diuji <strong>sendiri-sendiri</strong> ke Y —
+                X lain <strong>tidak</strong> ikut dihitung. Bisa banyak X.<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+          <label class="pilih-cara" data-cara="berganda">
+            <input type="radio" name="cara" value="berganda">
+            <span class="cara-teks">
+              <span class="cara-judul">Berganda (Parsial + Simultan)</span>
+              <span class="cara-ket">Semua X diuji <strong>bersama-sama</strong> ke Y
+                — <strong>lengkap</strong>: ada parsial (uji t) <em>dan</em>
+                simultan (uji F).<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+          <!-- ── "BERGANDA-BERANTAI" DIARSIPKAN (ACC Bos 21Sep26, Opsi R1) ──
+               Kode mesin cara='berantai' TETAP ADA & tetap jalan (gerbang_s3.py
+               33 uji tetap sah) — yang dihentikan hanya PENAMPILANNYA di pintu.
+               Sebab diarsipkan (kata Bos sendiri): "berantai itu tidak ada,
+               karena saya kebingungan nyari parsialnya kok ga ada".
+               ⚠️ JANGAN HAPUS — cukup tambah 'sembunyi' supaya bisa dibuka
+               lagi kapan saja tanpa membangun ulang.
+               Dijaga otomatis oleh sot.py::_periksa_kartu_regresi(). -->
+          <label class="pilih-cara sembunyi" data-cara="berantai" id="cara-berantai-kartu">
+            <input type="radio" name="cara" value="berantai">
+            <span class="cara-teks">
+              <span class="cara-judul">Berganda-berantai</span>
+              <span class="cara-ket">DIARSIPKAN — lihat catatan di atas.<br>
+                <span class="cara-hitung"></span></span>
+            </span>
+            <span class="cara-tanda" aria-hidden="true">✓</span>
+          </label>
+        </div>
+
+        <label class="centang-keduanya">
+          <input type="checkbox" id="cara-keduanya">
+          <span>Tampilkan <strong>dua-duanya</strong> di hasil — supaya bisa dibandingkan</span>
+        </label>
+
+        <p class="samar" id="cara-ringkas" style="margin:8px 0 0"></p>
+      </div>
+    </div>
+
+    <div class="medan">
+      <!-- ⚠️ DIKSI (ACC Bos 18Sep26): "Keandalan (alpha)" → "Konsistensi
+           jawaban". Nama lama bikin Bos tanya "ini apa maksudnya". Yang
+           dibaca user HARUS bahasa sehari-hari; istilah teknis (Cronbach's
+           alpha) cukup di halaman BELAJAR. -->
+      <label>  Konsistensi jawaban
+        <span class="petunjuk">semakin kecil = jawaban semakin tidak seirama</span></label>
+      <select id="alpha">
+        <option value="0.78">0,78 — khas kuesioner mahasiswa</option>
+        <option value="0.85" selected>0,85 — jawaban seirama (bagus)</option>
+        <option value="0.92">0,92 — sangat seirama</option>
+      </select>
+    </div>
+
+    <div class="medan">
+      <label>  Skala jawaban</label>
+      <select id="skala">
+        <option value="5" selected>Likert 1 – 5</option>
+        <option value="7">Likert 1 – 7</option>
+      </select>
+    </div>
+
+    <div class="medan" style="margin-bottom:0">
+      <label>  Mode hasil</label>
+      <div class="pilih-kisi" style="grid-template-columns:1fr">
+        <button class="pilih terpilih" data-mode="presisi">
+          <strong>🎯 Presisi</strong>
+          <span>Koefisien persis setelan. Cocok untuk kunci jawaban & soal ujian.</span>
+        </button>
+        <button class="pilih" data-mode="natural">
+          <strong>🌿 Natural</strong>
+          <span>Hasil bervariasi seperti data lapangan — untuk belajar galat pensampelan.</span>
+        </button>
+        <button class="pilih" data-mode="presisi_variasi">
+          <strong>⚖️ Presisi, p bervariasi</strong>
+          <span>Koefisien tetap persis, tapi p bergerak — supaya tidak hafal angka.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL HASIL ══ -->
+  <div>
+    <div class="kartu">
+      <span class="eyebrow">  Koefisien per jalur</span>
+      <p style="font-size:13.5px">
+        Isi nama variabel dan besar pengaruhnya (β). Kolom paling kanan
+        langsung memberi tahu pengaruh itu nanti <strong>signifikan atau tidak</strong>
+        pada jumlah responden yang kamu pilih.
+      </p>
+      <div id="tabel-jalur"></div>
+
+      <div class="baris-antara renggang" style="padding-top:15px;border-top:1px solid var(--garis)">
+        <!-- ⚠️ DIKSI (ACC Bos 18Sep26): simbol R² DIPERBESAR + DIPERTEBAL,
+             dan diberi keterangan awam "Seberapa besar X menerangkan Y".
+             Label "Prediksi R²" tetap ada sebagai nama resminya. -->
+        <div class="kotak-r2">
+          <div class="samar">Prediksi R² <span class="r2-tanya" title="R² itu angka 0 sampai 1. Contoh: 0,144 berarti X menerangkan 14,4% dari perbedaan Y; sisanya 85,6% karena hal lain di luar model.">?</span></div>
+          <div class="r2-baris">
+            <span class="r2-simbol">R²</span>
+            <span class="r2-angka" id="r2">0.00</span>
+          </div>
+          <div class="r2-arti">Seberapa besar X menerangkan Y</div>
+        </div>
+        <div style="text-align:right;max-width:290px">
+          <span class="pita pita-hijau" id="r2-pita">—</span>
+          <p class="samar" id="r2-pesan" style="margin:8px 0 0;text-align:left"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="catatan renggang" id="catatan-kelayakan">
+       <div id="catatan-isi"></div>
+    </div>
+
+    <div class="baris renggang">
+      <button class="tb tb-utama" id="tombol-buat">
+          Buatkan data
+      </button>
+      <button class="tb tb-sekunder" id="tombol-acak">
+          Setel angka wajar
+      </button>
+    </div>
+
+    <div id="hasil" class="sembunyi"></div>
+  </div>
+
+  {# ═══════════════════════════════════════════════════════════════════
+     PANEL MANOVA — BANDING KELOMPOK (ACC Bos 21Sep26: "Ok buka untuk manova")
+
+     Muncul HANYA kalau pintunya lewat kartu ke-5:
+        /buat-data?model=banding-kelompok
+
+     ⚠️ Pola yang sudah jalan sejak awal — MASUK + KELUAR:
+          MASUK  → pilih kelompok, jumlah, nama Y → mesin BANGUN data
+          KELUAR → mesin UJI & JELASKAN (Wilks/Pillai + ANOVA per-Y + syarat)
+
+     ⚠️ BEDA CARA BERPIKIR (kenapa ini pintu SENDIRI, bukan saklar Regresi):
+          REGRESI : "X memengaruhi Y"
+          MANOVA  : "Kelompok A ≠ Kelompok B"
+
+     ⚠️ PAGAR JUJUR (Opsi A, ACC Bos): beda kelompok di luar
+         –  DITOLAK, karena di
+        luar rentang itu mesin tidak akurat (terukur). Pesannya ramah +
+        memberi angka yang disarankan (gaya proyek: tolak + jalan keluar).
+     ═══════════════════════════════════════════════════════════════════ #}
+  <div id="panel-manova" class="sembunyi">
+    <div class="kepala-judul">
+      <span class="eyebrow">  Banding Kelompok (MANOVA)</span>
+      <h2 style="margin:6px 0 4px">Kelompok mana yang mau dibandingkan?</h2>
+      <p class="samar" style="font-size:13.5px;margin:0">
+        Mesin akan <strong>membangun data</strong> untuk beberapa kelompok
+        sekaligus, lalu <strong>menguji</strong> apakah kelompok itu berbeda
+        pada <strong>semua variabel hasil bersamaan</strong>.
+      </p>
+    </div>
+
+    <div class="pilih-kisi">
+      <label>Nama kelompok
+        <span class="petunjuk">pisahkan dengan koma</span>
+        <input type="text" id="mn-kelompok" value="Kelas A, Kelas B"
+               placeholder="Kelas A, Kelas B">
+      </label>
+
+      <label>Isi tiap kelompok
+        <span class="petunjuk">jumlah responden tiap kelompok</span>
+        <input type="number" id="mn-isi" value="60" min="3" max="500">
+      </label>
+
+      <label>Nama variabel hasil (Y)
+        <span class="petunjuk">MINIMAL 2 — inilah bedanya dengan uji beda biasa</span>
+        <input type="text" id="mn-nama-y" value="Minat, Nilai"
+               placeholder="Minat, Nilai">
+      </label>
+
+      <label>Besarnya beda (Y1, Y2, …)
+        <span class="petunjuk">
+          isi 0 kalau kelompok memang sengaja dibuat sama
+        </span>
+        <input type="text" id="mn-beda" value="0.90, 0.54"
+               placeholder="0.90, 0.54">
+      </label>
+
+      <label>Mode hasil
+        <span class="petunjuk">sama seperti di Regresi</span>
+        <select id="mn-mode">
+          <option value="presisi">Presisi — persis setelan (untuk kunci jawaban)</option>
+          <option value="natural">Natural — apa adanya (untuk belajar derau)</option>
+          <option value="presisi_variasi">Campuran — koefisien pas, p bergeser</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="catatan renggang">
+       
+      <div>
+        <strong>Kenapa minimal 2 variabel hasil?</strong> Kalau hasilnya cuma
+        satu, itu namanya uji beda biasa (ANOVA/uji t) — pakai menu itu.
+        MANOVA gunanya menguji <em>beberapa</em> hasil sekaligus, supaya
+        peluang salahnya tetap terjaga.
+        <br>
+        <strong>Beda yang akurat:</strong>
+        <span id="mn-rentang">—</span>
+        <span class="samar">(di luar rentang itu mesin belum akurat, jadi
+        ditolak dengan saran angka — bukan dibiarkan menghasilkan data yang
+        kelihatan sah padahal meleset).</span>
+      </div>
+    </div>
+
+     
+    <p id="mn-info" class="samar" style="font-size:12.5px;margin:8px 0 0"></p>
+
+    <div class="baris renggang">
+      <button class="tb tb-utama" id="mn-tombol">
+          Buatkan &amp; ujikan
+      </button>
+    </div>
+
+    <div id="mn-hasil" class="sembunyi"></div>
+  </div>
+
+</div>
+
+</div>
+<script>
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    try {
+      var out = 
+(function(){
+  var hasil = {lebarLayar: window.innerWidth, slider: [], ditemukan: 0};
+  var daftar = document.querySelectorAll('#kotak-uji input[type=range]');
+  hasil.ditemukan = daftar.length;
+  daftar.forEach(function(s){
+    var r = s.getBoundingClientRect();
+    var cs = window.getComputedStyle(s);
+    var jarakMin = 9999, teksDekat = '';
+    var semua = document.querySelectorAll('#kotak-uji div, #kotak-uji span, #kotak-uji p, #kotak-uji label');
+    for (var i = 0; i < semua.length; i++) {
+      var n = semua[i];
+      if (n.contains(s)) continue;
+      var rr = n.getBoundingClientRect();
+      if (rr.height === 0 || rr.width === 0) continue;
+      if (rr.top < r.bottom - 1) continue;
+      if (rr.left > r.right || rr.right < r.left) continue;
+      var t = (n.textContent || '').trim();
+      if (!t || t.length > 60) continue;
+      // ⚠️ LEWATI label skala (30 / 2.000 / 1 / 8) — itu MEMANG ditaruh
+      // rapat di bawah slider sebagai penanda ujung. Yang berbahaya =
+      // teks NILAI ("N variabel X") yang dulu ikut menempel di garis.
+      // 🚨 Koreksi 18Sep26: versi lama hanya melewati ANGKA murni,
+      // sehingga PEMISAH "·" (titik tengah) dianggap "teks menempel" →
+      // temuan PALSU yang memblokir deploy. Kini seluruh isi
+      // .skala-slider dikecualikan + apa pun yang TIDAK punya huruf.
+      if (n.closest('.skala-slider')) continue;
+      if (!/[a-zA-Z]/.test(t)) continue;
+      var j = rr.top - r.bottom;
+      if (j < jarakMin) { jarakMin = j; teksDekat = t.slice(0, 26); }
+    }
+    hasil.slider.push({
+      id: s.id || '(tanpa id)',
+      tinggiKotak: Math.round(r.height * 10) / 10,
+      tinggiCSS: cs.height,
+      jarakKeTeks: jarakMin === 9999 ? null : Math.round(jarakMin * 10) / 10,
+      teksDekat: teksDekat
+    });
+  });
+  return hasil;
+})();
+
+      document.title = 'SLD::' + JSON.stringify(out);
+    } catch(e){ document.title = 'SLD::GALAT ' + e.message; }
+  }, 900);
+});
+</script></body></html>

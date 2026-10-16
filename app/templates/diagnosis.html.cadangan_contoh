@@ -1,0 +1,620 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN DIAGNOSIS DATA SPSS & PLS — ALAT unggah + periksa + cara membetulkan
+  ────────────────────────────────────────────────────────────────────────────
+  ACC Bos 19Sep26 (verbatim): "Halaman Syarat, jadikan tool / alat saja.
+    Namanya Diagnosis Data SPSS & PLS. Isinya user upload data dari spss
+    atau pls, untuk di diaknosa dan cara tulisnya. Benar katakan benar
+    salah katakan salah dan beri panduan untuk cara membetulkan data."
+
+  KEPUTUSAN BOS: 1B (terima .xlsx/.csv/.sav) · 2A (TUNJUK KOLOM MANUAL,
+  bukan ditebak mesin) · 3A (7 kartu bacaan /syarat pindah ke BELAJAR —
+  dikerjakan di Tahap 2, BUKAN di sini).
+
+  ALUR 4 LANGKAH (kenapa begini — pelajaran dari aplikasi lain):
+    ① pilih alat  → menentukan SYARAT mana yang berlaku (SPSS vs PLS beda)
+    ② unggah      → server baca, kembalikan DAFTAR KOLOM saja (belum hitung)
+    ③ tunjuk kolom→ user yang menentukan mana X, mana Y (2A). Mesin TIDAK
+                    menebak dari nama kolom: salah tebak = salah diagnosa.
+    ④ hasil       → benar bilang benar, salah bilang salah + cara membetulkan
+
+  ⚠️ Nasihat "cara membetulkan" DATANG DARI SERVER (app/nasihat.py), TIDAK
+  ditulis di JS. Alasan (pelajaran EduAi 15Sep26): teks yang disimpan di dua
+  tempat membuat yang satu tidak pernah ikut diperbarui.
+#}
+{% block isi %}
+<span class="eyebrow">{{ ikon('stethoscope', 13) }} Diagnosis Data</span>
+<h1 style="margin:8px 0 10px">Datamu sudah memenuhi syarat belum?</h1>
+<p class="besar" style="max-width:700px;margin-bottom:18px">
+  Unggah datamu — dari SPSS (<code>.sav</code>), Excel (<code>.xlsx</code>),
+  atau CSV (<code>.csv</code>). Wulan periksa satu per satu, lalu bilang mana
+  yang <strong>sudah benar</strong> dan mana yang <strong>perlu dibetulkan</strong>
+  — lengkap dengan caranya.
+</p>
+
+{# ═══ LANGKAH 1 — PILIH ALAT ═══════════════════════════════════════════ #}
+<div class="kartu" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">1</span>
+    <h2 style="margin:0;font-size:1.12rem">Mau diperiksa pakai cara yang mana?</h2>
+  </div>
+  <p style="margin:6px 0 12px;color:#6B6259">
+    Pilihan ini menentukan <strong>syarat apa saja</strong> yang diperiksa —
+    SPSS dan SmartPLS memeriksa hal yang berbeda.
+  </p>
+  <div class="grid-jenis" style="margin-bottom:0">
+    <div class="pilih terpilih" data-alat="spss" onclick="pilihAlat(this,'spss')">
+      <strong>{{ ikon('bar-chart-3', 15) }} SPSS</strong>
+      <span>Data per-responden, diuji dengan regresi</span>
+    </div>
+    <div class="pilih" data-alat="pls" onclick="pilihAlat(this,'pls')">
+      <strong>{{ ikon('boxes', 15) }} SmartPLS</strong>
+      <span>Data per-butir pertanyaan (indikator)</span>
+    </div>
+  </div>
+  <div class="catatan" id="catatan-alat" style="margin-top:12px">
+    <strong>SPSS</strong> memeriksa: normalitas · heteroskedastisitas ·
+    multikolinearitas · linearitas · data menyimpang · autokorelasi.
+  </div>
+</div>
+
+{# ═══ LANGKAH 2 — UNGGAH ═══════════════════════════════════════════════ #}
+<div class="kartu" id="kartu-unggah" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">2</span>
+    <h2 style="margin:0;font-size:1.12rem">Unggah berkas datamu</h2>
+  </div>
+  <p style="margin:6px 0 12px;color:#6B6259">
+    Bisa <code>.sav</code> · <code>.xlsx</code> · <code>.csv</code> —
+    paling besar <strong>10 MB</strong>. Di HP, tekan kotak di bawah untuk memilih.
+  </p>
+
+  <label id="kotak-unggah" for="berkas" style="display:block;border:2px dashed #C9BFB2;border-radius:13px;padding:26px 16px;text-align:center;background:#FDFBF7;cursor:pointer">
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:#EAF3F0;color:#2E7D6F;margin-bottom:9px">
+      {{ ikon('upload', 22) }}
+    </span>
+    <div style="font-weight:600">{{ ikon('file-spreadsheet', 15) }} Pilih berkas dari perangkatmu</div>
+    <div style="color:#6B6259;font-size:.86rem;margin-top:5px">
+      atau seret berkasnya ke sini
+    </div>
+  </label>
+  <input type="file" id="berkas" accept=".sav,.xlsx,.xls,.csv" style="display:none">
+
+  <div id="pesan-unggah" style="margin-top:12px"></div>
+
+  <div id="ringkas-berkas" hidden style="margin-top:14px">
+    <div class="catatan" style="background:#EAF3F0;border-color:#BFDCD4">
+      <strong id="nama-berkas"></strong>
+      <span id="ukuran-berkas" style="color:#6B6259"></span>
+      <div id="bentuk-berkas" style="margin-top:5px;font-size:.9rem"></div>
+    </div>
+  </div>
+</div>
+
+{# ═══ LANGKAH 3 — TUNJUK KOLOM ═════════════════════════════════════════ #}
+<div class="kartu" id="kartu-kolom" hidden style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">3</span>
+    <h2 style="margin:0;font-size:1.12rem">Tunjuk kolomnya</h2>
+  </div>
+  <p style="margin:6px 0 14px;color:#6B6259">
+    Wulan tidak menebak dari nama kolom — salah tebak artinya salah diagnosa.
+    Jadi <strong>kamu yang menentukan</strong>. Kolom kosong boleh dilewati.
+  </p>
+
+  {# ── Mode SPSS: X, Y, dan M ── #}
+  <div id="panel-spss">
+    <div id="baris-x"></div>
+    <button type="button" class="tb tb-sekunder" id="tambah-x" onclick="tambahX()"
+            style="margin:8px 0 16px">Tambah variabel bebas (X)</button>
+
+    <div class="medan" style="margin-bottom:14px">
+      <label for="kolom-y" style="font-weight:600;display:block;margin-bottom:5px">
+        Variabel terikat (Y) — yang mau dijelaskan
+      </label>
+      <select id="kolom-y" style="width:100%"></select>
+    </div>
+
+    <details style="margin-bottom:6px">
+      <summary style="cursor:pointer;color:#2E7D6F;font-weight:600">
+        Ada variabel perantara (M)? Buka di sini
+      </summary>
+      <p style="color:#6B6259;font-size:.9rem;margin:9px 0">
+        Variabel perantara = yang <em>dilewati</em> pengaruh X menuju Y
+        (istilahnya <strong>mediasi</strong>). Kalau tidak ada, lewati saja.
+      </p>
+      <div id="baris-m"></div>
+      <button type="button" class="tb tb-sekunder" onclick="tambahM()">
+        Tambah perantara (M)
+      </button>
+    </details>
+  </div>
+
+  {# ── Mode SmartPLS: konstruk + butir ── #}
+  <div id="panel-pls" hidden>
+    <p style="margin:0 0 10px;color:#6B6259">
+      Di SmartPLS, tiap <strong>variabel</strong> diukur oleh beberapa
+      <strong>butir pertanyaan</strong>. Tunjuk butir mana masuk variabel mana.
+    </p>
+    <div id="daftar-konstruk"></div>
+    <button type="button" class="tb tb-sekunder" onclick="tambahKonstruk()">
+      Tambah variabel
+    </button>
+    <div class="medan" style="margin:16px 0 0">
+      <label for="target-pls" style="font-weight:600;display:block;margin-bottom:5px">
+        Variabel yang mau dijelaskan (endogen)
+      </label>
+      <select id="target-pls" style="width:100%"></select>
+    </div>
+  </div>
+
+  <div class="medan" style="margin-top:16px">
+    <label for="cara-missing" style="font-weight:600;display:block;margin-bottom:5px">
+      Kalau ada sel yang kosong
+    </label>
+    <select id="cara-missing" style="width:100%">
+      <option value="buang">Buang responden yang jawabannya kosong</option>
+      <option value="rata">Ganti dengan nilai rata-rata</option>
+    </select>
+  </div>
+
+  <p style="margin-top:16px">
+    <button type="button" class="tb tb-utama" id="tombol-periksa" onclick="periksa()">
+      {{ ikon('stethoscope', 16) }} Periksa sekarang
+    </button>
+  </p>
+  <div id="pesan-periksa" style="margin-top:10px"></div>
+</div>
+
+{# ═══ LANGKAH 4 — HASIL ════════════════════════════════════════════════ #}
+<div id="kartu-hasil" hidden></div>
+
+<p style="margin-top:22px">
+  <a href="/belajar" class="tb tb-sekunder">{{ ikon('book-open', 15) }} Pelajari istilahnya dulu</a>
+  <a href="/kuantitatif" class="tb tb-sekunder" style="margin-left:9px">{{ ikon('arrow-left', 15) }} Coba buat data sendiri</a>
+</p>
+{% endblock %}
+
+{% block skrip %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   DIAGNOSIS DATA — sisi tampilan. SEMUA hitungan ada di server.
+   ⚠️ Nasihat "cara membetulkan" TIDAK ditulis di sini — datang dari server
+   (app/nasihat.py). Alasannya: teks di dua tempat = yang satu pasti basi.
+   ═══════════════════════════════════════════════════════════════════════ */
+let ALAT = 'spss';
+let KUNCI = null;
+let KOLOM = [];
+let nX = 0;
+
+/* Ganti alat → ganti syarat yang diperiksa + ganti panel */
+function pilihAlat(el, alat) {
+  ALAT = alat;
+  document.querySelectorAll('[data-alat]').forEach(e => e.classList.remove('terpilih'));
+  el.classList.add('terpilih');
+  document.getElementById('panel-spss').hidden = (alat !== 'spss');
+  document.getElementById('panel-pls').hidden = (alat !== 'pls');
+  const c = document.getElementById('catatan-alat');
+  c.innerHTML = (alat === 'spss')
+    ? '<strong>SPSS<\/strong> memeriksa: normalitas · heteroskedastisitas · ' +
+      'multikolinearitas · linearitas · data menyimpang · autokorelasi.'
+    : '<strong>SmartPLS<\/strong> memeriksa: kekuatan tiap butir (outer loading) · ' +
+      'AVE · keandalan (composite reliability) · VIF · Fornell-Larcker.';
+  if (KOLOM.length) isiPilihan();
+}
+
+function pesan(tempat, teks, jenis) {
+  const el = document.getElementById(tempat);
+  const warna = jenis === 'galat'
+    ? 'background:#FBEFEF;border-color:#E8C9C9;color:#8A4A4A'
+    : 'background:#FDF6E9;border-color:#EAD9B8;color:#7A5A2A';
+  el.innerHTML = '<div class="catatan" style="' + warna + '">' + teks + '<\/div>';
+}
+
+/* ── UNGGAH ─────────────────────────────────────────────────────────── */
+document.getElementById('berkas').addEventListener('change', async function () {
+  const f = this.files[0];
+  if (!f) return;
+  if (f.size > 10 * 1024 * 1024) {
+    pesan('pesan-unggah', 'Berkasnya ' + (f.size / 1048576).toFixed(1) +
+      ' MB — melebihi batas 10 MB. Coba simpan sebagian data dulu ya.', 'galat');
+    return;
+  }
+  pesan('pesan-unggah', 'Sedang membaca berkasnya…');
+  const fd = new FormData();
+  fd.append('berkas', f);
+  try {
+    const r = await fetch('/api/diagnosis/unggah', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) { pesan('pesan-unggah', d.detail || 'Berkasnya belum bisa dibaca.', 'galat'); return; }
+    KUNCI = d.kunci;
+    KOLOM = d.kolom;
+    document.getElementById('pesan-unggah').innerHTML = '';
+    document.getElementById('nama-berkas').textContent = d.nama_berkas;
+    document.getElementById('ukuran-berkas').textContent = '  ·  ' + (f.size / 1024).toFixed(0) + ' KB';
+    document.getElementById('bentuk-berkas').textContent =
+      d.n_baris + ' responden  ·  ' + d.n_kolom + ' kolom';
+    document.getElementById('ringkas-berkas').hidden = false;
+    document.getElementById('kartu-kolom').hidden = false;
+    nX = 0;
+    document.getElementById('baris-x').innerHTML = '';
+    document.getElementById('baris-m').innerHTML = '';
+    document.getElementById('daftar-konstruk').innerHTML = '';
+    tambahX(); pilihKosong('kolom-y');
+    if (ALAT === 'pls') { tambahKonstruk(); tambahKonstruk(); }
+    document.getElementById('kartu-hasil').hidden = true;
+    document.getElementById('kartu-kolom').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    pesan('pesan-unggah', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  }
+});
+
+function namaKolom() { return KOLOM.map(k => k.nama); }
+
+function isiPilihan() {
+  const semua = namaKolom();
+  document.querySelectorAll('.pilih-kolom').forEach((s, i) => {
+    const sekarang = s.value;
+    s.innerHTML = '<option value="">— pilih kolom —<\/option>' +
+      semua.map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+    if (sekarang && semua.includes(sekarang)) s.value = sekarang;
+  });
+  pilihKosong('kolom-y');
+  pilihKosong('target-pls');
+  isiPilihanKonstruk();
+}
+
+function pilihKosong(id) {
+  const s = document.getElementById(id);
+  if (!s) return;
+  const skr = s.value;
+  s.innerHTML = '<option value="">— pilih kolom —<\/option>' +
+    namaKolom().map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+  if (skr && namaKolom().includes(skr)) s.value = skr;
+}
+
+function buatBaris(tempat, awalan, nomor) {
+  const d = document.createElement('div');
+  d.className = 'medan';
+  d.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:10px';
+  d.innerHTML =
+    '<span style="min-width:46px;font-weight:600">' + awalan + nomor + '<\/span>' +
+    '<select class="pilih-kolom" style="flex:1"><\/select>' +
+    '<button type="button" class="tb tb-sekunder" style="padding:7px 11px" ' +
+    'title="Hapus" onclick="this.parentElement.remove()">' + '&times;' + '<\/button>';
+  document.getElementById(tempat).appendChild(d);
+  isiPilihan();
+}
+
+function tambahX() { nX += 1; buatBaris('baris-x', 'X', nX); }
+function tambahM() { buatBaris('baris-m', 'M', document.querySelectorAll('#baris-m .medan').length + 1); }
+
+function tambahKonstruk() {
+  const d = document.createElement('div');
+  d.className = 'kartu';
+  d.style.cssText = 'padding:13px;margin-bottom:11px;background:#FBFAF7';
+  d.innerHTML =
+    '<div class="medan" style="margin-bottom:9px">' +
+      '<label style="font-weight:600;display:block;margin-bottom:4px">Nama variabel<\/label>' +
+      '<input type="text" class="nama-konstruk" placeholder="misalnya: Kualitas Produk" style="width:100%">' +
+    '<\/div>' +
+    '<div class="medan">' +
+      '<label style="font-weight:600;display:block;margin-bottom:4px">Butir pertanyaannya (bisa pilih beberapa)<\/label>' +
+      '<select class="butir-konstruk" multiple size="4" style="width:100%"><\/select>' +
+    '<\/div>' +
+    '<button type="button" class="tb tb-sekunder" style="margin-top:8px" onclick="this.parentElement.remove(); isiTargetPls()">Hapus variabel ini<\/button>';
+  document.getElementById('daftar-konstruk').appendChild(d);
+  isiPilihanKonstruk();
+}
+
+function isiPilihanKonstruk() {
+  document.querySelectorAll('.butir-konstruk').forEach(s => {
+    const sudah = Array.from(s.selectedOptions).map(o => o.value);
+    s.innerHTML = namaKolom().map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+    Array.from(s.options).forEach(o => { if (sudah.includes(o.value)) o.selected = true; });
+  });
+  isiTargetPls();
+}
+
+function isiTargetPls() {
+  const s = document.getElementById('target-pls');
+  if (!s) return;
+  const nama = Array.from(document.querySelectorAll('.nama-konstruk'))
+    .map(i => i.value.trim()).filter(Boolean);
+  const skr = s.value;
+  s.innerHTML = '<option value="">— pilih variabel —<\/option>' +
+    nama.map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+  if (nama.includes(skr)) s.value = skr;
+}
+document.addEventListener('input', e => { if (e.target.classList.contains('nama-konstruk')) isiTargetPls(); });
+
+/* ── GAMBAR HASIL ───────────────────────────────────────────────────────
+   Semua angka datang dari server. Fungsi ini hanya MENYUSUN tampilan.
+   ⚠️ Nasihat "cara membetulkan" juga dari server (d.nasihat_semua) —
+   sengaja TIDAK ditulis di sini supaya hanya ada SATU sumber teks.
+   ───────────────────────────────────────────────────────────────────── */
+function angka(n, desimal) {
+  if (n === null || n === undefined || n === '') return '—';
+  if (typeof n !== 'number') return String(n);
+  return n.toFixed(desimal === undefined ? 3 : desimal).replace('.', ',');
+}
+
+function lambang(lulus) {
+  if (lulus === true)  return '<span class="pita pita-hijau">Sudah benar<\/span>';
+  if (lulus === false) return '<span class="pita pita-merah">Perlu dibetulkan<\/span>';
+  return '<span class="pita pita-kuning">Belum bisa dinilai<\/span>';
+}
+
+function kartuUji(nama, lulus, isi) {
+  return '<div class="kartu" style="margin-bottom:13px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:7px">' +
+      '<h3 style="margin:0;font-size:1rem">' + nama + '<\/h3>' + lambang(lulus) +
+    '<\/div>' + isi + '<\/div>';
+}
+
+function tabelBaris(judul, baris) {
+  return '<table class="data" style="margin-top:8px">' +
+    '<thead><tr>' + judul.map(h => '<th style="text-align:left">' + h + '<\/th>').join('') + '<\/tr><\/thead>' +
+    '<tbody>' + baris.map(r => '<tr>' + r.map((c, i) =>
+      '<td' + (i ? ' style="text-align:right"' : '') + '>' + c + '<\/td>').join('') + '<\/tr>').join('') +
+    '<\/tbody><\/table>';
+}
+
+/* Kotak nasihat — SATU nasihat lengkap (arti, kenapa, langkah, jangan) */
+function kotakNasihat(n, nomor) {
+  if (!n) return '';
+  const langkah = n.langkah.map((l, i) =>
+    '<li style="margin-bottom:10px"><strong>' + l[0] + '<\/strong><br>' +
+    '<span style="color:#6B6259">' + l[1] + '<\/span><\/li>').join('');
+  return '<div class="kartu" style="margin-top:12px;border-left:4px solid #B5762A">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<span class="langkah-nomor">' + nomor + '<\/span>' +
+      '<h3 style="margin:0;font-size:1rem">' + n.judul + '<\/h3>' +
+    '<\/div>' +
+    '<p style="margin:6px 0"><strong>Apa artinya:<\/strong> ' + n.arti + '<\/p>' +
+    '<p style="margin:6px 0"><strong>Kenapa penting:<\/strong> ' + n.kenapa + '<\/p>' +
+    '<p style="margin:10px 0 6px"><strong>Cara membetulkan:<\/strong><\/p>' +
+    '<ol style="margin:0 0 10px 18px;padding:0">' + langkah + '<\/ol>' +
+    '<div class="catatan" style="background:#F3F8F5;border-color:#CDE3D5;margin-bottom:9px">' +
+      '<strong>Kapan masih aman:<\/strong> ' + n.boleh_abaikan + '<\/div>' +
+    '<div class="catatan" style="background:#FBEFEF;border-color:#E8C9C9">' +
+      '<strong>Yang sebaiknya tidak dilakukan:<\/strong> ' + n.jangan + '<\/div>' +
+    '<\/div>';
+}
+
+function gambarHasil(d) {
+  const wadah = document.getElementById('kartu-hasil');
+  let h = '';
+
+  /* ── RINGKASAN di atas: berapa masalah, berapa aman ── */
+  const nMasalah = (d.masalah || []).length;
+  const judulAlat = d.mode === 'pls' ? 'SmartPLS' : 'SPSS';
+  h += '<div class="kartu" style="margin-bottom:18px;border-left:4px solid ' +
+       (nMasalah ? '#B5762A' : '#4E8A5A') + '">' +
+    '<span class="eyebrow">Hasil pemeriksaan ' + judulAlat + '<\/span>' +
+    '<h2 style="margin:6px 0 8px">' +
+      (nMasalah
+        ? 'Ada ' + nMasalah + ' hal yang perlu kamu lihat'
+        : 'Semua syarat sudah terpenuhi') + '<\/h2>' +
+    '<p style="margin:0;color:#6B6259">' +
+      d.n + ' responden diperiksa · ' + (d.n_kolom || '') +
+      (nMasalah
+        ? '. Tidak semua harus dibetulkan — lihat penjelasan tiap bagian.'
+        : '. Datamu siap diolah lebih lanjut.') +
+    '<\/p><\/div>';
+
+  /* ══════════ MODE SPSS ══════════ */
+  if (d.mode !== 'pls') {
+    /* Model ringkas */
+    if (d.koef && d.koef.length) {
+      h += kartuUji('Model yang diperiksa', true,
+        '<p style="margin:0 0 4px;color:#6B6259">' +
+        'Prediktor: ' + (d.prediktor || []).join(', ') + ' · Y: ' + d.y + '<\/p>' +
+        tabelBaris(['Prediktor', 'B', 't', 'p'],
+          d.koef.map(k => [k.nama, angka(k.b), angka(k.t), angka(k.p)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">' +
+        '<strong>R² = ' + angka(d.r2) + '<\/strong> (R² terkoreksi ' + angka(d.r2_adj) + ') — ' +
+        'artinya ' + angka(d.r2 * 100, 1) + '% keragaman Y bisa dijelaskan model. ' +
+        '<strong>' + (d.prediktor || []).length + '<\/strong> responden dianalisis: ' + d.n + '.<\/p>');
+    }
+
+    /* ① Normalitas */
+    const n = d.normalitas || {};
+    h += kartuUji('Normalitas sisa', n.lulus,
+      '<p style="margin:0;color:#6B6259">Tiga uji sekaligus, supaya kesimpulannya kokoh.<\/p>' +
+      tabelBaris(['Uji', 'Nilai p'],
+        [['Kolmogorov-Smirnov', angka(n.ks_p)],
+         ['Shapiro-Wilk', angka(n.shapiro_p)],
+         ["D'Agostino", angka(n.dagostino_p)]]) +
+      /* ── GRAFIK HIDUP (Tahap 2, ACC Bos 20Sep26) ──────────────────────
+         Gambar dari DATA YANG DIUNGGAH — bukan contoh tetap. Fungsi gambar
+         ada di /static/grafik_hidup.js (satu berkas untuk semua halaman). */
+      kotakGrafik(svgPP(d.titik, n.lulus),
+        (n.lulus
+          ? 'Titik-titik mengikuti garis miring — sisa menyebar normal.'
+          : 'Titik membelok menjauh dari garis, terutama di ujung — sisa belum normal.'),
+        'pp') +
+      '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+        '<strong>Cara membacanya:<\/strong> titik harus <strong>menempel<\/strong> ' +
+        'pada garis miring. Kalau ujungnya membelok menjauh, bentuknya seperti S — ' +
+        'itu tanda sisa belum menyebar normal.<\/p>' +
+      '<p style="margin:7px 0 0;font-size:.92rem">Kemiringan (skewness) = ' + angka(n.skew) +
+      ' · Keruncingan = ' + angka(n.kurtosis) + '. ' +
+      'Nilai p di atas 0,05 artinya sisa menyebar normal.<\/p>' +
+      catatanTitik(d.n ? d.n.length : 0));
+
+    /* ② Heteroskedastisitas */
+    const het = d.hetero || {};
+    h += kartuUji('Heteroskedastisitas (Glejser)', het.lulus,
+      '<p style="margin:0;color:#6B6259">Seberapa tidak rata sebaran sisanya.<\/p>' +
+      tabelBaris(['Nilai p terkecil'], [[angka(het.glejser_p)]]) +
+      kotakGrafik(svgHetero(d.titik, het.lulus),
+        (het.lulus
+          ? 'Sebaran sisanya rata dari kiri ke kanan — tidak ada corong.'
+          : 'Sebaran makin melebar ke kanan seperti corong — sisa tidak rata.'),
+        'hetero') +
+      '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+        '<strong>Cara membacanya:<\/strong> lihat lebarnya sebaran titik dari kiri ' +
+        'ke kanan. Lebar yang <strong>tetap<\/strong> = aman. Kalau makin ke kanan ' +
+        'makin melebar seperti corong, itu heteroskedastisitas.<\/p>' +
+      '<p style="margin:7px 0 0;font-size:.92rem">' +
+      'Nilai p di bawah 0,05 artinya sebaran sisa tidak rata — ada yang perlu diperiksa.<\/p>' +
+      catatanTitik(d.n ? d.n.length : 0));
+
+    /* ③ Multikolinearitas */
+    const vif = d.vif || [];
+    const vifMaks = d.vif_maks || 0;
+    h += kartuUji('Multikolinearitas (VIF)', vifMaks <= 10,
+      '<p style="margin:0;color:#6B6259">Apakah X saling kembar.<\/p>' +
+      (vif.length ? tabelBaris(['Prediktor', 'VIF'],
+        vif.map(v => [v.nama, angka(v.vif, 2)])) : '') +
+      '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman; di atas 10 perlu ditangani.<\/p>');
+
+    /* ④ Linearitas */
+    if (d.linearitas) {
+      const lin = d.linearitas;
+      h += kartuUji('Linearitas', lin.lulus,
+        '<p style="margin:0;color:#6B6259">Apakah hubungan X dan Y berbentuk garis lurus.<\/p>' +
+        (lin.p === null || lin.p === undefined ? '' :
+          tabelBaris(['Nilai p'], [[angka(lin.p)]])) +
+        kotakGrafik(svgLinear(d.titik, (d.prediktor || [])[0], d.y, lin.lulus),
+          (lin.lulus
+            ? 'Titik-titik memanjang mengikuti satu arah — hubungannya lurus.'
+            : 'Titik melengkung atau menyebar tak berarah — hubungannya belum lurus.'),
+          'linear') +
+        '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+          '<strong>Cara membacanya:<\/strong> titik sebaiknya memanjang mengikuti ' +
+          'satu arah seperti garis. Kalau membentuk lengkungan (U atau busur), ' +
+          'hubungannya tidak lurus.<\/p>');
+    }
+
+    /* ⑤ Outlier */
+    const out = d.outlier || {};
+    h += kartuUji('Data menyimpang jauh', (out.n_y || 0) < 3,
+      '<p style="margin:0;color:#6B6259">Responden yang jawabannya jauh berbeda dari yang lain.<\/p>' +
+      tabelBaris(['Yang ditemukan', 'Jumlah'],
+        [['Menyimpang di Y', (out.n_y || 0) + ' titik'],
+         ['Menyimpang di X', (out.n_x || 0) + ' titik']]) +
+      '<p style="margin:9px 0 0;font-size:.92rem">' +
+      (out.batas_atas !== undefined
+        ? 'Batas wajar Y: ' + angka(out.batas_bawah, 2) + ' sampai ' + angka(out.batas_atas, 2) + '.'
+        : '') + '<\/p>');
+
+    /* ⑥ Durbin-Watson */
+    if (d.dw !== null && d.dw !== undefined) {
+      h += kartuUji('Autokorelasi (Durbin-Watson)', d.dw >= 1.5 && d.dw <= 2.5,
+        '<p style="margin:0;color:#6B6259">Apakah sisa berhubungan dengan urutan responden.<\/p>' +
+        tabelBaris(['Durbin-Watson'], [[angka(d.dw, 3)]]) +
+        '<p style="margin:9px 0 0;font-size:.92rem">Nilai sehat mendekati 2.<\/p>');
+    }
+  } else {
+    /* ══════════ MODE SmartPLS ══════════ */
+    (d.konstruk || []).forEach(function (k) {
+      const muat = k.muat || [];
+      const lemah = muat.filter(function (m) { return (m.muat || 0) < 0.7; });
+      const terendah = muat.reduce(function (a, m) {
+        return (a === null || (m.muat || 0) < a.muat) ? m : a; }, null);
+      h += kartuUji('Variabel: ' + k.nama,
+        k.lulus_muat && k.lulus_ave && k.lulus_cr,
+        '<p style="margin:0 0 4px;color:#6B6259">Diukur oleh ' + k.kolom.length +
+        ' butir: ' + k.kolom.join(', ') + '<\/p>' +
+        tabelBaris(['Ukuran', 'Nilai', 'Ambang'],
+          [['Butir terendah', terendah
+              ? (terendah.butir + ' = ' + angka(terendah.muat)) : '—', '≥ 0,70'],
+           ['AVE', angka(k.ave), '≥ 0,50'],
+           ['Composite Reliability', angka(k.cr), '≥ 0,70']]) +
+        tabelBaris(['Butir', 'Outer loading'],
+          muat.map(function (m) { return [m.butir, angka(m.muat)]; })) +
+        (lemah.length
+          ? '<p style="margin:9px 0 0;font-size:.92rem">' + lemah.length +
+            ' butir di bawah 0,70: ' + lemah.map(function (m) { return m.butir; }).join(', ') +
+            '. Lihat cara membetulkannya di bawah.<\/p>'
+          : '<p style="margin:9px 0 0;font-size:.92rem">Semua butir sudah kuat.<\/p>'));
+    });
+
+    if (d.vif_inner && d.vif_inner.length) {
+      h += kartuUji('VIF antar-variabel', (d.vif_inner_maks || 0) <= 5,
+        tabelBaris(['Variabel', 'VIF'],
+          d.vif_inner.map(v => [v.nama, angka(v.vif, 2)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman.<\/p>');
+    }
+    if (d.catatan_belum && d.catatan_belum.length) {
+      h += '<div class="catatan" style="margin-top:12px">' +
+        '<strong>Belum diperiksa di versi ini:<\/strong> ' + d.catatan_belum.join(' · ') +
+        '. Alat ini sengaja tidak mengaku bisa menghitungnya — sedang disiapkan.<\/div>';
+    }
+
+    if (d.fornell && d.fornell.length) {
+      h += kartuUji('Fornell-Larcker', !d.fornell_ada_masalah,
+        '<p style="margin:0;color:#6B6259">Apakah tiap variabel lebih erat dengan ' +
+        'butirnya sendiri daripada dengan variabel lain.<\/p>' +
+        tabelBaris(['Pasangan', 'Korelasi', 'Batas'],
+          d.fornell.map(f => [f.pasangan, angka(f.korelasi, 3), angka(f.batas, 3)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">Lulus kalau korelasi ' +
+        'tidak melebihi akar AVE masing-masing variabel.<\/p>');
+    }
+  }
+
+  /* ══════════ NASIHAT — datang dari server ══════════ */
+  const masalah = d.masalah || [];
+  if (masalah.length) {
+    h += '<h2 style="margin:26px 0 4px">Cara membetulkannya<\/h2>' +
+         '<p style="margin:0 0 14px;color:#6B6259">Satu per satu, mulai dari yang paling perlu.<\/p>';
+    masalah.forEach(function (m, i) { h += kotakNasihat(m.nasihat, i + 1); });
+  } else {
+    h += '<div class="kartu" style="margin-top:20px;border-left:4px solid #4E8A5A">' +
+      '<h3 style="margin:0 0 6px">{{ ikon("check-circle-2", 16) }} Tidak ada yang perlu dibetulkan<\/h3>' +
+      '<p style="margin:0;color:#6B6259">Datamu sudah memenuhi syarat yang diperiksa. ' +
+      'Lanjutkan ke analisis di ' + (d.mode === 'pls' ? 'SmartPLS' : 'SPSS') + ' ya. ' +
+      'Kalau nanti hasilnya berbeda dari harapan, unggah lagi ke sini.<\/p><\/div>';
+  }
+
+  wadah.innerHTML = h;
+  wadah.hidden = false;
+  wadah.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── PERIKSA ────────────────────────────────────────────────────────── */
+async function periksa() {
+  const kirim = { kunci: KUNCI, mode: ALAT,
+                  missing: document.getElementById('cara-missing').value };
+  if (ALAT === 'spss') {
+    const x = Array.from(document.querySelectorAll('#baris-x .pilih-kolom'))
+      .map(s => s.value).filter(Boolean);
+    const m = Array.from(document.querySelectorAll('#baris-m .pilih-kolom'))
+      .map(s => s.value).filter(Boolean);
+    const y = document.getElementById('kolom-y').value;
+    if (!x.length) { pesan('pesan-periksa', 'Tunjuk dulu minimal satu kolom X.', 'galat'); return; }
+    if (!y) { pesan('pesan-periksa', 'Tunjuk dulu kolom Y.', 'galat'); return; }
+    kirim.kolom_x = x; kirim.kolom_y = y; kirim.kolom_m = m;
+  } else {
+    const konstruk = {};
+    document.querySelectorAll('#daftar-konstruk .kartu').forEach(k => {
+      const nama = k.querySelector('.nama-konstruk').value.trim();
+      const butir = Array.from(k.querySelector('.butir-konstruk').selectedOptions).map(o => o.value);
+      if (nama && butir.length) konstruk[nama] = butir;
+    });
+    const target = document.getElementById('target-pls').value;
+    if (Object.keys(konstruk).length < 2) {
+      pesan('pesan-periksa', 'Butuh minimal dua variabel supaya bisa diperiksa.', 'galat'); return;
+    }
+    if (!target) { pesan('pesan-periksa', 'Tunjuk dulu variabel yang mau dijelaskan.', 'galat'); return; }
+    kirim.konstruk = konstruk; kirim.kolom_y_konstruk = target;
+  }
+  pesan('pesan-periksa', 'Sedang memeriksa…');
+  const t = document.getElementById('tombol-periksa');
+  t.disabled = true;
+  try {
+    const r = await fetch('/api/diagnosis/periksa', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kirim) });
+    const d = await r.json();
+    if (!r.ok) { pesan('pesan-periksa', d.detail || 'Belum bisa diperiksa.', 'galat'); return; }
+    document.getElementById('pesan-periksa').innerHTML = '';
+    gambarHasil(d);
+  } catch (e) {
+    pesan('pesan-periksa', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  } finally { t.disabled = false; }
+}
+</script>
+{% endblock %}

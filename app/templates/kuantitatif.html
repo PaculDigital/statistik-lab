@@ -1,0 +1,765 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN PILIH MODEL KUANTITATIF (ACC Bos 18Sep26)
+  ────────────────────────────────────────────────────────────────────────
+  MENGAPA BAHASANYA TUJUAN, BUKAN NAMA TEKNIK:
+  Orang awam tidak tahu "mediasi" itu apa. Tapi dia tahu tujuannya:
+  "pengaruhnya lewat sesuatu dulu". Jadi kartu dibaca dari PERTANYAAN
+  penelitian, baru nama tekniknya ditulis kecil di bawah — supaya dia
+  BELAJAR istilahnya sambil memilih, bukan dihadang istilahnya lebih dulu.
+
+  ⚠️ GAMBAR = BAHASA UNIVERSAL. Tiap kartu ada denah panahnya sendiri
+  supaya bisa dipahami tanpa membaca satu kata pun.
+
+  ⚠️ KUNCI BEDA MODERASI vs MEDIASI (sudah dikunci 18Sep26):
+  MEDIASI  → M ada DI ANTARA X dan Y (X → M → Y)
+  MODERASI → Z menempel DI GARIS panah X→Y, bukan di antara kotak.
+  Jangan digambar sama, itu bahaya (mahasiswa salah tafsir).
+#}
+
+{% block isi %}
+
+<span class="eyebrow">{{ ikon('flask-conical', 13) }} Kuantitatif</span>
+<h1 style="margin:8px 0 10px">Penelitianmu mau menjawab apa?</h1>
+<p class="besar" style="max-width:680px;margin-bottom:8px">
+  Pilih yang paling mirip dengan tujuan penelitianmu. Tidak harus persis —
+  bisa diganti nanti.
+</p>
+<p class="samar" style="font-size:13px;margin-bottom:26px">
+  Bingung istilahnya? Buka <a href="/belajar" style="color:var(--teal)">BELAJAR</a>
+  kapan saja — tidak akan kehilangan pilihanmu.
+</p>
+
+<div class="grid-model-kartu">
+
+  {# ① REGRESI — INDUK. Klik → MUNCUL 3 SUB-PILIHAN (#sub-regresi) #}
+  <a href="#sub-regresi" class="kartu-pilih" data-induk="regresi" onclick="bukaSub(event,'regresi')">
+    <span class="denah">
+      <svg viewBox="0 0 150 60" role="img" aria-label="X panah ke Y">
+        <ellipse cx="34" cy="30" rx="23" ry="16"/>
+        <text x="34" y="34">X</text>
+        <line x1="57" y1="30" x2="91" y2="30" class="garis-panah"/>
+        <polygon points="94,30 86,26 86,34"/>
+        <ellipse cx="116" cy="30" rx="23" ry="16"/>
+        <text x="116" y="34">Y</text>
+      </svg>
+    </span>
+    <span class="kartu-judul">Regresi</span>
+    <span class="kartu-tujuan">
+      Mau tahu seberapa besar pengaruh <strong>satu atau beberapa variabel</strong>
+      terhadap satu variabel lain?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-s1">S1</span>
+      <span class="kartu-teknis">3 pilihan · klik untuk lihat</span>
+    </span>
+  </a>
+
+  {# ③ MEDIASI — INDUK. Klik → MUNCUL 4 SUB-PILIHAN (#sub-mediasi) #}
+  <a href="#sub-mediasi" class="kartu-pilih" data-induk="mediasi" onclick="bukaSub(event,'mediasi')">
+    <span class="denah">
+      <svg viewBox="0 0 150 60" role="img" aria-label="X ke M ke Y, M di antara">
+        <ellipse cx="20" cy="32" rx="17" ry="13" class="kecil"/>
+        <text x="20" y="35.5" class="teks-kecil">X</text>
+        <line x1="37" y1="32" x2="55" y2="32" class="garis-panah"/>
+        <polygon points="58,32 50,28.5 50,35.5"/>
+        <ellipse cx="80" cy="32" rx="18" ry="13" class="kotak-m"/>
+        <text x="80" y="35.5" class="teks-m">M</text>
+        <line x1="98" y1="32" x2="114" y2="32" class="garis-panah"/>
+        <polygon points="118,32 110,28.5 110,35.5"/>
+        <ellipse cx="134" cy="32" rx="15" ry="12" class="kecil"/>
+        <text x="134" y="35.5" class="teks-kecil">Y</text>
+        <line x1="20" y1="46" x2="134" y2="46" class="garis-putus"/>
+      </svg>
+    </span>
+    <span class="kartu-judul">Ada perantara</span>
+    <span class="kartu-tujuan">
+      Pengaruhnya <strong>lewat sesuatu dulu</strong> — X memengaruhi
+      perantara, baru perantara memengaruhi Y?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-s2">S1–S2</span>
+      <span class="kartu-teknis">Mediasi · 4 pilihan · klik untuk lihat</span>
+    </span>
+  </a>
+
+  {# ④ MODERASI — INDUK. Klik → MUNCUL 6 SUB-PILIHAN (#sub-moderasi) #}
+  <a href="#sub-moderasi" class="kartu-pilih" data-induk="moderasi" onclick="bukaSub(event,'moderasi')">
+    <span class="denah">
+      <svg viewBox="0 0 150 60" role="img" aria-label="Z menempel di garis X ke Y">
+        <ellipse cx="22" cy="40" rx="17" ry="13" class="kecil"/>
+        <text x="22" y="43.5" class="teks-kecil">X</text>
+        <line x1="39" y1="40" x2="92" y2="40" class="garis-panah"/>
+        <polygon points="96,40 88,36.5 88,43.5"/>
+        <ellipse cx="116" cy="40" rx="19" ry="13" class="kecil"/>
+        <text x="116" y="43.5" class="teks-kecil">Y</text>
+        <ellipse cx="68" cy="12" rx="17" ry="10" class="kotak-z"/>
+        <text x="68" y="15.5" class="teks-z">Z</text>
+        <line x1="68" y1="22" x2="68" y2="40" class="garis-z"/>
+        <polygon points="68,40 64,32 72,32" class="isi-z"/>
+      </svg>
+    </span>
+    <span class="kartu-judul">Ada yang memperkuat / melemahkan</span>
+    <span class="kartu-tujuan">
+      Ada variabel yang membuat pengaruhnya jadi <strong>lebih kuat</strong>
+      atau <strong>lebih lemah</strong> tergantung kondisinya?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-s2">S2</span>
+      <span class="kartu-teknis">Moderasi · 6 pilihan · klik untuk lihat</span>
+    </span>
+  </a>
+
+  {# ④ GABUNGAN — dibiarkan LEBAR PENUH agar barisnya tidak pincang.
+     🔴 PUTUSAN BOS 22Sep26: "Geser". Sebelum ini kartu ini duduk sendiri di
+     kolom 1 dengan 2 kolom kosong di sebelahnya (terlihat MATA), karena
+     kartu ke-5 "Banding kelompok" (MANOVA) memakai .lebar-penuh juga.
+     Aturan baru: satu baris jangan menyisakan kolom kosong. #}
+  <a href="/buat-data?model=gabungan" class="kartu-pilih lebar-penuh">
+    <span class="denah">
+      <svg viewBox="0 0 150 60" role="img" aria-label="Model gabungan">
+        <ellipse cx="20" cy="20" rx="15" ry="10" class="kecil"/>
+        <text x="20" y="23" class="teks-kecil">X1</text>
+        <ellipse cx="20" cy="48" rx="15" ry="10" class="kecil"/>
+        <text x="20" y="51" class="teks-kecil">Xn</text>
+        <line x1="35" y1="20" x2="84" y2="27" class="garis-panah"/>
+        <line x1="35" y1="48" x2="84" y2="33" class="garis-panah"/>
+        <polygon points="88,30 80,26 82,33"/>
+        <ellipse cx="110" cy="30" rx="20" ry="13" class="kecil"/>
+        <text x="110" y="33.5" class="teks-kecil">Y</text>
+        <ellipse cx="110" cy="9" rx="14" ry="7" class="kotak-m"/>
+        <text x="110" y="11.5" class="teks-sangat-kecil">M / Z</text>
+      </svg>
+    </span>
+    <span class="kartu-judul">Campuran</span>
+    <span class="kartu-tujuan">
+      Modelmu <strong>lengkap</strong> — ada perantara, ada penguat, atau
+      berantai sekaligus?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-s3">S2–S3</span>
+      <span class="kartu-teknis">Gabungan &amp; berantai</span>
+    </span>
+  </a>
+
+  {# ⑤ BANDING KELOMPOK (MANOVA) — ACC Bos 21Sep26: "Ok buka untuk manova".
+     Ruang dipesan 19Sep26 (RUANG_MANOVA.md §2 R1–R2). Tata letak = Opsi A
+     (ACC Bos): kartu ini MEMINTANG PENUH via `.pintu.lebar-penuh`
+     (grid-model-kartu terkunci 3 kolom → kartu ke-5 akan menggantung
+     sendirian di kolom kiri dan tampak pincang kalau tidak dilebarkan).
+     ⚠️ Gambar: 3 kelompok → 2 panah ke 2 Y (cara berpikir BEDA dari regresi:
+        bukan "X memengaruhi Y", tapi "kelompok A ≠ kelompok B"). #}
+  <a href="/buat-data?model=banding-kelompok" class="kartu-pilih lebar-penuh">
+    <span class="denah">
+      <svg viewBox="0 0 220 60" role="img"
+           aria-label="tiga kelompok dibandingkan pada dua variabel hasil">
+        <ellipse cx="26" cy="14" rx="19" ry="10"/>
+        <text x="26" y="18" style="font-size:10px">A</text>
+        <ellipse cx="26" cy="38" rx="19" ry="10"/>
+        <text x="26" y="42" style="font-size:10px">B</text>
+        <ellipse cx="26" cy="56" rx="19" ry="10"/>
+        <text x="26" y="60" style="font-size:10px">C</text>
+        <line x1="46" y1="20" x2="150" y2="24" class="garis-panah"/>
+        <polygon points="155,25 146,20 146,30"/>
+        <line x1="46" y1="38" x2="150" y2="38" class="garis-panah"/>
+        <polygon points="155,38 146,33 146,43"/>
+        <line x1="46" y1="52" x2="150" y2="48" class="garis-panah"/>
+        <polygon points="155,48 146,43 146,53"/>
+        <ellipse cx="182" cy="24" rx="26" ry="13"/>
+        <text x="182" y="28" style="font-size:11px">Y1</text>
+        <ellipse cx="182" cy="50" rx="26" ry="13"/>
+        <text x="182" y="54" style="font-size:11px">Y2</text>
+      </svg>
+    </span>
+    <span class="kartu-judul">Banding kelompok</span>
+    <span class="kartu-tujuan">
+      Mau tahu apakah <strong>beberapa kelompok berbeda</strong> — pada
+      <strong>lebih dari satu</strong> variabel sekaligus? (kelas A vs B,
+      pria vs wanita), dan hasilnya lebih dari satu?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-s2">S1–S2</span>
+      <span class="kartu-teknis">MANOVA</span>
+    </span>
+  </a>
+
+  {# ⑥ SUSUN SENDIRI — terkunci (ACC Bos: diskusi dulu).
+     Dibiarkan 1 kolom: MEMANG sengaja belum dibuka, dan aturan "jangan
+     menyisakan kolom kosong" berlaku untuk kartu yang SUDAH dipakai —
+     kartu terkunci tetap diletakkan apa adanya supaya terlihat "menyusul". #}
+  <div class="kartu-pilih kartu-kunci">
+    <span class="denah">
+      <svg viewBox="0 0 150 60" role="img" aria-label="Susun sendiri">
+        <ellipse cx="30" cy="16" rx="17" ry="10" class="kotak-abu"/>
+        <ellipse cx="30" cy="44" rx="17" ry="10" class="kotak-abu"/>
+        <ellipse cx="116" cy="30" rx="18" ry="11" class="kotak-abu"/>
+        <line x1="47" y1="16" x2="94" y2="26" class="garis-abu"/>
+        <line x1="47" y1="44" x2="94" y2="34" class="garis-abu"/>
+        <circle cx="74" cy="30" r="11" class="lingkar-abu"/>
+        <path d="M70 30h8M74 26v8" class="tanda-plus"/>
+      </svg>
+    </span>
+    <span class="kartu-judul">Susun sendiri (expert)</span>
+    <span class="kartu-tujuan">
+      Sudah punya model sendiri di kepala dan mau menyusunnya bebas?
+    </span>
+    <span class="kartu-kaki">
+      <span class="pita-kecil pita-abu2">{{ ikon('timer', 10) }} nanti</span>
+      <span class="kartu-teknis">sedang disiapkan</span>
+    </span>
+  </div>
+
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PANEL SUB-PILIHAN REGRESI (TAHAP 1.3 ACC Bos 19Sep26 · DIPERBARUI 21Sep26)
+
+   ⚠️ MENGAPA DISEMBUNYIKAN DULU: keputusan Bos "4 kartu induk → klik → BARU
+   muncul sub-pilihan". Orang awam melihat 4 dulu, bukan 15 sekaligus.
+
+   ⚠️ ISTILAH BAKU + TERJEMAHAN (keputusan Bos): nama teknis tetap ditulis
+   berdampingan dengan bahasa tujuan — supaya mahasiswa BELAJAR istilahnya.
+
+   ⚠️ PERUBAHAN 21Sep26 (ACC Bos, keputusan N1 + Opsi R1):
+      · Kartu ① "Sederhana" → "PARSIAL (Sederhana)": banyak X, diuji SATU-SATU
+        (X lain tidak ikut dihitung). Gambar = 3 panah LURUS, tanpa garis siku.
+      · Kartu ② "Berganda" → "BERGANDA (Parsial + Simultan)": LENGKAP, ada
+        uji t (parsial) DAN uji F (simultan). Gambar = panah lurus + jalur siku.
+      · Kartu ③ "Berganda-berantai" DITUTUP dari pintu (diarsipkan, Opsi R1).
+        Kode mesin cara='berantai' TETAP ADA & tetap lolos 33 uji gerbang_s3.
+        Sebab ditutup (kata Bos): "berantai itu tidak ada, karena saya
+        kebingungan nyari parsialnya kok ga ada" — parsial kini SUDAH tampil
+        di kartu ① dan ②, jadi berantai tidak diperlukan lagi.
+        Dijaga otomatis oleh sot.py::_periksa_kartu_regresi().
+   ═══════════════════════════════════════════════════════════════════════════ #}
+<section id="sub-regresi" class="panel-sub" hidden>
+  <div class="kepala-sub">
+    <span class="eyebrow">{{ ikon('trending-up', 13) }} Regresi</span>
+    <h2 style="margin:6px 0 4px">Regresi yang mana?</h2>
+    <p class="samar" style="font-size:13.5px;margin:0">
+      Bedanya cuma di <strong>jumlah X</strong> dan apakah X-nya diuji
+      <strong>sendiri-sendiri</strong> (parsial) atau
+      <strong>bersama-sama</strong> (simultan). Pilih yang paling mirip
+      penelitianmu.
+    </p>
+  </div>
+
+  <div class="grid-sub">
+
+    {# ① PARSIAL (dulu "Sederhana") — BANYAK X, DIUJI SATU-SATU #}
+    {# ACC Bos 21Sep26 (N1): isinya banyak X ke Y, tapi TIDAK simultan.
+       Gambar = 3 panah LURUS tanpa garis siku — beda jelas dengan ②. #}
+    <a href="/buat-data?model=sederhana" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X1, X2, X3 masing-masing panah ke Y">
+          <ellipse cx="22" cy="12" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="15.5" class="teks-kecil">X1</text>
+          <ellipse cx="22" cy="30" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="33.5" class="teks-kecil">X2</text>
+          <ellipse cx="22" cy="48" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="51.5" class="teks-kecil">X3</text>
+          {# tiga panah LURUS ke Y — TIDAK ada garis siku (itu tanda simultan) #}
+          <line x1="38" y1="14" x2="88" y2="26" class="garis-panah"/>
+          <line x1="38" y1="30" x2="88" y2="30" class="garis-panah"/>
+          <line x1="38" y1="46" x2="88" y2="34" class="garis-panah"/>
+          <ellipse cx="116" cy="30" rx="23" ry="16"/>
+          <text x="116" y="34">Y</text>
+        </svg>
+      </span>
+      <span class="kartu-judul">Parsial (Sederhana)</span>
+      <span class="kartu-tujuan">
+        Tiap X diuji <strong>sendiri-sendiri</strong> ke Y — X lain tidak ikut
+        dihitung. Bisa dipakai untuk <strong>banyak X</strong> (X1…X8).
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s1">S1</span>
+        <span class="kartu-teknis">Beberapa regresi sederhana (uji t)</span>
+      </span>
+    </a>
+
+    {# ② BERGANDA (PARSIAL + SIMULTAN) — LENGKAP #}
+    {# ACC Bos 21Sep26 (N1): parsial (panah lurus tiap X) DITAMBAH simultan
+       (garis siku semua X → Y). Ini gambar yang dulu dipakai "berantai". #}
+    <a href="/buat-data?model=berganda" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X1, X2, X3 panah lurus ke Y, dan semua X bersama-sama (garis siku) ke Y">
+          <ellipse cx="22" cy="12" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="15.5" class="teks-kecil">X1</text>
+          <ellipse cx="22" cy="30" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="33.5" class="teks-kecil">X2</text>
+          <ellipse cx="22" cy="48" rx="16" ry="9" class="kecil"/>
+          <text x="22" y="51.5" class="teks-kecil">X3</text>
+
+          {# (1) PARSIAL — panah lurus tiap X ke Y #}
+          <line x1="38" y1="14" x2="88" y2="26" class="garis-panah"/>
+          <line x1="38" y1="30" x2="88" y2="30" class="garis-panah"/>
+          <line x1="38" y1="46" x2="88" y2="34" class="garis-panah"/>
+
+          {# (2) SIMULTAN — jalur SIKU 90° ke Y (tanpa mata panah, aturan
+                 18Sep26). Menandakan "semua X bersama-sama ke Y".
+                 ⚠️ DIPERJELAS 21Sep26 setelah AUDIT UKUR: versi pertama
+                 memakai `--tinta-3` (abu terang, tampak seperti bayangan)
+                 DAN sikunya cuma tinggi 9px di layar → bentuk siku tidak
+                 terbaca. Kini: warna tinta-2 (segelap panah) + siku dinaikkan
+                 (y 48 → 34) supaya tingginya ~2,5× lebih jelas.
+                 Tetap TANPA mata panah — pembeda dari panah lurus = BENTUK. #}
+          <path d="M38,48 L110,48 L110,32" class="garis-siku"/>
+
+          <ellipse cx="116" cy="30" rx="23" ry="16"/>
+          <text x="116" y="34">Y</text>
+        </svg>
+      </span>
+      <span class="kartu-judul">Berganda (Parsial + Simultan)</span>
+      <span class="kartu-tujuan">
+        <strong>Lengkap</strong> — parsial (tiap X sendiri) <em>dan</em>
+        simultan (semua X bersama-sama). Dua uji dari satu regresi:
+        <strong>uji t</strong> + <strong>uji F</strong>.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s1">S1</span>
+        <span class="kartu-teknis">Regresi linear berganda (uji t + uji F)</span>
+      </span>
+    </a>
+
+  </div>
+
+  <p style="margin:18px 0 0">
+    <button type="button" class="tb tb-sekunder" onclick="tutupSub()">
+      {{ ikon('arrow-left', 14) }} Kembali ke pilihan model
+    </button>
+  </p>
+</section>
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PANEL SUB-PILIHAN MEDIASI (TAHAP 1.3 LANGKAH B, ACC Bos 19Sep26)
+
+   ⚠️ ISTILAH BAKU + TERJEMAHAN (keputusan Bos): nama teknis ditulis
+   berdampingan bahasa tujuan — "Paralel (sejajar)" & "Berjenjang (bertahap)".
+
+   ⚠️ KEEMPAT BENTUK INI SUDAH TERUKUR 19Sep26 (kalibrasi_per_jalur,
+   n=300, toleransi 0,03 — 18 dari 18 jalur TEPAT):
+      tunggal galat 0,0134 · paralel 0,0138 · berjenjang 0,0161 · campuran 0,0231.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+<section id="sub-mediasi" class="panel-sub" hidden>
+  <div class="kepala-sub">
+    <span class="eyebrow">{{ ikon('refresh-cw', 13) }} Mediasi</span>
+    <h2 style="margin:6px 0 4px">Perantaranya berapa, dan bagaimana susunannya?</h2>
+    <p class="samar" style="font-size:13.5px;margin:0">
+      Semua bentuk ini punya <strong>perantara (M)</strong> di tengah.
+      Bedanya: <strong>berapa M</strong> dan <strong>apakah M saling lewat</strong>.
+    </p>
+  </div>
+
+  <div class="grid-sub">
+
+    {# ① TUNGGAL #}
+    <a href="/buat-data?model=mediasi" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X ke M ke Y">
+          <ellipse cx="18" cy="30" rx="15" ry="11" class="kecil"/>
+          <text x="18" y="33.5" class="teks-kecil">X</text>
+          <line x1="33" y1="30" x2="52" y2="30" class="garis-panah"/>
+          <polygon points="56,30 48,26.5 48,33.5"/>
+          <ellipse cx="76" cy="30" rx="17" ry="12" class="kotak-m"/>
+          <text x="76" y="33.5" class="teks-m">M</text>
+          <line x1="93" y1="30" x2="110" y2="30" class="garis-panah"/>
+          <polygon points="114,30 106,26.5 106,33.5"/>
+          <ellipse cx="131" cy="30" rx="15" ry="11" class="kecil"/>
+          <text x="131" y="33.5" class="teks-kecil">Y</text>
+          <line x1="18" y1="45" x2="131" y2="45" class="garis-putus"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Tunggal</span>
+      <span class="kartu-tujuan">
+        Satu perantara saja: X → M → Y. Ini bentuk paling dasar.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S1–S2</span>
+        <span class="kartu-teknis">Mediasi sederhana</span>
+      </span>
+    </a>
+
+    {# ② PARALEL #}
+    <a href="/buat-data?model=mediasi-paralel" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X ke M1 dan M2 secara sejajar, lalu ke Y">
+          <ellipse cx="16" cy="30" rx="14" ry="10" class="kecil"/>
+          <text x="16" y="33.5" class="teks-kecil">X</text>
+          <ellipse cx="74" cy="14" rx="16" ry="10" class="kotak-m"/>
+          <text x="74" y="17.5" class="teks-m">M1</text>
+          <ellipse cx="74" cy="46" rx="16" ry="10" class="kotak-m"/>
+          <text x="74" y="49.5" class="teks-m">M2</text>
+          <line x1="28" y1="26" x2="60" y2="17" class="garis-panah"/>
+          <line x1="28" y1="34" x2="60" y2="43" class="garis-panah"/>
+          <line x1="90" y1="17" x2="118" y2="26" class="garis-panah"/>
+          <line x1="90" y1="43" x2="118" y2="34" class="garis-panah"/>
+          <polygon points="122,30 114,26 114,34"/>
+          <ellipse cx="134" cy="30" rx="14" ry="10" class="kecil"/>
+          <text x="134" y="33.5" class="teks-kecil">Y</text>
+        </svg>
+      </span>
+      <span class="kartu-judul">Paralel (sejajar)</span>
+      <span class="kartu-tujuan">
+        <strong>Dua perantara atau lebih yang berdiri sejajar</strong> —
+        keduanya langsung dari X, tidak saling lewat.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Mediasi paralel</span>
+      </span>
+    </a>
+
+    {# ③ BERJENJANG #}
+    <a href="/buat-data?model=mediasi-berjenjang" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X ke M1 ke M2 ke Y, bertahap">
+          <ellipse cx="14" cy="30" rx="13" ry="10" class="kecil"/>
+          <text x="14" y="33.5" class="teks-kecil">X</text>
+          <line x1="27" y1="30" x2="41" y2="30" class="garis-panah"/>
+          <polygon points="45,30 37,26.5 37,33.5"/>
+          <ellipse cx="62" cy="30" rx="16" ry="11" class="kotak-m"/>
+          <text x="62" y="33.5" class="teks-m">M1</text>
+          <line x1="78" y1="30" x2="94" y2="30" class="garis-panah"/>
+          <polygon points="98,30 90,26.5 90,33.5"/>
+          <ellipse cx="115" cy="30" rx="16" ry="11" class="kotak-m"/>
+          <text x="115" y="33.5" class="teks-m">M2</text>
+          <line x1="14" y1="45" x2="136" y2="45" class="garis-putus"/>
+          <ellipse cx="143" cy="30" rx="7" ry="7" class="kecil"/>
+          <text x="143" y="32.5" style="font-size:8px">Y</text>
+        </svg>
+      </span>
+      <span class="kartu-judul">Berjenjang (bertahap)</span>
+      <span class="kartu-tujuan">
+        Perantaranya <strong>bertingkat</strong>: X → M1 → M2 → Y.
+        M2 baru muncul <strong>sesudah</strong> M1.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Mediasi berjenjang (serial)</span>
+      </span>
+    </a>
+
+    {# ④ CAMPURAN #}
+    <a href="/buat-data?model=mediasi-campuran" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="X ke M1, M1 ke M2 dan ke Y, X juga ke M2">
+          <ellipse cx="14" cy="38" rx="13" ry="10" class="kecil"/>
+          <text x="14" y="41.5" class="teks-kecil">X</text>
+          <ellipse cx="66" cy="38" rx="16" ry="11" class="kotak-m"/>
+          <text x="66" y="41.5" class="teks-m">M1</text>
+          <ellipse cx="66" cy="12" rx="16" ry="10" class="kotak-m"/>
+          <text x="66" y="15.5" class="teks-m">M2</text>
+          <line x1="27" y1="38" x2="46" y2="38" class="garis-panah"/>
+          <polygon points="50,38 42,34.5 42,41.5"/>
+          <line x1="66" y1="27" x2="66" y2="22" class="garis-panah"/>
+          <polygon points="66,18 62.5,25 69.5,25"/>
+          <line x1="24" y1="32" x2="56" y2="17" class="garis-putus"/>
+          <line x1="82" y1="34" x2="112" y2="30" class="garis-panah"/>
+          <polygon points="116,30 108,26.5 108,33.5"/>
+          <line x1="82" y1="14" x2="112" y2="26" class="garis-panah"/>
+          <ellipse cx="128" cy="30" rx="15" ry="11" class="kecil"/>
+          <text x="128" y="33.5" class="teks-kecil">Y</text>
+        </svg>
+      </span>
+      <span class="kartu-judul">Campuran</span>
+      <span class="kartu-tujuan">
+        Gabungan: ada yang <strong>sejajar</strong>, ada yang
+        <strong>bertingkat</strong>, dan sebagian langsung ke Y.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Mediasi campuran (paralel + serial)</span>
+      </span>
+    </a>
+
+  </div>
+
+  <p style="margin:18px 0 0">
+    <button type="button" class="tb tb-sekunder" onclick="tutupSub()">
+      {{ ikon('arrow-left', 14) }} Kembali ke pilihan model
+    </button>
+  </p>
+</section>
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PANEL SUB-PILIHAN MODERASI (TAHAP 1.3 LANGKAH C, ACC Bos 19Sep26)
+
+   ⚠️ KEENAM BENTUK + 8 KOEFISIEN INTERAKSI SUDAH TERUKUR 19Sep26
+   (kalibrasi_per_jalur + interaksi, n=300, toleransi 0,04):
+      tunggal 0,0071 · dual 0,0103 · jalur-a 0,0184 · jalur-b 0,0148
+      · keduanya 0,0062 · 3-jalur 0,0362.
+   Semua interaksi (XxZ->M, MxZ->Y, XxZ->Y, XxZ1->M, MxZ2->Y) TEPAT.
+   ⚠️ CATATAN JUJUR: 3-jalur galat 0,0362 (paling besar dari keenamnya,
+   tapi masih di dalam toleransi 0,04). Bila ditampilkan, WAJIB ada catatan.
+
+   ⚠️ JEBAKAN 3-JALUR (pernah kena 18Sep26, bug item_per): bentuk ini
+   SEBELUMNYA GAGAL dibangun. Sekarang TERBUKTI jalan — TAPI uji ini
+   memakai jalur yang DISUSUN WULAN SENDIRI (bukan lewat UI /buat-data).
+   Jadi: MESIN sanggup; PINTU-nya belum dijahit.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+<section id="sub-moderasi" class="panel-sub" hidden>
+  <div class="kepala-sub">
+    <span class="eyebrow">{{ ikon('shield-check', 13) }} Moderasi</span>
+    <h2 style="margin:6px 0 4px">Penguatnya (Z) ditempel di mana?</h2>
+    <p class="samar" style="font-size:13.5px;margin:0">
+      Variabel penguat (<strong>Z</strong>) bisa ditempel di <strong>berbagai
+      jalur</strong>. Letaknya menentukan jenis moderasinya.
+    </p>
+  </div>
+
+  <div class="grid-sub">
+
+    {# ① TUNGGAL — X→Y dimoderasi Z #}
+    <a href="/buat-data?model=moderasi" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Z menempel di garis X ke Y">
+          <ellipse cx="20" cy="42" rx="15" ry="11" class="kecil"/>
+          <text x="20" y="45.5" class="teks-kecil">X</text>
+          <line x1="35" y1="42" x2="94" y2="42" class="garis-panah"/>
+          <polygon points="98,42 90,38.5 90,45.5"/>
+          <ellipse cx="116" cy="42" rx="17" ry="12" class="kecil"/>
+          <text x="116" y="45.5" class="teks-kecil">Y</text>
+          <ellipse cx="66" cy="12" rx="16" ry="10" class="kotak-z"/>
+          <text x="66" y="15.5" class="teks-z">Z</text>
+          <line x1="66" y1="22" x2="66" y2="42" class="garis-z"/>
+          <polygon points="66,42 62,34 70,34" class="isi-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Tunggal</span>
+      <span class="kartu-tujuan">
+        Satu penguat (Z) menempel di jalur <strong>X → Y</strong>. Bentuk paling dasar.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Moderasi (MRA)</span>
+      </span>
+    </a>
+
+    {# ② DUAL — Z1 & Z2 dua-duanya di X→Y #}
+    <a href="/buat-data?model=moderasi-dual" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Z1 dan Z2 dua-duanya menempel di X ke Y">
+          <ellipse cx="18" cy="42" rx="14" ry="10" class="kecil"/>
+          <text x="18" y="45.5" class="teks-kecil">X</text>
+          <line x1="32" y1="42" x2="94" y2="42" class="garis-panah"/>
+          <polygon points="98,42 90,38.5 90,45.5"/>
+          <ellipse cx="116" cy="42" rx="16" ry="11" class="kecil"/>
+          <text x="116" y="45.5" class="teks-kecil">Y</text>
+          <ellipse cx="50" cy="10" rx="15" ry="9" class="kotak-z"/>
+          <text x="50" y="13.5" class="teks-z">Z1</text>
+          <line x1="50" y1="19" x2="56" y2="42" class="garis-z"/>
+          <ellipse cx="88" cy="10" rx="15" ry="9" class="kotak-z"/>
+          <text x="88" y="13.5" class="teks-z">Z2</text>
+          <line x1="88" y1="19" x2="82" y2="42" class="garis-z"/>
+          <polygon points="68,42 64,35 72,35" class="isi-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Dual</span>
+      <span class="kartu-tujuan">
+        <strong>Dua penguat</strong> (Z1 dan Z2) menempel di jalur yang sama
+        — mana yang lebih kuat pengaruhnya?
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Dual moderasi</span>
+      </span>
+    </a>
+
+    {# ③ JALUR-A — Z di X→M #}
+    <a href="/buat-data?model=moderasi-jalur-a" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Z menempel di jalur X ke M">
+          <ellipse cx="16" cy="44" rx="13" ry="10" class="kecil"/>
+          <text x="16" y="47.5" class="teks-kecil">X</text>
+          <line x1="29" y1="44" x2="46" y2="44" class="garis-panah"/>
+          <polygon points="50,44 42,40.5 42,47.5"/>
+          <ellipse cx="66" cy="44" rx="16" ry="11" class="kotak-m"/>
+          <text x="66" y="47.5" class="teks-m">M</text>
+          <line x1="82" y1="44" x2="112" y2="44" class="garis-panah"/>
+          <polygon points="116,44 108,40.5 108,47.5"/>
+          <ellipse cx="131" cy="44" rx="15" ry="11" class="kecil"/>
+          <text x="131" y="47.5" class="teks-kecil">Y</text>
+          <ellipse cx="38" cy="12" rx="15" ry="9" class="kotak-z"/>
+          <text x="38" y="15.5" class="teks-z">Z</text>
+          <line x1="38" y1="21" x2="38" y2="44" class="garis-z"/>
+          <polygon points="38,44 34,36 42,36" class="isi-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Jalur A</span>
+      <span class="kartu-tujuan">
+        Penguat menempel di <strong>X → M</strong> (jalur pertama).
+        Kekuatan jalan menuju perantara berubah.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Moderasi jalur-a</span>
+      </span>
+    </a>
+
+    {# ④ JALUR-B — Z di M→Y #}
+    <a href="/buat-data?model=moderasi-jalur-b" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Z menempel di jalur M ke Y">
+          <ellipse cx="16" cy="44" rx="13" ry="10" class="kecil"/>
+          <text x="16" y="47.5" class="teks-kecil">X</text>
+          <line x1="29" y1="44" x2="46" y2="44" class="garis-panah"/>
+          <polygon points="50,44 42,40.5 42,47.5"/>
+          <ellipse cx="66" cy="44" rx="16" ry="11" class="kotak-m"/>
+          <text x="66" y="47.5" class="teks-m">M</text>
+          <line x1="82" y1="44" x2="112" y2="44" class="garis-panah"/>
+          <polygon points="116,44 108,40.5 108,47.5"/>
+          <ellipse cx="131" cy="44" rx="15" ry="11" class="kecil"/>
+          <text x="131" y="47.5" class="teks-kecil">Y</text>
+          <ellipse cx="98" cy="12" rx="15" ry="9" class="kotak-z"/>
+          <text x="98" y="15.5" class="teks-z">Z</text>
+          <line x1="98" y1="21" x2="98" y2="44" class="garis-z"/>
+          <polygon points="98,44 94,36 102,36" class="isi-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Jalur B</span>
+      <span class="kartu-tujuan">
+        Penguat menempel di <strong>M → Y</strong> (jalur kedua).
+        Kekuatan dari perantara ke hasil yang berubah.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s2">S2</span>
+        <span class="kartu-teknis">Moderasi jalur-b</span>
+      </span>
+    </a>
+
+    {# ⑤ KEDUANYA — satu Z di dua jalur #}
+    <a href="/buat-data?model=moderasi-keduanya" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Satu Z menempel di jalur X ke M dan M ke Y">
+          <ellipse cx="14" cy="46" rx="12" ry="9" class="kecil"/>
+          <text x="14" y="49" class="teks-kecil">X</text>
+          <line x1="26" y1="46" x2="44" y2="46" class="garis-panah"/>
+          <polygon points="48,46 40,42.5 40,49.5"/>
+          <ellipse cx="64" cy="46" rx="15" ry="10" class="kotak-m"/>
+          <text x="64" y="49" class="teks-m">M</text>
+          <line x1="79" y1="46" x2="110" y2="46" class="garis-panah"/>
+          <polygon points="114,46 106,42.5 106,49.5"/>
+          <ellipse cx="130" cy="46" rx="14" ry="10" class="kecil"/>
+          <text x="130" y="49" class="teks-kecil">Y</text>
+          <ellipse cx="64" cy="12" rx="17" ry="9" class="kotak-z"/>
+          <text x="64" y="15.5" class="teks-z">Z</text>
+          <line x1="56" y1="18" x2="36" y2="46" class="garis-z"/>
+          <line x1="72" y1="18" x2="94" y2="46" class="garis-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Keduanya</span>
+      <span class="kartu-tujuan">
+        <strong>Satu penguat yang sama</strong> menempel di dua jalur sekaligus
+        (X → M dan M → Y).
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s3">S2–S3</span>
+        <span class="kartu-teknis">Moderasi jalur-a & b</span>
+      </span>
+    </a>
+
+    {# ⑥ 3-JALUR — dua penguat berbeda #}
+    <a href="/buat-data?model=moderasi-3jalur" class="kartu-pilih">
+      <span class="denah">
+        <svg viewBox="0 0 150 60" role="img" aria-label="Z1 menempel di jalur X ke M, Z2 menempel di M ke Y">
+          <ellipse cx="14" cy="46" rx="12" ry="9" class="kecil"/>
+          <text x="14" y="49" class="teks-kecil">X</text>
+          <line x1="26" y1="46" x2="44" y2="46" class="garis-panah"/>
+          <polygon points="48,46 40,42.5 40,49.5"/>
+          <ellipse cx="64" cy="46" rx="15" ry="10" class="kotak-m"/>
+          <text x="64" y="49" class="teks-m">M</text>
+          <line x1="79" y1="46" x2="110" y2="46" class="garis-panah"/>
+          <polygon points="114,46 106,42.5 106,49.5"/>
+          <ellipse cx="130" cy="46" rx="14" ry="10" class="kecil"/>
+          <text x="130" y="49" class="teks-kecil">Y</text>
+          <ellipse cx="32" cy="12" rx="15" ry="9" class="kotak-z"/>
+          <text x="32" y="15.5" class="teks-z">Z1</text>
+          <line x1="32" y1="21" x2="32" y2="46" class="garis-z"/>
+          <ellipse cx="98" cy="12" rx="15" ry="9" class="kotak-z"/>
+          <text x="98" y="15.5" class="teks-z">Z2</text>
+          <line x1="98" y1="21" x2="98" y2="46" class="garis-z"/>
+        </svg>
+      </span>
+      <span class="kartu-judul">Tiga jalur</span>
+      <span class="kartu-tujuan">
+        <strong>Dua penguat berbeda</strong>: Z1 di X → M, Z2 di M → Y.
+        Bentuk paling lengkap.
+      </span>
+      <span class="kartu-kaki">
+        <span class="pita-kecil pita-s3">S3</span>
+        <span class="kartu-teknis">Moderasi 3 jalur</span>
+      </span>
+    </a>
+
+  </div>
+
+  <p class="samar" style="font-size:12.5px;margin:16px 0 0;line-height:1.7">
+    Belum yakin? Mulai dari <strong>Tunggal</strong> dulu — bentuk paling
+    sederhana. Kamu bisa kembali ke sini kapan saja.
+  </p>
+
+  <p style="margin:18px 0 0">
+    <button type="button" class="tb tb-sekunder" onclick="tutupSub()">
+      {{ ikon('arrow-left', 14) }} Kembali ke pilihan model
+    </button>
+  </p>
+</section>
+
+<div class="kartu" style="margin-top:26px">
+  <span class="eyebrow">{{ ikon('lightbulb', 13) }} Setelah kamu pilih</span>
+  <p style="color:var(--tinta-2);font-size:14px;line-height:1.8;margin:10px 0 0">
+    Kamu akan masuk ke halaman pengisian — tapi <strong>hanya bagian yang
+    kamu butuhkan</strong>. Kalau tadi pilih regresi sederhana, kamu tidak
+    akan melihat menu perantara atau penguat sama sekali. Begitu sebaliknya.
+  </p>
+  <p style="color:var(--tinta-2);font-size:14px;line-height:1.8;margin:12px 0 0">
+    <strong>Ingin lihat contoh dulu?</strong> Nanti di halaman pengisian
+    tersedia contoh skripsi siap-klik — kamu tinggal lihat hasilnya, baru
+    ganti dengan datamu sendiri.
+  </p>
+</div>
+
+<p style="margin-top:20px">
+  <a href="/mulai" class="tb tb-sekunder">{{ ikon('arrow-left', 15) }} Ganti jenis penelitian</a>
+</p>
+
+{% endblock %}
+
+{% block skrip %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUKA / TUTUP SUB-PILIHAN MODEL (TAHAP 1.3, ACC Bos 19Sep26)
+
+   ⚠️ MENGAPA PAKAI `hidden` + `scrollIntoView`, BUKAN HALAMAN BARU:
+   Keputusan Bos "sub-pilihan muncul di halaman yang SAMA" (opsi 1a) —
+   supaya user tidak pindah halaman dan tidak kehilangan tempat.
+
+   ⚠️ MENGAPA `defer`/letak script di BAWAH + DOMContentLoaded TIDAK PERLU:
+   skrip ini ditaruh SETELAH elemen `#sub-regresi` di dalam blok skrip
+   bawaan halaman, jadi elemennya SUDAH ADA saat skrip jalan.
+
+   ⚠️ JEBAKAN YANG SUDAH KENA (18Sep26): kalau memakai fungsi yang diambil
+   dari skrip lain, WAJIB dipastikan skripnya dimuat LEBIH DULU
+   (ReferenceError: Cannot access before initialization). Di sini skripnya
+   MANDIRI — tidak mengambil apa pun dari berkas lain.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function bukaSub(ev, nama) {
+  if (ev) ev.preventDefault();
+  const panel = document.getElementById('sub-' + nama);
+  if (!panel) return;
+
+  // Sembunyikan semua kartu INDUK supaya user fokus ke sub-pilihan.
+  document.querySelectorAll('.grid-model-kartu').forEach(g => { g.hidden = true; });
+
+  panel.hidden = false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function tutupSub() {
+  document.querySelectorAll('.panel-sub').forEach(p => { p.hidden = true; });
+  document.querySelectorAll('.grid-model-kartu').forEach(g => { g.hidden = false; });
+  const atas = document.querySelector('.grid-model-kartu');
+  if (atas) atas.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+{% endblock %}

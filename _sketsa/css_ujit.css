@@ -1,0 +1,134 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   KARTU UJI t — 3 LAPIS (18Sep26, ACC Bos)
+
+   MENGAPA BAGIAN INI ADA:
+   Di halaman BELAJAR, istilah keenam (hetero/β/p-value/R²/VIF/alpha) mudah
+   dipahami, TAPI mahasiswa tersandung hal lain: mereka melihat hasil uji t
+   yang SIG. < 0,05 tapi nilainya NEGATIF, lalu panik dan menyangka tidak
+   berpengaruh. Ada juga yang salah arah sebaliknya — menganggap "tidak
+   signifikan tapi positif" berarti "berpengaruh positif lemah".
+
+   Permintaan Bos (verbatim): "1 kartu khusus untuk simulasi menjelaskan uji t
+   yang sering dialami mahasiswa dan mereka bingung, signifikan kok hasilnya
+   negatif disertai penjelasan dan buat interaktif agar menarik dilengkapi
+   beberapa skenario uji t".
+
+   KEPUTUSAN BOS yang menentukan bentuk akhir:
+     · 1A — tambahkan miskonsepsi kedua (tidak signifikan, tanda tak bermakna)
+     · 2A — masukkan keadaan "marginal" (Sig. 0,05–0,10)
+     · 3A — susunan 2 tingkat: pilih HASIL dulu, baru keluar artinya
+     · Bahasan sebab + cara memperbaiki + label ✅SAH/⚠️HATI-HATI/❌CURANG
+     · 5 cara curang ditampilkan
+     · Tombol "Belum yakin datanya benar?" → daftar periksa
+     · Kartu hack: "5 CARA HACK" — strip GELAP warna MERAH (bukan coklat)
+   ═════════════════════════════════════════════════════════════════════════ */
+.kartu-ujit { margin-top: 4px; }
+
+/* ── Kotak pilih hasil (Tingkat ①) ─────────────────────────────────────── */
+.ujit-empat { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+@media (max-width: 560px) { .ujit-empat { grid-template-columns: 1fr; } }
+
+.ujit-pilih {
+  background: #fff; border: 1px solid var(--garis); border-radius: 11px;
+  padding: 11px 12px; text-align: left; font: inherit; color: inherit;
+  cursor: pointer; width: 100%; display: block;
+}
+.ujit-pilih:hover { border-color: #C9BEB1; }
+.ujit-pilih.aktif { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-muda); }
+.ujit-kepala { display: flex; justify-content: space-between; gap: 7px;
+               align-items: center; margin-bottom: 5px; }
+.ujit-nilai { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ujit-nama { font-size: 13px; font-weight: 700; display: block; margin-bottom: 2px; }
+.ujit-kecil { font-size: 12px; color: var(--lembut); }
+
+/* ── Pita penanda hasil ────────────────────────────────────────────────── */
+.ujit-pita { display: inline-block; font-size: 11px; font-weight: 700;
+             padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.ujit-pita.hijau  { background: var(--hijau-muda); color: var(--hijau); }
+.ujit-pita.merah  { background: var(--merah-muda); color: var(--merah); }
+.ujit-pita.amber  { background: var(--amber-muda); color: var(--amber); }
+.ujit-pita.abu    { background: #EFEBE3; color: var(--lembut); }
+
+/* ── Dua kolom: gambar + penjelasan ────────────────────────────────────── */
+.ujit-dua { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .ujit-dua { grid-template-columns: 1fr; } }
+
+/* ── Kotak contoh penulisan ────────────────────────────────────────────── */
+.ujit-tulis { background: #F6F3EC; border-left: 3px solid var(--teal);
+              border-radius: 8px; padding: 12px 14px; margin-top: 12px;
+              font-size: 13.5px; }
+.ujit-tulis .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+                   text-transform: uppercase; color: var(--lembut);
+                   margin-bottom: 7px; }
+.ujit-tulis p { margin: 0 0 8px; }
+.ujit-tulis p:last-child { margin-bottom: 0; }
+.ujit-salah { color: var(--merah); font-weight: 600; }
+.ujit-benar { color: var(--hijau); font-weight: 600; }
+
+/* ── Tabel sebab & cara memperbaiki (Tingkat ③) ──────────────────────────
+   ⚠️ WAJIB: cegah ISI (tabel/svg/input) meluber keluar kartu.
+   Terukur 18Sep26: tanpa ini tabel mendorong kolom BESAR & PERANNYA
+   hancur di layar HP — kolom "Boleh?" terdorong keluar layar.
+   Dipakai `word-break: break-word` (BUKAN `anywhere`) karena `anywhere`
+   MEMOTONG KATA DI TENGAH ("Tampilkan" → "Tampilk"+"an"). */
+.ujit-tabel { border-collapse: collapse; width: 100%; font-size: 13px;
+              table-layout: fixed; word-break: break-word; }
+.ujit-tabel th, .ujit-tabel td {
+  padding: 9px 7px; border-bottom: 1px solid var(--garis); text-align: left;
+  vertical-align: top; overflow-wrap: break-word; }
+.ujit-tabel th { font-size: 10.5px; text-transform: uppercase;
+                 letter-spacing: .06em; color: var(--lembut); font-weight: 700; }
+.ujit-tabel tr:last-child td { border-bottom: 0; }
+.ujit-tabel .kol-sebab { width: 34%; }
+.ujit-tabel .kol-boleh { width: 86px; }
+.ujit-tabel .sebab-ket { font-size: 12.5px; color: var(--lembut); margin-top: 3px; }
+
+/* Label SAH / HATI-HATI / CURANG */
+.ujit-tag { font-size: 10.5px; font-weight: 700; padding: 3px 8px;
+            border-radius: 999px; white-space: nowrap; display: inline-block; }
+.ujit-tag.sah    { background: var(--hijau-muda); color: var(--hijau); }
+.ujit-tag.hati   { background: var(--amber-muda); color: var(--amber); }
+.ujit-tag.curang { background: var(--merah-muda); color: var(--merah); }
+
+/* ── Kartu "5 CARA HACK" — STRIP GELAP WARNA MERAH (ACC Bos 18Sep26) ─────
+   Bos memilih V3 "strip gelap" TAPI stripnya MERAH (bukan coklat tinta).
+   Alasan bentuk ini: kartu lain berlatar putih kertas, jadi hanya bagian
+   kepala yang gelap-merah supaya tetap kontras tanpa merusak irama halaman. */
+.hack-kartu { border: 0; border-radius: 14px; overflow: hidden; padding: 0;
+              background: #fff; box-shadow: 0 4px 18px rgba(43,39,34,.10); }
+.hack-kepala { background: var(--merah); color: #fff; padding: 15px 18px;
+               display: flex; justify-content: space-between; align-items: center;
+               gap: 10px; }
+.hack-kepala h3 { color: #fff; font-size: 15.5px; margin: 0; }
+.hack-lencana { background: rgba(255,255,255,.22); color: #fff; font-size: 10.5px;
+                font-weight: 800; letter-spacing: .1em; padding: 4px 10px;
+                border-radius: 999px; white-space: nowrap; }
+.hack-badan { padding: 16px 18px; }
+.hack-ket { color: var(--lembut); font-size: 12.5px; margin: 0 0 12px; }
+.hack-item { display: flex; gap: 11px; align-items: flex-start; padding: 10px 12px;
+             background: #F6F3EC; border-radius: 10px; margin-bottom: 7px; }
+.hack-item:last-of-type { margin-bottom: 0; }
+.hack-n { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+          background: #fff; border: 1px solid var(--garis); font-size: 11.5px;
+          font-weight: 700; display: flex; align-items: center;
+          justify-content: center; }
+.hack-item b { display: block; font-size: 13.5px; }
+.hack-item span { color: var(--lembut); font-size: 12.5px; }
+.hack-kaki { margin-top: 12px; background: var(--hijau-muda); border-radius: 10px;
+             padding: 12px 13px; font-size: 13px; }
+
+/* ── Daftar periksa ("Belum yakin datanya benar?") ─────────────────────── */
+.cek-tombol { display: inline-flex; gap: 9px; align-items: center;
+              background: var(--teal); color: #fff; border: 0; border-radius: 11px;
+              padding: 12px 16px; font: inherit; font-size: 13.5px;
+              font-weight: 700; cursor: pointer; margin-top: 4px; }
+.cek-tombol:hover { background: #26695E; }
+.cek-daftar { display: grid; gap: 8px; margin-top: 12px; }
+.cek-daftar[hidden] { display: none; }
+.cek-butir { display: flex; gap: 10px; align-items: flex-start;
+             background: #F6F3EC; border-radius: 9px; padding: 10px 12px;
+             font-size: 13px; }
+.cek-butir .n { background: #fff; border: 1px solid var(--garis); width: 22px;
+                height: 22px; border-radius: 50%; display: flex;
+                align-items: center; justify-content: center; font-size: 11.5px;
+                font-weight: 700; flex: 0 0 auto; }

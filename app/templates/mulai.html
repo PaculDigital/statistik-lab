@@ -1,0 +1,367 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN PILIH JENIS PENELITIAN + DETEKSI JUDUL (ACC Bos 18Sep26)
+  ────────────────────────────────────────────────────────────────────────
+  MENGAPA HALAMAN INI ADA (akar, bukan tambalan):
+  /buat-data dulu langsung meminta angka β. Bagi orang awam itu seperti
+  mengisi formulir pajak — dia belum tahu mau model apa, tapi sudah diminta
+  mengisi koefisien. Hasilnya: bingung, dan mesin yang sebenarnya banyak
+  terasa menakutkan.
+  Solusinya: pilih JENIS dulu (dua pintu), baru pilih MODEL (kartu
+  bergambar berbahasa tujuan), baru masuk pengisian angka.
+
+  ⚠️ KEPUTUSAN BOS 18Sep26 — kotak judul ditaruh DI SINI (pilihan B),
+  bukan di /kuantitatif.
+
+  ⚠️ HYBRID 3 LAPIS (ACC Bos) — TAPI MAKSIMAL 2 PERTANYAAN:
+    Lapis 1: kata kunci (Rp 0, instan) — AKTIF di halaman ini
+    Lapis 2: AI 9router                — hanya kalau Lapis 1 ragu (MENYUSUL)
+    Lapis 3: kartu manual              — penutup, aplikasi TIDAK PERNAH buntu
+  Alasan maksimal 2 tanya (kata Bos): "hemat token dan user tidak bertambah
+  bingung". Jadi: 1 tanya = jenis penelitian, 1 tanya = pilihan model.
+
+  ⚠️ 4 PENGAMAN ANTI-BOROS TOKEN (ACC Bos):
+    (1) AI hanya jalan saat tombol DITEKAN (bukan tiap ketikan)
+    (2) Judul SAMA → jawaban diambil dari simpanan browser (0 panggilan AI)
+    (3) Lapis 1 dulu → 95% judul tidak pernah memanggil AI
+    (4) Saklar AI MATI → Lapis 2 mati; aplikasi tetap jalan
+
+  ⚠️ JATAH 20 JUDUL/HARI (ACC Bos: "20 kali judul/hari, kembali lagi besok").
+  Dihitung per JUDUL BARU. Judul yang sama tidak dipotong. Kalau jatah
+  habis, aplikasi TETAP JALAN (Lapis 1 + kartu manual) — user TIDAK pernah
+  melihat pesan galat. Ini disengaja: jatah = pengaman biaya, bukan penghalang.
+#}
+
+{% block isi %}
+
+<span class="eyebrow">{{ ikon('play', 13) }} Mulai</span>
+<h1 style="margin:8px 0 10px">Mau meneliti apa?</h1>
+<p class="besar" style="max-width:720px;margin-bottom:22px">
+  Pilih jenis penelitianmu dulu. Dari sini jalurnya bercabang — kamu tidak
+  akan disuguhi hal-hal yang belum kamu butuhkan.
+</p>
+
+{# ── KOTAK DETEKSI JUDUL (Lapis 1, AKTIF) ─────────────────────────────── #}
+<div class="kartu kotak-judul" style="margin:0 0 26px">
+  <div class="kepala-judul">
+    <div>
+      <span class="eyebrow teal">{{ ikon('search', 13) }} Cara cepat</span>
+      <h3 style="margin:7px 0 5px;font-size:17px">
+        Punya judul penelitian? Tempel di sini
+      </h3>
+      <p class="samar" style="font-size:13px;margin:0">
+        Wulan bacakan judulmu, lalu usulkan model penelitian yang paling
+        cocok — lengkap dengan alasannya.
+      </p>
+    </div>
+    <span class="pita pita-abu2" id="pita-jatah" title="Jatah judul baru hari ini">
+      {{ ikon('timer', 11) }} <span id="sisa-jatah">…</span>
+    </span>
+  </div>
+
+  <div class="baris-judul">
+    <input type="text" id="judul" class="isian-judul" autocomplete="off"
+           placeholder="Contoh: Pengaruh Harga dan Promosi terhadap Keputusan Pembelian">
+    <button class="tb tb-utama" id="tombol-cek" type="button">
+      {{ ikon('sparkles', 15) }} Cek rekomendasi
+    </button>
+  </div>
+
+  <p class="samar" style="font-size:12.5px;margin:11px 0 0">
+    Belum punya judul? Tidak masalah —
+    <a href="#pilih-jenis" style="color:var(--teal);font-weight:600">pilih
+    jenis penelitian di bawah</a> saja.
+  </p>
+
+  {# ── HASIL REKOMENDASI (diisi JavaScript) ───────────────────────────── #}
+  <div class="hasil-judul" id="hasil" hidden>
+    <p class="rekomendasi-judul" id="hasil-judul-teks"></p>
+    <p class="rekomendasi-model" id="hasil-model"></p>
+    <p class="rekomendasi-alasan" id="hasil-alasan"></p>
+    <div class="baris-aksi" id="hasil-aksi">
+      <a class="tb-kecil tb-kecil-utama" id="pakai-ini" href="#">
+        {{ ikon('check', 13) }} Ya, pakai ini
+      </a>
+      <a class="tb-kecil" href="/kuantitatif">
+        {{ ikon('list', 13) }} Pilih model lain
+      </a>
+    </div>
+  </div>
+
+  {# ── CONTOH (tampil sebelum user mencoba) ───────────────────────────── #}
+  <div class="contoh-rekomendasi" id="contoh">
+    <span class="eyebrow amber" style="font-size:11px">
+      {{ ikon('lightbulb', 12) }} Bentuk hasilnya nanti
+    </span>
+    <div class="rekomendasi-isi">
+      <p class="rekomendasi-judul">
+        “Pengaruh Harga dan Promosi terhadap Keputusan Pembelian”
+      </p>
+      <p class="rekomendasi-model">
+        Sepertinya <strong>Regresi Linear Berganda</strong>
+      </p>
+      <p class="rekomendasi-alasan">
+        Alasannya: judulmu menyebut <strong>dua hal yang diuji bersama-sama</strong>
+        (Harga dan Promosi) ke satu tujuan (Keputusan Pembelian).
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <span class="tb-kecil tb-kecil-utama">Ya, pakai ini</span>
+        <span class="tb-kecil">Pilih model lain</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── RIWAYAT JUDUL (ACC Bos: kartu tersendiri, 5 terlihat, bisa scroll) ── #}
+<div class="kartu kartu-riwayat" id="kartu-riwayat" hidden>
+  <div class="kepala-judul">
+    <div>
+      <span class="eyebrow">{{ ikon('rotate-ccw', 13) }} Riwayat judulmu</span>
+      <p class="samar" style="font-size:12.5px;margin:6px 0 0">
+        Klik salah satu untuk memakainya lagi — tidak dihitung ulang.
+      </p>
+    </div>
+    <button class="tb-kecil" id="hapus-riwayat" type="button">
+      {{ ikon('trash-2', 12) }} Bersihkan
+    </button>
+  </div>
+  <div class="daftar-riwayat" id="daftar-riwayat"></div>
+</div>
+
+{# ── DUA PINTU ────────────────────────────────────────────────────────── #}
+<div id="pilih-jenis" class="grid-jenis">
+
+  <a href="/kuantitatif" class="pintu pintu-kuant">
+    <span class="pintu-ikon">{{ ikon('bar-chart-3', 26) }}</span>
+    <h3>Kuantitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>angka</strong> — kuesioner, skor 1–5,
+      diolah dengan SPSS atau SmartPLS.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>mengukur seberapa besar</strong> pengaruh
+      sesuatu terhadap hal lain.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: pengaruh harga &amp; promosi → keputusan pembelian
+    </span>
+    <span class="pintu-aksi">
+      Pilih model penelitian {{ ikon('arrow-right', 14) }}
+    </span>
+  </a>
+
+  <a href="/segera/kualitatif" class="pintu pintu-kual">
+    <span class="pintu-lencana">
+      <span class="pita pita-abu2">{{ ikon('timer', 11) }} belum siap</span>
+    </span>
+    <span class="pintu-ikon">{{ ikon('info', 26) }}</span>
+    <h3>Kualitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>kata &amp; cerita</strong> — wawancara,
+      observasi, tanpa angka.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>memahami alasan</strong> di balik
+      sesuatu — kenapa, bagaimana.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: kenapa pelanggan tetap setia walau harganya naik
+    </span>
+    <span class="pintu-aksi">
+      Lihat rencananya {{ ikon('arrow-right', 14) }}
+    </span>
+  </a>
+
+</div>
+
+{# ── PENJELASAN ALUR ──────────────────────────────────────────────────── #}
+<div class="kartu" style="margin-top:24px">
+  <span class="eyebrow">{{ ikon('lightbulb', 13) }} Kenapa ditanyakan dulu?</span>
+  <p style="color:var(--tinta-2);font-size:13.5px;line-height:1.78;margin:9px 0 0">
+    Karena tiap jenis penelitian <strong>jalurnya berbeda</strong>. Setelah
+    kamu pilih, Wulan hanya menampilkan hal-hal yang kamu perlukan — jadi
+    kamu tidak tersesat di antara puluhan istilah statistik yang belum
+    kamu butuhkan. Pilihan bisa diganti kapan saja.
+  </p>
+</div>
+
+{% endblock %}
+
+{% block skrip %}
+<script>
+/*
+  DETEKSI JUDUL — LAPIS 1 (ACC Bos 18Sep26)
+
+  ⚠️ 4 PENGAMAN ANTI-BOROS TOKEN ada di sini:
+   (1) Permintaan HANYA dikirim saat tombol ditekan. Mengetik 1 kata pun
+       TIDAK mengirim apa-apa ke server. (Jangan tambahkan event 'input'
+       yang memanggil server — itu yang bikin token habis.)
+   (2) Judul yang sudah pernah dibaca diambil dari SIMPANAN BROWSER
+       (localStorage) — 0 permintaan, 0 token.
+   (3) Server tetap menjalankan Lapis 1 dulu; AI hanya kalau ragu.
+   (4) Server sendiri dibatasi jatah harian.
+
+  ⚠️ JANGAN hardcode angka jatah di sini. Angka batas SELALU dari server
+  (pelajaran EduAi 15Sep26: batas yang ditulis di dua tempat membuat
+  gerbang tak pernah tersentuh — yang pertama memblokir, yang kedua
+  mustahil kejadian).
+*/
+(function () {
+  var KUNCI_SIMPAN = 'statlab_riwayat_judul_v1';   // simpanan browser
+  var kotak     = document.getElementById('judul');
+  var tombol    = document.getElementById('tombol-cek');
+  var hasil     = document.getElementById('hasil');
+  var contoh    = document.getElementById('contoh');
+  var elJudul   = document.getElementById('hasil-judul-teks');
+  var elModel   = document.getElementById('hasil-model');
+  var elAlasan  = document.getElementById('hasil-alasan');
+  var elPakai   = document.getElementById('pakai-ini');
+  var elSisa    = document.getElementById('sisa-jatah');
+  var kartu     = document.getElementById('kartu-riwayat');
+  var daftar    = document.getElementById('daftar-riwayat');
+  var elBersih  = document.getElementById('hapus-riwayat');
+
+  // ── simpanan browser (localStorage) ──────────────────────────────────
+  function muatRiwayat() {
+    try {
+      var t = localStorage.getItem(KUNCI_SIMPAN);
+      var a = t ? JSON.parse(t) : [];
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function simpanRiwayat(a) {
+    try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(a.slice(0, 50))); }
+    catch (e) { /* mode privat / penuh — abaikan, jangan gagalkan halaman */ }
+  }
+  function cariRiwayat(judul) {
+    var k = (judul || '').trim().toLowerCase();
+    var a = muatRiwayat();
+    for (var i = 0; i < a.length; i++) {
+      if ((a[i].judul || '').toLowerCase() === k) return a[i];
+    }
+    return null;
+  }
+  function tambahRiwayat(j, isi) {
+    var a = muatRiwayat().filter(function (x) {
+      return (x.judul || '').toLowerCase() !== (j || '').toLowerCase();
+    });
+    a.unshift({ judul: j, model: isi.model, nama: isi.nama,
+                kode: isi.kode, alasan: isi.alasan, jam: Date.now() });
+    simpanRiwayat(a);
+    gambarRiwayat();
+  }
+
+  // ── gambar kartu riwayat (5 terlihat, sisanya di-scroll) ─────────────
+  function gambarRiwayat() {
+    var a = muatRiwayat();
+    if (!a.length) { kartu.hidden = true; return; }
+    kartu.hidden = false;
+    daftar.innerHTML = '';
+    a.forEach(function (x) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'baris-riwayat';
+      var kiri = document.createElement('span');
+      kiri.className = 'riwayat-judul';
+      kiri.textContent = x.judul;
+      var kanan = document.createElement('span');
+      kanan.className = 'pita-kecil pita-s1';
+      kanan.textContent = x.nama || '—';
+      b.appendChild(kiri);
+      b.appendChild(kanan);
+      b.addEventListener('click', function () {
+        kotak.value = x.judul;
+        tampilkan(x, true);          // true = dari simpanan, tanpa hitung
+      });
+      daftar.appendChild(b);
+    });
+  }
+
+  // ── tampilkan hasil rekomendasi ──────────────────────────────────────
+  function tampilkan(isi, dariSimpanan) {
+    elJudul.textContent = '“' + (isi.judul || '') + '”';
+    elModel.innerHTML = 'Sepertinya <strong>' + (isi.nama || '—') + '<\/strong>';
+    elAlasan.textContent = (isi.alasan || '');
+    if (isi.kode) {
+      elPakai.href = '/buat-data?model=' + encodeURIComponent(isi.kode);
+      elPakai.hidden = false;
+    } else {
+      elPakai.hidden = true;      // ragu → jangan tawarkan yang belum pasti
+    }
+    hasil.hidden = false;
+    contoh.hidden = true;
+    if (dariSimpanan) {
+      // beri tahu bahwa ini tidak dihitung ulang (hemat jatah)
+      elAlasan.textContent = (isi.alasan || '') +
+        ' Ini diambil dari riwayat, jadi tidak dihitung ulang.';
+    }
+  }
+
+  // ── tanya server (HANYA saat tombol ditekan) ─────────────────────────
+  function tanya(judul) {
+    tombol.disabled = true;
+    tombol.textContent = 'Sedang dibaca…';
+    fetch('/api/baca-judul', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ judul: judul })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) {
+          elModel.innerHTML = 'Judulnya belum bisa dibaca';
+          elAlasan.textContent = (d && d.pesan) || 'Coba tulis judul yang lebih lengkap.';
+          hasil.hidden = false; contoh.hidden = true; elPakai.hidden = true;
+          return;
+        }
+        tampilkan(d, false);
+        tambahRiwayat(d.judul, d);
+        if (d.jatah) { elSisa.textContent = d.jatah.sisa + ' judul tersisa hari ini'; }
+      })
+      .catch(function () {
+        // ⚠️ JANGAN tampilkan galat teknis ke user (aturan gaya bahasa).
+        elModel.innerHTML = 'Koneksi sedang sibuk';
+        elAlasan.textContent = 'Coba tekan sekali lagi ya — atau langsung '
+          + 'pilih jenis penelitian di bawah, tetap bisa jalan.';
+        hasil.hidden = false; contoh.hidden = true; elPakai.hidden = true;
+      })
+      .then(function () {
+        tombol.disabled = false;
+        tombol.innerHTML = 'Cek rekomendasi';
+      });
+  }
+
+  // ── kejadian ─────────────────────────────────────────────────────────
+  tombol.addEventListener('click', function () {
+    var j = (kotak.value || '').trim();
+    if (j.length < 5) {
+      elModel.innerHTML = 'Tulis judulnya dulu ya';
+      elAlasan.textContent = 'Tempel atau tulis judul penelitianmu di kotak atas.';
+      hasil.hidden = false; contoh.hidden = true; elPakai.hidden = true;
+      return;
+    }
+    // PENGAMAN (2): judul sama → ambil dari simpanan, 0 permintaan
+    var ada = cariRiwayat(j);
+    if (ada) { tampilkan(ada, true); return; }
+    tanya(j);
+  });
+
+  kotak.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); tombol.click(); }
+  });
+
+  elBersih.addEventListener('click', function () {
+    simpanRiwayat([]);
+    gambarRiwayat();
+  });
+
+  // ── awal: muat riwayat + keadaan jatah dari server ───────────────────
+  gambarRiwayat();
+  fetch('/api/jatah-judul').then(function (r) { return r.json(); })
+    .then(function (d) {
+      elSisa.textContent = d.sisa + ' judul tersisa hari ini';
+    })
+    .catch(function () { elSisa.textContent = '—'; });
+})();
+</script>
+{% endblock %}

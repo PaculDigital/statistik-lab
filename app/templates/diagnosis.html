@@ -1,0 +1,1194 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN DIAGNOSIS DATA SPSS & PLS — ALAT unggah + periksa + cara membetulkan
+  ────────────────────────────────────────────────────────────────────────────
+  ACC Bos 19Sep26 (verbatim): "Halaman Syarat, jadikan tool / alat saja.
+    Namanya Diagnosis Data SPSS & PLS. Isinya user upload data dari spss
+    atau pls, untuk di diaknosa dan cara tulisnya. Benar katakan benar
+    salah katakan salah dan beri panduan untuk cara membetulkan data."
+
+  KEPUTUSAN BOS: 1B (terima .xlsx/.csv/.sav) · 2A (TUNJUK KOLOM MANUAL,
+  bukan ditebak mesin) · 3A (7 kartu bacaan /syarat pindah ke BELAJAR —
+  dikerjakan di Tahap 2, BUKAN di sini).
+
+  ALUR 4 LANGKAH (kenapa begini — pelajaran dari aplikasi lain):
+    ① pilih alat  → menentukan SYARAT mana yang berlaku (SPSS vs PLS beda)
+    ② unggah      → server baca, kembalikan DAFTAR KOLOM saja (belum hitung)
+    ③ tunjuk kolom→ user yang menentukan mana X, mana Y (2A). Mesin TIDAK
+                    menebak dari nama kolom: salah tebak = salah diagnosa.
+    ④ hasil       → benar bilang benar, salah bilang salah + cara membetulkan
+
+  ⚠️ Nasihat "cara membetulkan" DATANG DARI SERVER (app/nasihat.py), TIDAK
+  ditulis di JS. Alasan (pelajaran EduAi 15Sep26): teks yang disimpan di dua
+  tempat membuat yang satu tidak pernah ikut diperbarui.
+#}
+{% block isi %}
+<span class="eyebrow">{{ ikon('stethoscope', 13) }} Diagnosis Data</span>
+<h1 style="margin:8px 0 10px">Datamu sudah memenuhi syarat belum?</h1>
+<p class="besar" style="max-width:700px;margin-bottom:18px">
+  Unggah datamu — dari SPSS (<code>.sav</code>), Excel (<code>.xlsx</code>),
+  atau CSV (<code>.csv</code>). Wulan periksa satu per satu, lalu bilang mana
+  yang <strong>sudah benar</strong> dan mana yang <strong>perlu dibetulkan</strong>
+  — lengkap dengan caranya.
+</p>
+
+{# ═══ LANGKAH 1 — PILIH ALAT ═══════════════════════════════════════════ #}
+<div class="kartu" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">1</span>
+    <h2 style="margin:0;font-size:1.12rem">Mau diperiksa pakai cara yang mana?</h2>
+  </div>
+  <p style="margin:6px 0 12px;color:#6B6259">
+    Pilihan ini menentukan <strong>syarat apa saja</strong> yang diperiksa —
+    SPSS dan SmartPLS memeriksa hal yang berbeda.
+  </p>
+  <div class="grid-jenis" style="margin-bottom:0">
+    <div class="pilih terpilih" data-alat="spss" onclick="pilihAlat(this,'spss')">
+      <strong>{{ ikon('bar-chart-3', 15) }} SPSS</strong>
+      <span>Data per-responden, diuji dengan regresi</span>
+    </div>
+    <div class="pilih" data-alat="pls" onclick="pilihAlat(this,'pls')">
+      <strong>{{ ikon('boxes', 15) }} SmartPLS</strong>
+      <span>Data per-butir pertanyaan (indikator)</span>
+    </div>
+  </div>
+  <div class="catatan" id="catatan-alat" style="margin-top:12px">
+    <strong>SPSS</strong> memeriksa: normalitas · heteroskedastisitas ·
+    multikolinearitas · linearitas · data menyimpang · autokorelasi.
+  </div>
+</div>
+
+{# ═══ LANGKAH 2 — UNGGAH ═══════════════════════════════════════════════ #}
+<div class="kartu" id="kartu-unggah" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">2</span>
+    <h2 style="margin:0;font-size:1.12rem">Unggah berkas datamu</h2>
+  </div>
+  <p style="margin:6px 0 12px;color:#6B6259">
+    Bisa <code>.sav</code> · <code>.xlsx</code> · <code>.csv</code> —
+    paling besar <strong>10 MB</strong>. Di HP, tekan kotak di bawah untuk memilih.
+  </p>
+
+  {# ── CONTOH SIAP-KLIK (Tahap 2.1d, ACC Bos 20Sep26) ──────────────────
+     Mahasiswa awam sering belum punya data — halaman ini jadi kosong dan
+     tak bisa dicoba. Dua tombol ini mengisi data contoh supaya SEMUA grafik
+     langsung terlihat hidup, tanpa perlu menyiapkan berkas lebih dulu.
+     "Sehat" = semua syarat terpenuhi (hijau). "Bermasalah" = sengaja
+     melanggar (corong merah) supaya mahasiswa BELAJAR MENGENALI bentuknya.
+     ⚠️ Data contoh ditandai jelas — jangan sampai dikira data mahasiswa. #}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+    <button type="button" class="tb tb-sekunder" onclick="pakaiContoh('sehat')">
+      {{ ikon('sparkles', 15) }} Coba contoh data yang sehat
+    </button>
+    <button type="button" class="tb tb-sekunder" onclick="pakaiContoh('sakit')">
+      {{ ikon('activity', 15) }} Lihat contoh data bermasalah
+    </button>
+  </div>
+  <p style="margin:0 0 14px;color:#6B6259;font-size:.9rem">
+    Belum punya data? Pakai contoh dulu — nanti berkasmu sendiri tinggal
+    diunggah seperti biasa.
+  </p>
+
+  <label id="kotak-unggah" for="berkas" style="display:block;border:2px dashed #C9BFB2;border-radius:13px;padding:26px 16px;text-align:center;background:#FDFBF7;cursor:pointer">
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:#EAF3F0;color:#2E7D6F;margin-bottom:9px">
+      {{ ikon('upload', 22) }}
+    </span>
+    <div style="font-weight:600">{{ ikon('file-spreadsheet', 15) }} Pilih berkas dari perangkatmu</div>
+    <div style="color:#6B6259;font-size:.86rem;margin-top:5px">
+      atau seret berkasnya ke sini
+    </div>
+  </label>
+  <input type="file" id="berkas" accept=".sav,.xlsx,.xls,.csv" style="display:none">
+
+  <div id="pesan-unggah" style="margin-top:12px"></div>
+
+  <div id="ringkas-berkas" hidden style="margin-top:14px">
+    <div class="catatan" style="background:#EAF3F0;border-color:#BFDCD4">
+      <strong id="nama-berkas"></strong>
+      <span id="ukuran-berkas" style="color:#6B6259"></span>
+      <div id="bentuk-berkas" style="margin-top:5px;font-size:.9rem"></div>
+    </div>
+    {# Penanda jujur: berkas ini CONTOH, bukan data mahasiswa sendiri. #}
+    <div id="catatan-contoh" class="catatan" hidden
+         style="margin-top:9px;background:#FDF6E9;border-color:#E8D9B5"></div>
+  </div>
+</div>
+
+{# ═══ LANGKAH 3 — TUNJUK KOLOM ═════════════════════════════════════════ #}
+<div class="kartu" id="kartu-kolom" hidden style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+    <span class="langkah-nomor">3</span>
+    <h2 style="margin:0;font-size:1.12rem">Tunjuk kolomnya</h2>
+  </div>
+  <p style="margin:6px 0 14px;color:#6B6259">
+    Tandai <strong>peran setiap kolom</strong> — kolom ini X1, kolom ini M1,
+    kolom ini Y1, dan seterusnya. Klik-klik saja, tidak perlu menulis apa pun.
+    Semua kolom ditampilkan supaya <strong>tidak ada yang terlewat</strong>.
+  </p>
+
+  {# ── Mode SPSS: tunjuk PERAN tiap kolom (bentuk baru, ACC Bos 21Sep26) ── #}
+  <div id="panel-spss">
+    <div id="kepala-peran" style="display:flex;gap:10px;align-items:center;
+         padding:7px 4px 7px 0;border-bottom:1px solid #E7E2DA;margin-bottom:6px">
+      <span style="font-weight:700;font-size:.86rem;letter-spacing:.03em;
+            color:#6B6259">KOLOM DI BERKASMU</span>
+      <span style="font-weight:700;font-size:.86rem;letter-spacing:.03em;
+            color:#6B6259;margin-left:auto">INI APA?</span>
+    </div>
+    <div id="daftar-peran" style="max-height:340px;overflow-y:auto;
+         padding-right:4px"></div>
+
+    <div id="ringkas-peran" style="margin:12px 0 4px;padding:11px 13px;
+         border-radius:9px;background:#F4F1EA;color:#4A443D;font-size:.9rem">
+      Belum ada kolom yang ditandai.
+    </div>
+
+    <div id="pesan-peran"></div>
+
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">
+      <button type="button" class="tb" id="tb-periksa-peran"
+              onclick="periksaPeranSekarang()">Cek dulu, benar atau tidak</button>
+      <button type="button" class="tb tb-sekunder" onclick="isiOtomatisPeran()">
+        Coba tebak dulu dari nama kolom
+      </button>
+    </div>
+
+    {# Tersembunyi — dipakai kalau mahasiswa ingin menambah peran baru #}
+    <div id="kotak-peran-baru" hidden style="margin-top:12px;padding:12px 13px;
+         border:1px dashed #C9C1B5;border-radius:9px">
+      <label for="peran-baru" style="font-weight:600;display:block;
+             margin-bottom:5px;font-size:.92rem">Peran baru</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="peran-huruf" style="padding:8px 10px;border-radius:8px;
+                border:1px solid #D9D2C7;background:#fff">
+          <option value="X">X — penyebab</option>
+          <option value="M">M — perantara</option>
+          <option value="Z">Z — penguat</option>
+          <option value="Y">Y — hasil</option>
+        </select>
+        <input id="peran-nomor" type="number" min="1" max="99" value="1"
+               style="width:80px;padding:8px 10px;border-radius:8px;
+                      border:1px solid #D9D2C7">
+        <button type="button" class="tb" onclick="tambahPeranBaru()">
+          Tambahkan
+        </button>
+        <button type="button" class="tb tb-sekunder"
+                onclick="document.getElementById('kotak-peran-baru').hidden = true">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {# ── Mode SmartPLS: konstruk + butir ── #}
+  <div id="panel-pls" hidden>
+    <p style="margin:0 0 10px;color:#6B6259">
+      Di SmartPLS, tiap <strong>variabel</strong> diukur oleh beberapa
+      <strong>butir pertanyaan</strong>. Tunjuk butir mana masuk variabel mana.
+    </p>
+    <div id="daftar-konstruk"></div>
+    <button type="button" class="tb tb-sekunder" onclick="tambahKonstruk()">
+      Tambah variabel
+    </button>
+    <div class="medan" style="margin:16px 0 0">
+      <label for="target-pls" style="font-weight:600;display:block;margin-bottom:5px">
+        Variabel yang mau dijelaskan (endogen)
+      </label>
+      <select id="target-pls" style="width:100%"></select>
+    </div>
+  </div>
+
+  <div class="medan" style="margin-top:16px">
+    <label for="cara-missing" style="font-weight:600;display:block;margin-bottom:5px">
+      Kalau ada sel yang kosong
+    </label>
+    <select id="cara-missing" style="width:100%">
+      <option value="buang">Buang responden yang jawabannya kosong</option>
+      <option value="rata">Ganti dengan nilai rata-rata</option>
+    </select>
+  </div>
+
+  <p style="margin-top:16px">
+    <button type="button" class="tb tb-utama" id="tombol-periksa" onclick="periksa()">
+      {{ ikon('stethoscope', 16) }} Periksa sekarang
+    </button>
+  </p>
+  <div id="pesan-periksa" style="margin-top:10px"></div>
+</div>
+
+{# ═══ LANGKAH 4 — HASIL ════════════════════════════════════════════════ #}
+<div id="kartu-hasil" hidden></div>
+
+<p style="margin-top:22px">
+  <a href="/belajar" class="tb tb-sekunder">{{ ikon('book-open', 15) }} Pelajari istilahnya dulu</a>
+  <a href="/kuantitatif" class="tb tb-sekunder" style="margin-left:9px">{{ ikon('arrow-left', 15) }} Coba buat data sendiri</a>
+</p>
+{% endblock %}
+
+{% block skrip %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   DIAGNOSIS DATA — sisi tampilan. SEMUA hitungan ada di server.
+   ⚠️ Nasihat "cara membetulkan" TIDAK ditulis di sini — datang dari server
+   (app/nasihat.py). Alasannya: teks di dua tempat = yang satu pasti basi.
+   ═══════════════════════════════════════════════════════════════════════ */
+let ALAT = 'spss';
+let KUNCI = null;
+let KOLOM = [];
+let nX = 0;
+
+/* Ganti alat → ganti syarat yang diperiksa + ganti panel */
+function pilihAlat(el, alat) {
+  ALAT = alat;
+  document.querySelectorAll('[data-alat]').forEach(e => e.classList.remove('terpilih'));
+  el.classList.add('terpilih');
+  document.getElementById('panel-spss').hidden = (alat !== 'spss');
+  document.getElementById('panel-pls').hidden = (alat !== 'pls');
+  const c = document.getElementById('catatan-alat');
+  c.innerHTML = (alat === 'spss')
+    ? '<strong>SPSS<\/strong> memeriksa: normalitas · heteroskedastisitas · ' +
+      'multikolinearitas · linearitas · data menyimpang · autokorelasi.'
+    : '<strong>SmartPLS<\/strong> memeriksa: kekuatan tiap butir (outer loading) · ' +
+      'AVE · keandalan (composite reliability) · VIF · Fornell-Larcker.';
+  if (KOLOM.length) isiPilihan();
+}
+
+function pesan(tempat, teks, jenis) {
+  const el = document.getElementById(tempat);
+  const warna = jenis === 'galat'
+    ? 'background:#FBEFEF;border-color:#E8C9C9;color:#8A4A4A'
+    : 'background:#FDF6E9;border-color:#EAD9B8;color:#7A5A2A';
+  el.innerHTML = '<div class="catatan" style="' + warna + '">' + teks + '<\/div>';
+}
+
+/* ── UNGGAH ─────────────────────────────────────────────────────────── */
+document.getElementById('berkas').addEventListener('change', async function () {
+  const f = this.files[0];
+  if (!f) return;
+  if (f.size > 10 * 1024 * 1024) {
+    pesan('pesan-unggah', 'Berkasnya ' + (f.size / 1048576).toFixed(1) +
+      ' MB — melebihi batas 10 MB. Coba simpan sebagian data dulu ya.', 'galat');
+    return;
+  }
+  pesan('pesan-unggah', 'Sedang membaca berkasnya…');
+  const fd = new FormData();
+  fd.append('berkas', f);
+  try {
+    const r = await fetch('/api/diagnosis/unggah', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) { pesan('pesan-unggah', d.detail || 'Berkasnya belum bisa dibaca.', 'galat'); return; }
+    KUNCI = d.kunci;
+    KOLOM = d.kolom;
+    document.getElementById('pesan-unggah').innerHTML = '';
+    document.getElementById('nama-berkas').textContent = d.nama_berkas;
+    document.getElementById('ukuran-berkas').textContent = '  ·  ' + (f.size / 1024).toFixed(0) + ' KB';
+    document.getElementById('bentuk-berkas').textContent =
+      d.n_baris + ' responden  ·  ' + d.n_kolom + ' kolom';
+    document.getElementById('ringkas-berkas').hidden = false;
+    document.getElementById('kartu-kolom').hidden = false;
+    document.getElementById('daftar-konstruk').innerHTML = '';
+    if (ALAT === 'pls') { tambahKonstruk(); tambahKonstruk(); }
+    // Peran kolom (mode SPSS) — semua kolom ditampilkan, klik-klik saja
+    PERAN = {}; PERAN_DIPAKAI = peranBawaan();
+    bangunDaftarPeran(); segarkanPeran();
+    document.getElementById('kartu-hasil').hidden = true;
+    document.getElementById('kartu-kolom').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    pesan('pesan-unggah', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  }
+});
+
+function namaKolom() { return KOLOM.map(k => k.nama); }
+
+// ══════════════════════════════════════════════════════════════════════════
+//  PERAN KOLOM — "mesin & mahasiswa satu bahasa" (ACC Bos 21Sep26)
+//  Mahasiswa tandai: kolom ini X1, kolom ini M1, … klik-klik saja.
+//  Dipakai HANYA oleh mode SPSS. Mode PLS tetap pakai konstruk+butir.
+// ══════════════════════════════════════════════════════════════════════════
+
+const HURUF_PERAN = [
+  { h: 'X', nama: 'penyebab', warna: '#2E7D6F' },
+  { h: 'M', nama: 'perantara', warna: '#B07A2B' },
+  { h: 'Z', nama: 'penguat', warna: '#8A5BA6' },
+  { h: 'Y', nama: 'hasil', warna: '#B4543F' }
+];
+let PERAN = {};          // {namaKolom: 'X1' | ''}
+let PERAN_DIPAKAI = [];  // ['X1','X2','M1',…] — daftar peran yang muncul di dropdown
+let BENTUK = {};         // {bentuk_mediasi:'paralel'|'berjenjang', bentuk_moderasi:…}
+
+function warnaPeran(huruf) {
+  const p = HURUF_PERAN.find(x => x.h === huruf);
+  return p ? p.warna : '#6B6259';
+}
+
+/* Peran bawaan: X1..X3, M1..M2, Z1, Y1..Y2  (cukup untuk kebanyakan model) */
+function peranBawaan() {
+  return ['X1', 'X2', 'X3', 'X4', 'M1', 'M2', 'Z1', 'Z2', 'Y1', 'Y2'];
+}
+
+/* Isi dropdown peran: 1 baris = 1 KOLOM dari berkas (Opsi A: semua tampil) */
+function bangunDaftarPeran() {
+  const wadah = document.getElementById('daftar-peran');
+  if (!wadah) return;
+  const kolom = namaKolom();
+  if (!kolom.length) { wadah.innerHTML = ''; return; }
+
+  if (!PERAN_DIPAKAI.length) PERAN_DIPAKAI = peranBawaan();
+  const opsiDasar = ['<option value="">— belum ditandai —<\/option>']
+    .concat(PERAN_DIPAKAI.map(p =>
+      '<option value="' + p + '">' + p + ' — ' +
+      (HURUF_PERAN.find(x => x.h === p[0]) || {}).nama + '<\/option>'));
+
+  wadah.innerHTML = '';
+  kolom.forEach(nama => {
+    const nilaiSekarang = PERAN[nama] || '';
+    const d = document.createElement('div');
+    d.style.cssText = 'display:flex;gap:9px;align-items:center;' +
+      'padding:7px 0;border-bottom:1px solid #F0ECE4';
+    const warna = nilaiSekarang ? warnaPeran(nilaiSekarang[0]) : '#B9B1A6';
+    d.innerHTML =
+      '<span class="kurung-nama" style="flex:1 1 auto;min-width:0;overflow:hidden;' +
+        'text-overflow:ellipsis;white-space:nowrap;font-size:.93rem" ' +
+        'title="' + nama + '">' + nama + '<\/span>' +
+      '<select class="pilih-peran" data-kolom="' + nama + '" ' +
+        'style="flex:0 0 auto;min-width:150px;max-width:46%;padding:7px 9px;' +
+        'border-radius:8px;border:1.5px solid ' + warna +
+        ';background:#fff;font-size:.9rem">' +
+        opsiDasar.join('') + '<\/select>';
+    wadah.appendChild(d);
+    const sel = d.querySelector('select');
+    sel.value = nilaiSekarang;
+    sel.addEventListener('change', () => {
+      PERAN[nama] = sel.value;
+      segarkanPeran();
+    });
+  });
+
+  // Tombol "+ peran baru" di bawah daftar
+  const t = document.createElement('button');
+  t.type = 'button';
+  t.className = 'tb tb-sekunder';
+  t.style.cssText = 'margin-top:10px';
+  t.textContent = 'Butuh peran lain (mis. X5, M3)?';
+  t.onclick = () => {
+    const k = document.getElementById('kotak-peran-baru');
+    k.hidden = false;
+    k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+  wadah.appendChild(t);
+}
+
+/* Tambah peran baru ke daftar dropdown (mis. X5) */
+function tambahPeranBaru() {
+  const h = document.getElementById('peran-huruf').value;
+  const n = parseInt(document.getElementById('peran-nomor').value, 10);
+  if (!n || n < 1) { pesan('pesan-peran', 'Nomornya belum diisi.', 'galat'); return; }
+  const nama = h + n;
+  if (PERAN_DIPAKAI.includes(nama)) {
+    pesan('pesan-peran', nama + ' sudah ada di daftar.', 'galat');
+    return;
+  }
+  PERAN_DIPAKAI.push(nama);
+  PERAN_DIPAKAI.sort();
+  document.getElementById('kotak-peran-baru').hidden = true;
+  bangunDaftarPeran();
+  pesan('pesan-peran', nama + ' sudah ditambahkan ke pilihan.', 'sukses');
+}
+
+/* Ringkasan bahasa manusia + warna baris */
+function segarkanPeran() {
+  const kel = {};
+  Object.keys(PERAN).forEach(k => {
+    const v = PERAN[k];
+    if (!v) return;
+    (kel[v] = kel[v] || []).push(k);
+  });
+  const hurufNama = { X: 'penyebab (X)', M: 'perantara (M)',
+                      Z: 'penguat (Z)', Y: 'hasil (Y)' };
+  const bagian = [];
+  ['X', 'M', 'Z', 'Y'].forEach(h => {
+    const punya = Object.keys(kel).filter(p => p[0] === h).sort();
+    if (!punya.length) return;
+    bagian.push(hurufNama[h] + ': ' +
+      punya.map(p => p + ' (' + kel[p].length + ' kolom)').join(' · '));
+  });
+  const el = document.getElementById('ringkas-peran');
+  if (el) {
+    el.innerHTML = bagian.length
+      ? bagian.join(' | ')
+      : 'Belum ada kolom yang ditandai.';
+  }
+  // Warnai pinggir dropdown sesuai peran
+  document.querySelectorAll('.pilih-peran').forEach(sel => {
+    const v = sel.value;
+    sel.style.borderColor = v ? warnaPeran(v[0]) : '#B9B1A6';
+  });
+}
+
+/* Coba tebak dari nama kolom — hanya SARAN, mahasiswa tetap memutuskan */
+function isiOtomatisPeran() {
+  const kolom = namaKolom();
+  let kena = 0;
+  kolom.forEach(nama => {
+    const n = nama.toLowerCase();
+    let p = null;
+    if (/(^|[_\s])(y|y1|y2|kepuasan|loyalitas|minat|kinerja|keputusan|hasil|niat)/.test(n)) p = 'Y';
+    else if (/(^|[_\s])(m|m1|m2|mediasi|perantara|citra)/.test(n)) p = 'M';
+    else if (/(^|[_\s])(z|z1|z2|moderasi|penguat)/.test(n)) p = 'Z';
+    else p = 'X';
+    const hurufSudah = Object.values(PERAN).filter(v => v && v[0] === p);
+    const nomor = hurufSudah.length + 1;
+    PERAN[nama] = p + nomor;
+    kena++;
+  });
+  PERAN_DIPAKAI = Array.from(new Set(
+    PERAN_DIPAKAI.concat(Object.values(PERAN).filter(Boolean)))).sort();
+  bangunDaftarPeran();
+  segarkanPeran();
+  pesan('pesan-peran', 'Saya coba tebak ' + kena + ' kolom dari namanya. ' +
+    'Coba cek satu-satu — kalau ada yang salah, tinggal ganti.', 'info');
+}
+
+function daftarPeranTerpakai() {
+  return Array.from(new Set(Object.values(PERAN).filter(v => v)));
+}
+
+/* Isi pilihan untuk mode PLS (konstruk + target). Mode SPSS pakai peran. */
+function isiPilihan() {
+  pilihKosong('target-pls');
+  isiPilihanKonstruk();
+}
+
+function pilihKosong(id) {
+  const s = document.getElementById(id);
+  if (!s) return;
+  const skr = s.value;
+  s.innerHTML = '<option value="">— pilih kolom —<\/option>' +
+    namaKolom().map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+  if (skr && namaKolom().includes(skr)) s.value = skr;
+}
+
+function tambahKonstruk() {
+  const d = document.createElement('div');
+  d.className = 'kartu';
+  d.style.cssText = 'padding:13px;margin-bottom:11px;background:#FBFAF7';
+  d.innerHTML =
+    '<div class="medan" style="margin-bottom:9px">' +
+      '<label style="font-weight:600;display:block;margin-bottom:4px">Nama variabel<\/label>' +
+      '<input type="text" class="nama-konstruk" placeholder="misalnya: Kualitas Produk" style="width:100%">' +
+    '<\/div>' +
+    '<div class="medan">' +
+      '<label style="font-weight:600;display:block;margin-bottom:4px">Butir pertanyaannya (bisa pilih beberapa)<\/label>' +
+      '<select class="butir-konstruk" multiple size="4" style="width:100%"><\/select>' +
+    '<\/div>' +
+    '<button type="button" class="tb tb-sekunder" style="margin-top:8px" onclick="this.parentElement.remove(); isiTargetPls()">Hapus variabel ini<\/button>';
+  document.getElementById('daftar-konstruk').appendChild(d);
+  isiPilihanKonstruk();
+}
+
+function isiPilihanKonstruk() {
+  document.querySelectorAll('.butir-konstruk').forEach(s => {
+    const sudah = Array.from(s.selectedOptions).map(o => o.value);
+    s.innerHTML = namaKolom().map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+    Array.from(s.options).forEach(o => { if (sudah.includes(o.value)) o.selected = true; });
+  });
+  isiTargetPls();
+}
+
+function isiTargetPls() {
+  const s = document.getElementById('target-pls');
+  if (!s) return;
+  const nama = Array.from(document.querySelectorAll('.nama-konstruk'))
+    .map(i => i.value.trim()).filter(Boolean);
+  const skr = s.value;
+  s.innerHTML = '<option value="">— pilih variabel —<\/option>' +
+    nama.map(n => '<option value="' + n + '">' + n + '<\/option>').join('');
+  if (nama.includes(skr)) s.value = skr;
+}
+document.addEventListener('input', e => { if (e.target.classList.contains('nama-konstruk')) isiTargetPls(); });
+
+/* ── GAMBAR HASIL ───────────────────────────────────────────────────────
+   Semua angka datang dari server. Fungsi ini hanya MENYUSUN tampilan.
+   ⚠️ Nasihat "cara membetulkan" juga dari server (d.nasihat_semua) —
+   sengaja TIDAK ditulis di sini supaya hanya ada SATU sumber teks.
+   ───────────────────────────────────────────────────────────────────── */
+function angka(n, desimal) {
+  if (n === null || n === undefined || n === '') return '—';
+  if (typeof n !== 'number') return String(n);
+  return n.toFixed(desimal === undefined ? 3 : desimal).replace('.', ',');
+}
+
+function lambang(lulus) {
+  if (lulus === true)  return '<span class="pita pita-hijau">Sudah benar<\/span>';
+  if (lulus === false) return '<span class="pita pita-merah">Perlu dibetulkan<\/span>';
+  return '<span class="pita pita-kuning">Belum bisa dinilai<\/span>';
+}
+
+function kartuUji(nama, lulus, isi) {
+  return '<div class="kartu" style="margin-bottom:13px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:7px">' +
+      '<h3 style="margin:0;font-size:1rem">' + nama + '<\/h3>' + lambang(lulus) +
+    '<\/div>' + isi + '<\/div>';
+}
+
+function tabelBaris(judul, baris) {
+  return '<table class="data" style="margin-top:8px">' +
+    '<thead><tr>' + judul.map(h => '<th style="text-align:left">' + h + '<\/th>').join('') + '<\/tr><\/thead>' +
+    '<tbody>' + baris.map(r => '<tr>' + r.map((c, i) =>
+      '<td' + (i ? ' style="text-align:right"' : '') + '>' + c + '<\/td>').join('') + '<\/tr>').join('') +
+    '<\/tbody><\/table>';
+}
+
+/* Kotak nasihat — SATU nasihat lengkap (arti, kenapa, langkah, jangan) */
+function kotakNasihat(n, nomor) {
+  if (!n) return '';
+  const langkah = n.langkah.map((l, i) =>
+    '<li style="margin-bottom:10px"><strong>' + l[0] + '<\/strong><br>' +
+    '<span style="color:#6B6259">' + l[1] + '<\/span><\/li>').join('');
+  return '<div class="kartu" style="margin-top:12px;border-left:4px solid #B5762A">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<span class="langkah-nomor">' + nomor + '<\/span>' +
+      '<h3 style="margin:0;font-size:1rem">' + n.judul + '<\/h3>' +
+    '<\/div>' +
+    '<p style="margin:6px 0"><strong>Apa artinya:<\/strong> ' + n.arti + '<\/p>' +
+    '<p style="margin:6px 0"><strong>Kenapa penting:<\/strong> ' + n.kenapa + '<\/p>' +
+    '<p style="margin:10px 0 6px"><strong>Cara membetulkan:<\/strong><\/p>' +
+    '<ol style="margin:0 0 10px 18px;padding:0">' + langkah + '<\/ol>' +
+    '<div class="catatan" style="background:#F3F8F5;border-color:#CDE3D5;margin-bottom:9px">' +
+      '<strong>Kapan masih aman:<\/strong> ' + n.boleh_abaikan + '<\/div>' +
+    '<div class="catatan" style="background:#FBEFEF;border-color:#E8C9C9">' +
+      '<strong>Yang sebaiknya tidak dilakukan:<\/strong> ' + n.jangan + '<\/div>' +
+    '<\/div>';
+}
+
+function gambarHasil(d) {
+  const wadah = document.getElementById('kartu-hasil');
+  let h = '';
+
+  /* ── RINGKASAN di atas: berapa masalah, berapa aman ── */
+  const nMasalah = (d.masalah || []).length;
+  const judulAlat = d.mode === 'pls' ? 'SmartPLS' : 'SPSS';
+  h += '<div class="kartu" style="margin-bottom:18px;border-left:4px solid ' +
+       (nMasalah ? '#B5762A' : '#4E8A5A') + '">' +
+    '<span class="eyebrow">Hasil pemeriksaan ' + judulAlat + '<\/span>' +
+    '<h2 style="margin:6px 0 8px">' +
+      (nMasalah
+        ? 'Ada ' + nMasalah + ' hal yang perlu kamu lihat'
+        : 'Semua syarat sudah terpenuhi') + '<\/h2>' +
+    '<p style="margin:0;color:#6B6259">' +
+      d.n + ' responden diperiksa · ' + (d.n_kolom || '') +
+      (nMasalah
+        ? '. Tidak semua harus dibetulkan — lihat penjelasan tiap bagian.'
+        : '. Datamu siap diolah lebih lanjut.') +
+    '<\/p><\/div>';
+
+  /* ══════════ MODE SPSS ══════════ */
+  if (d.mode !== 'pls') {
+    /* Model ringkas */
+    if (d.koef && d.koef.length) {
+      h += kartuUji('Model yang diperiksa', true,
+        '<p style="margin:0 0 4px;color:#6B6259">' +
+        'Prediktor: ' + (d.prediktor || []).join(', ') + ' · Y: ' + d.y + '<\/p>' +
+        tabelBaris(['Prediktor', 'B', 't', 'p'],
+          d.koef.map(k => [k.nama, angka(k.b), angka(k.t), angka(k.p)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">' +
+        '<strong>R² = ' + angka(d.r2) + '<\/strong> (R² terkoreksi ' + angka(d.r2_adj) + ') — ' +
+        'artinya ' + angka(d.r2 * 100, 1) + '% keragaman Y bisa dijelaskan model. ' +
+        '<strong>' + (d.prediktor || []).length + '<\/strong> responden dianalisis: ' + d.n + '.<\/p>');
+    }
+
+    /* ① Normalitas */
+    const n = d.normalitas || {};
+    h += kartuUji('Normalitas sisa', n.lulus,
+      '<p style="margin:0;color:#6B6259">Tiga uji sekaligus, supaya kesimpulannya kokoh.<\/p>' +
+      tabelBaris(['Uji', 'Nilai p'],
+        [['Kolmogorov-Smirnov', angka(n.ks_p)],
+         ['Shapiro-Wilk', angka(n.shapiro_p)],
+         ["D'Agostino", angka(n.dagostino_p)]]) +
+      /* ── GRAFIK HIDUP (Tahap 2, ACC Bos 20Sep26) ──────────────────────
+         Gambar dari DATA YANG DIUNGGAH — bukan contoh tetap. Fungsi gambar
+         ada di /static/grafik_hidup.js (satu berkas untuk semua halaman). */
+      kotakGrafik(svgPP(d.titik, n.lulus),
+        (n.lulus
+          ? 'Titik-titik mengikuti garis miring — sisa menyebar normal.'
+          : 'Titik membelok menjauh dari garis, terutama di ujung — sisa belum normal.'),
+        'pp') +
+      '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+        '<strong>Cara membacanya:<\/strong> titik harus <strong>menempel<\/strong> ' +
+        'pada garis miring. Kalau ujungnya membelok menjauh, bentuknya seperti S — ' +
+        'itu tanda sisa belum menyebar normal.<\/p>' +
+      '<p style="margin:7px 0 0;font-size:.92rem">Kemiringan (skewness) = ' + angka(n.skew) +
+      ' · Keruncingan = ' + angka(n.kurtosis) + '. ' +
+      'Nilai p di atas 0,05 artinya sisa menyebar normal.<\/p>' +
+      catatanTitik(d.n ? d.n.length : 0));
+
+    /* ② Heteroskedastisitas */
+    const het = d.hetero || {};
+    h += kartuUji('Heteroskedastisitas (Glejser)', het.lulus,
+      '<p style="margin:0;color:#6B6259">Seberapa tidak rata sebaran sisanya.<\/p>' +
+      tabelBaris(['Nilai p terkecil'], [[angka(het.glejser_p)]]) +
+      kotakGrafik(svgHetero(d.titik, het.lulus),
+        (het.lulus
+          ? 'Sebaran sisanya rata dari kiri ke kanan — tidak ada corong.'
+          : 'Sebaran makin melebar ke kanan seperti corong — sisa tidak rata.'),
+        'hetero') +
+      '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+        '<strong>Cara membacanya:<\/strong> lihat lebarnya sebaran titik dari kiri ' +
+        'ke kanan. Lebar yang <strong>tetap<\/strong> = aman. Kalau makin ke kanan ' +
+        'makin melebar seperti corong, itu heteroskedastisitas.<\/p>' +
+      '<p style="margin:7px 0 0;font-size:.92rem">' +
+      'Nilai p di bawah 0,05 artinya sebaran sisa tidak rata — ada yang perlu diperiksa.<\/p>' +
+      catatanTitik(d.n ? d.n.length : 0));
+
+    /* ③ Multikolinearitas */
+    const vif = d.vif || [];
+    const vifMaks = d.vif_maks || 0;
+    h += kartuUji('Multikolinearitas (VIF)', vifMaks <= 10,
+      '<p style="margin:0;color:#6B6259">Apakah X saling kembar.<\/p>' +
+      (vif.length ? tabelBaris(['Prediktor', 'VIF'],
+        vif.map(v => [v.nama, angka(v.vif, 2)])) : '') +
+      '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman; di atas 10 perlu ditangani.<\/p>');
+
+    /* ④ Linearitas */
+    if (d.linearitas) {
+      const lin = d.linearitas;
+      h += kartuUji('Linearitas', lin.lulus,
+        '<p style="margin:0;color:#6B6259">Apakah hubungan X dan Y berbentuk garis lurus.<\/p>' +
+        (lin.p === null || lin.p === undefined ? '' :
+          tabelBaris(['Nilai p'], [[angka(lin.p)]])) +
+        kotakGrafik(svgLinear(d.titik, (d.prediktor || [])[0], d.y, lin.lulus),
+          (lin.lulus
+            ? 'Titik-titik memanjang mengikuti satu arah — hubungannya lurus.'
+            : 'Titik melengkung atau menyebar tak berarah — hubungannya belum lurus.'),
+          'linear') +
+        '<p style="margin:6px 0 0;font-size:12.5px;color:#6B6259">' +
+          '<strong>Cara membacanya:<\/strong> titik sebaiknya memanjang mengikuti ' +
+          'satu arah seperti garis. Kalau membentuk lengkungan (U atau busur), ' +
+          'hubungannya tidak lurus.<\/p>');
+    }
+
+    /* ⑤ Outlier */
+    const out = d.outlier || {};
+    h += kartuUji('Data menyimpang jauh', (out.n_y || 0) < 3,
+      '<p style="margin:0;color:#6B6259">Responden yang jawabannya jauh berbeda dari yang lain.<\/p>' +
+      tabelBaris(['Yang ditemukan', 'Jumlah'],
+        [['Menyimpang di Y', (out.n_y || 0) + ' titik'],
+         ['Menyimpang di X', (out.n_x || 0) + ' titik']]) +
+      '<p style="margin:9px 0 0;font-size:.92rem">' +
+      (out.batas_atas !== undefined
+        ? 'Batas wajar Y: ' + angka(out.batas_bawah, 2) + ' sampai ' + angka(out.batas_atas, 2) + '.'
+        : '') + '<\/p>');
+
+    /* ⑥ Durbin-Watson */
+    if (d.dw !== null && d.dw !== undefined) {
+      h += kartuUji('Autokorelasi (Durbin-Watson)', d.dw >= 1.5 && d.dw <= 2.5,
+        '<p style="margin:0;color:#6B6259">Apakah sisa berhubungan dengan urutan responden.<\/p>' +
+        tabelBaris(['Durbin-Watson'], [[angka(d.dw, 3)]]) +
+        '<p style="margin:9px 0 0;font-size:.92rem">Nilai sehat mendekati 2.<\/p>');
+    }
+  } else {
+    /* ══════════ MODE SmartPLS ══════════ */
+    (d.konstruk || []).forEach(function (k) {
+      const muat = k.muat || [];
+      const lemah = muat.filter(function (m) { return (m.muat || 0) < 0.7; });
+      const terendah = muat.reduce(function (a, m) {
+        return (a === null || (m.muat || 0) < a.muat) ? m : a; }, null);
+      h += kartuUji('Variabel: ' + k.nama,
+        k.lulus_muat && k.lulus_ave && k.lulus_cr,
+        '<p style="margin:0 0 4px;color:#6B6259">Diukur oleh ' + k.kolom.length +
+        ' butir: ' + k.kolom.join(', ') + '<\/p>' +
+        tabelBaris(['Ukuran', 'Nilai', 'Ambang'],
+          [['Butir terendah', terendah
+              ? (terendah.butir + ' = ' + angka(terendah.muat)) : '—', '≥ 0,70'],
+           ['AVE', angka(k.ave), '≥ 0,50'],
+           ['Composite Reliability', angka(k.cr), '≥ 0,70']]) +
+        tabelBaris(['Butir', 'Outer loading'],
+          muat.map(function (m) { return [m.butir, angka(m.muat)]; })) +
+        (lemah.length
+          ? '<p style="margin:9px 0 0;font-size:.92rem">' + lemah.length +
+            ' butir di bawah 0,70: ' + lemah.map(function (m) { return m.butir; }).join(', ') +
+            '. Lihat cara membetulkannya di bawah.<\/p>'
+          : '<p style="margin:9px 0 0;font-size:.92rem">Semua butir sudah kuat.<\/p>'));
+    });
+
+    if (d.vif_inner && d.vif_inner.length) {
+      h += kartuUji('VIF antar-variabel', (d.vif_inner_maks || 0) <= 5,
+        tabelBaris(['Variabel', 'VIF'],
+          d.vif_inner.map(v => [v.nama, angka(v.vif, 2)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman.<\/p>');
+    }
+    if (d.catatan_belum && d.catatan_belum.length) {
+      h += '<div class="catatan" style="margin-top:12px">' +
+        '<strong>Belum diperiksa di versi ini:<\/strong> ' + d.catatan_belum.join(' · ') +
+        '. Alat ini sengaja tidak mengaku bisa menghitungnya — sedang disiapkan.<\/div>';
+    }
+
+    if (d.fornell && d.fornell.length) {
+      h += kartuUji('Fornell-Larcker', !d.fornell_ada_masalah,
+        '<p style="margin:0;color:#6B6259">Apakah tiap variabel lebih erat dengan ' +
+        'butirnya sendiri daripada dengan variabel lain.<\/p>' +
+        tabelBaris(['Pasangan', 'Korelasi', 'Batas'],
+          d.fornell.map(f => [f.pasangan, angka(f.korelasi, 3), angka(f.batas, 3)])) +
+        '<p style="margin:9px 0 0;font-size:.92rem">Lulus kalau korelasi ' +
+        'tidak melebihi akar AVE masing-masing variabel.<\/p>');
+    }
+
+    /* ── HTMT (Heterotrait-Monotrait Ratio) — 20Sep26 ──
+       Ambang 0,85 (ketat) / 0,90 (longgar). Kartu ini yang menjawab
+       "variabelku kembar atau tidak" — pelengkap Fornell-Larcker. */
+    if (d.htmt && d.htmt.length) {
+      h += kartuUji('HTMT', !d.htmt_ada_masalah,
+        '<p style="margin:0;color:#6B6259">Apakah dua variabel terlalu mirip ' +
+        'sehingga sulit dibedakan.<\/p>' +
+        tabelBaris(['Pasangan', 'Nilai', 'Batas'],
+          d.htmt.map(x => [x.pasangan, angka(x.nilai, 3), '0,85 / 0,90'])) +
+        '<p style="margin:9px 0 0;font-size:.92rem"><strong>Cara membacanya:<\/strong> ' +
+        'nilai di bawah <strong>0,85<\/strong> aman. Antara 0,85–0,90 masih ' +
+        'diterima dengan catatan. Di atas 0,90 berarti kedua variabel terlalu ' +
+        'mirip — pertimbangkan menggabung butirnya atau buang salah satu.<\/p>');
+    }
+  }
+
+  /* ══════════ MEDIASI & MODERASI (ACC Bos 21Sep26) ══════════
+     Server sudah mengirim semua angkanya di kunci `kaitan` (modul
+     app/hitung/kaitan.py). Di sini TIDAK ada rumus statistik baru —
+     hanya menggambar. Bentuk: mediasi = bootstrap (putusan 1b),
+     moderasi = suku interaksi X×Z (putusan 2a), simpulan = aturan
+     baku p<0,05 (putusan 3a).
+     ⚠️ Ditaruh SEBELUM bagian nasihat supaya mahasiswa lihat hasil
+     mediasi/moderasi lebih dulu — itu inti pilihan modelnya. */
+  const kaitan = d.kaitan;
+  if (kaitan && kaitan.ada) {
+    h += '<h2 style="margin:28px 0 4px">Hubungan antar-variabel<\/h2>' +
+         '<p style="margin:0 0 14px;color:#6B6259">' +
+         'Inilah yang membedakan model mediasi/moderasi dari regresi biasa — ' +
+         'dihitung dari datamu, bukan contoh.<\/p>';
+
+    /* ── MEDIASI: X → M → Y ── */
+    (kaitan.mediasi || []).forEach(function (m) {
+      if (!m.boleh) {
+        h += kartuUji('Perantara ' + m.m + ' (mediasi)', null,
+          '<p style="margin:0;color:#6B6259">' + m.sebab + '<\/p>');
+        return;
+      }
+      var tl = m.tidak_langsung || {};
+      var kotak = '';
+      /* ── BERJENJANG (X → M1 → M2 → Y): tampilkan RANTAI, bukan satu tabel ──
+         Perantaranya dua dan bertingkat, jadi jalurnya ada DUA. Ini yang
+         membedakannya dari paralel (di paralel, tiap M diuji sendiri-sendiri). */
+      if (m.berjenjang && m.jalur) {
+        /* Rantai lebih dari 2 perantara (ACC Bos 21Sep26 "Rantai lebih 2
+           perantara belum"): tabel langkah jadi BANYAK baris, jadi digambar
+           dari m.d_semua / m.b_semua apa adanya — bukan dipaku 2 perantara.
+           Jumlah jalur = jumlah perantara (k), semuanya lewat perantara
+           pertama. Halaman TIDAK menghitung apa pun, hanya menggambar. */
+        var panjang = m.rantai_panjang === true;
+        var mList = (m.m || '').split(' → ');
+        var barisLangkah = [['a1 · ' + m.x + ' → ' + mList[0],
+                             angka(m.a.b), angka(m.a.t), angka(m.a.p)]];
+        (m.d_semua || []).forEach(function (dd, i) {
+          barisLangkah.push(['d' + (i + 1) + ' · ' + dd.dari + ' → ' + dd.ke,
+                             angka(dd.b), '—', '—']);
+        });
+        (m.b_semua || []).forEach(function (bb, i) {
+          barisLangkah.push(['b' + (i + 1) + ' · ' + bb.dari + ' → ' + bb.ke,
+                             angka(bb.b), '—', '—']);
+        });
+        barisLangkah.push(['c · ' + m.x + ' → ' + m.y + ' (tanpa perantara)',
+                           angka(m.c.b), angka(m.c.t), angka(m.c.p)]);
+        barisLangkah.push(["c' · " + m.x + ' → ' + m.y + ' (dengan perantara)',
+                           angka(m.cp.b), angka(m.cp.t), angka(m.cp.p)]);
+        kotak += tabelBaris(['Langkah', 'B', 't', 'p'], barisLangkah);
+        kotak += tabelBaris(['Jalur tidak langsung', 'Nilai', 'Selang 95%'],
+          m.jalur.map(function (j) {
+            return [j.nama, angka(j.b),
+              (j.lo === null || j.hi === null) ? '—'
+                : '[' + angka(j.lo) + ' … ' + angka(j.hi) + ']'];
+          }));
+        kotak += '<p style="margin:9px 0 0;font-size:.92rem">' +
+          '<strong>Cara membacanya:<\/strong> tiap baris adalah satu jalan ' +
+          'dari ' + m.x + ' ke ' + m.y + ' lewat perantara yang berbeda-beda. ' +
+          'Kalau selang 95%-nya tidak melewati nol, jalur itu benar-benar ' +
+          'meneruskan pengaruh. Perhatikan juga baris <strong>d<\/strong> — ' +
+          'kalau ada <strong>d<\/strong> yang mendekati nol, rantainya ' +
+          'terputus di situ, dan jalur sesudahnya ikut mati.' +
+          (panjang
+            ? ' Keterangan: jalur-jalur ini <strong>saling tumpang-tindih<\/strong> '
+              + '(bukan bagian yang lepas), jadi angkanya <strong>tidak<\/strong> '
+              + 'boleh dijumlahkan jadi 100%.'
+            : '') + '<\/p>';
+        h += kartuUji(
+          (panjang ? 'Rantai perantara (' + m.jumlah_perantara + '): '
+                   : 'Rantai perantara: ')
+            + m.x + ' → ' + m.m + ' → ' + m.y,
+          (m.jenis === 'tidak ada mediasi') ? false : true, kotak);
+        h += '<div class="kartu" style="margin-top:-4px;margin-bottom:13px;' +
+          'border-left:4px solid #4E8A5A">' +
+          '<p style="margin:0;font-size:.96rem">' + m.kalimat + '<\/p><\/div>';
+        if (m.catatan) {
+          h += '<div class="catatan" style="margin-bottom:13px">' + m.catatan +
+               '<\/div>';
+        }
+        return;
+      }
+      /* Rantai 3 langkah, ditulis apa adanya */
+      kotak += tabelBaris(['Jalur', 'B', 't', 'p'],
+        [['a · ' + m.x + ' → ' + m.m, angka(m.a.b), angka(m.a.t), angka(m.a.p)],
+         ['b · ' + m.m + ' → ' + m.y, angka(m.b.b), angka(m.b.t), angka(m.b.p)],
+         ['c · ' + m.x + ' → ' + m.y + ' (tanpa ' + m.m + ')',
+          angka(m.c.b), angka(m.c.t), angka(m.c.p)],
+         ["c' · " + m.x + ' → ' + m.y + ' (dengan ' + m.m + ')',
+          angka(m.cp.b), angka(m.cp.t), angka(m.cp.p)]]);
+      /* Pengaruh tidak langsung a×b + selang bootstrap */
+      kotak += tabelBaris(['Pengaruh tidak langsung (a × b)', 'Nilai'],
+        [['a × b', angka(tl.b)],
+         ['Selang kepercayaan 95%',
+          (tl.lo === null || tl.hi === null) ? '—'
+            : '[' + angka(tl.lo) + '  …  ' + angka(tl.hi) + ']'],
+         ['Putaran bootstrap', tl.n_boot || '—']]);
+      kotak += '<p style="margin:9px 0 0;font-size:.92rem">' +
+        '<strong>Cara membacanya:<\/strong> perhatikan <strong>a × b<\/strong>. ' +
+        'Kalau selang kepercayaan 95% <strong>tidak melewati nol<\/strong>, ' +
+        'berarti perantara ' + m.m + ' benar-benar meneruskan pengaruh. ' +
+        (tl.signifikan
+          ? 'Di datamu selangnya tidak melewati nol.'
+          : 'Di datamu selangnya melewati nol.') + '<\/p>';
+      h += kartuUji('Apakah ' + m.m + ' jadi perantara? (' +
+                    m.x + ' → ' + m.m + ' → ' + m.y + ')',
+        (m.jenis === 'tidak ada mediasi') ? false : true, kotak);
+      /* Kesimpulan — kalimatnya datang dari MESIN, bukan disusun di JS */
+      h += '<div class="kartu" style="margin-top:-4px;margin-bottom:13px;' +
+        'border-left:4px solid #4E8A5A">' +
+        '<p style="margin:0;font-size:.96rem">' + m.kalimat + '<\/p><\/div>';
+    });
+
+    /* ── MODERASI: X × Z → Y ── */
+    (kaitan.moderasi || []).forEach(function (o) {
+      if (!o.boleh) {
+        h += kartuUji('Penguat ' + o.z + ' (moderasi)', null,
+          '<p style="margin:0;color:#6B6259">' + o.sebab + '<\/p>');
+        return;
+      }
+      var it = (o.dengan_interaksi || {}).interaksi || {};
+      var kotak = tabelBaris(['Ukuran', 'Nilai'],
+        [['Interaksi ' + o.x + ' × ' + o.z, angka(it.b)],
+         ['t', angka(it.t)],
+         ['p', angka(it.p)],
+         ['R² tanpa interaksi', angka(o.tanpa_interaksi.r2)],
+         ['R² dengan interaksi', angka(o.dengan_interaksi.r2)],
+         ['Kenaikan R² (ΔR²)', angka(o.delta_r2)]]);
+      kotak += '<p style="margin:9px 0 0;font-size:.92rem">' +
+        '<strong>Cara membacanya:<\/strong> lihat baris <strong>Interaksi ' +
+        o.x + ' × ' + o.z + '<\/strong>. Kalau p-nya di bawah <strong>0,05<\/strong>, ' +
+        o.z + ' ikut menentukan <em>kuat-lemahnya<\/em> pengaruh ' + o.x +
+        ' terhadap ' + o.y + ' — bukan sekadar menambah pengaruh sendiri.<\/p>';
+      h += kartuUji('Apakah ' + o.z + ' memperkuat/melemahkan? (' +
+                    o.x + ' × ' + o.z + ' → ' + o.y + ')',
+        (o.jenis === 'tidak memoderasi') ? false : true, kotak);
+      h += '<div class="kartu" style="margin-top:-4px;margin-bottom:13px;' +
+        'border-left:4px solid #8A5BA6">' +
+        '<p style="margin:0;font-size:.96rem">' + o.kalimat + '<\/p><\/div>';
+    });
+  } else if (kaitan && kaitan.sebab) {
+    /* Mesin tidak bisa menghitung — katakan apa adanya, jangan diam */
+    h += kartuUji('Hubungan antar-variabel', null,
+      '<p style="margin:0;color:#6B6259">' + kaitan.sebab + '<\/p>');
+  }
+
+  /* ══════════ NASIHAT — datang dari server ══════════ */
+  const masalah = d.masalah || [];
+  if (masalah.length) {
+    h += '<h2 style="margin:26px 0 4px">Cara membetulkannya<\/h2>' +
+         '<p style="margin:0 0 14px;color:#6B6259">Satu per satu, mulai dari yang paling perlu.<\/p>';
+    masalah.forEach(function (m, i) { h += kotakNasihat(m.nasihat, i + 1); });
+  } else {
+    h += '<div class="kartu" style="margin-top:20px;border-left:4px solid #4E8A5A">' +
+      '<h3 style="margin:0 0 6px">{{ ikon("check-circle-2", 16) }} Tidak ada yang perlu dibetulkan<\/h3>' +
+      '<p style="margin:0;color:#6B6259">Datamu sudah memenuhi syarat yang diperiksa. ' +
+      'Lanjutkan ke analisis di ' + (d.mode === 'pls' ? 'SmartPLS' : 'SPSS') + ' ya. ' +
+      'Kalau nanti hasilnya berbeda dari harapan, unggah lagi ke sini.<\/p><\/div>';
+  }
+
+  wadah.innerHTML = h;
+  wadah.hidden = false;
+  wadah.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── CEK PERAN DULU (ACC Bos 21Sep26: verifikasi sebelum proses) ─────── */
+async function periksaPeranSekarang() {
+  if (!KUNCI) { pesan('pesan-peran', 'Unggah berkasnya dulu ya.', 'galat'); return; }
+  pesan('pesan-peran', 'Sedang saya cek…');
+  try {
+    const r = await fetch('/api/diagnosis/periksa-peran', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kunci: KUNCI, peran: PERAN })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      pesan('pesan-peran', d.detail || 'Belum bisa dicek.', 'galat');
+      return;
+    }
+    tampilkanPeriksaPeran(d);
+  } catch (e) {
+    pesan('pesan-peran', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  }
+}
+
+function tampilkanPeriksaPeran(d) {
+  const pesanEl = document.getElementById('pesan-peran');
+  const suku = [];
+
+  // Ringkasan TIDAK diulang di sini — `#ringkas-peran` di atas sudah
+  // menampilkannya, dan `segarkanPeran()` memperbaruinya tiap kali ditandai.
+  // (Dulu Wulan tulis ulang di sini → teksnya dobel. Jangan dikembalikan.)
+
+  // Masalah — HARUS diperbaiki
+  (d.masalah || []).forEach(m => {
+    suku.push('<div style="padding:11px 13px;border-radius:9px;background:#FDF0EC;' +
+      'border:1px solid #E9C6BC;color:#8A3A28;font-size:.92rem;margin-bottom:8px">' +
+      '⚠️ ' + m.pesan + '<\/div>');
+  });
+
+  // Pertanyaan — boleh lanjut, tapi mohon dicek
+  (d.tanya || []).forEach(t => {
+    let extra = '';
+    if (t.pilihan) {
+      extra = '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+        t.pilihan.map(p =>
+          '<button type="button" class="tb tb-sekunder" style="padding:6px 11px" ' +
+          'onclick="jawabBentuk(\'' + t.jenis + '\',\'' + p + '\')">' +
+          (p === 'paralel' ? 'Dua-duanya dari X (paralel)'
+           : p === 'berjenjang' ? 'M1 dulu, lalu M2 (berjenjang)'
+           : p === 'bersama' ? 'Bekerja bersama-sama'
+           : 'Z1 dulu, lalu Z2') + '<\/button>').join('') +
+        '<\/div>';
+    }
+    suku.push('<div style="padding:11px 13px;border-radius:9px;background:#FDF6E9;' +
+      'border:1px solid #E8D9B5;color:#7A5A1E;font-size:.92rem;margin-bottom:8px">' +
+      '❓ ' + t.pesan + extra + '<\/div>');
+  });
+
+  // Kesimpulan
+  if (d.boleh_lanjut && !(d.masalah || []).length) {
+    suku.push('<div style="padding:11px 13px;border-radius:9px;background:#EAF5F0;' +
+      'border:1px solid #BFDCCF;color:#1F6B55;font-size:.92rem;margin-bottom:8px">' +
+      '✅ Bacaan saya sudah cocok. Tekan <strong>Periksa sekarang<\/strong> di bawah ' +
+      'untuk lanjut menghitung.<\/div>');
+  } else if (!d.boleh_lanjut) {
+    suku.push('<div style="padding:11px 13px;border-radius:9px;background:#FDF0EC;' +
+      'border:1px solid #E9C6BC;color:#8A3A28;font-size:.92rem">' +
+      'Perbaiki dulu yang di atas ya — baru bisa dihitung.<\/div>');
+  }
+
+  // Tombol "Pakai bacaan saya"
+  if (d.boleh_lanjut) {
+    suku.push('<button type="button" class="tb" onclick="pakaiBacaanMesin()" ' +
+      'style="margin-top:4px">Ya, bacaan ini benar — pakai ini<\/button>');
+  }
+
+  pesanEl.innerHTML = suku.join('');
+}
+
+/* Mahasiswa bilang bacaan mesin sudah benar */
+function pakaiBacaanMesin() {
+  pesan('pesan-peran',
+    'Siap. Sekarang tekan "Periksa sekarang" di bawah untuk menghitung.', 'sukses');
+}
+
+/* Jawaban atas pertanyaan bentuk (paralel / berjenjang, dst.) */
+function jawabBentuk(jenis, pilihan) {
+  BENTUK[jenis] = pilihan;
+  pesan('pesan-peran', 'Dicatat: ' + pilihan + '. Terima kasih!', 'sukses');
+}
+
+/* ── PERIKSA ────────────────────────────────────────────────────────── */
+async function periksa() {
+  const kirim = { kunci: KUNCI, mode: ALAT,
+                  missing: document.getElementById('cara-missing').value };
+  if (ALAT === 'spss') {
+    // TERJEMAHKAN peran (X1/M1/Y1) → daftar kolom (bentuk yang mesin sudah
+    // paham). Mesin hitung TIDAK diubah — hanya bentuk masukannya.
+    const kel = {};
+    Object.keys(PERAN).forEach(k => {
+      const v = PERAN[k];
+      if (v) (kel[v] = kel[v] || []).push(k);
+    });
+    const hurufX = Object.keys(kel).filter(p => p[0] === 'X').sort();
+    const hurufM = Object.keys(kel).filter(p => p[0] === 'M').sort();
+    const hurufZ = Object.keys(kel).filter(p => p[0] === 'Z').sort();
+    const hurufY = Object.keys(kel).filter(p => p[0] === 'Y').sort();
+    const x = hurufX.reduce((a, p) => a.concat(kel[p]), []);
+    const m = hurufM.reduce((a, p) => a.concat(kel[p]), []);
+    /* ⚠️ AKAR DITUTUP 21Sep26: Z (penguat/moderator) SUDAH bisa ditandai
+       mahasiswa lewat dropdown, TAPI daftarnya tidak pernah disusun di sini
+       → kirim.kolom_z tak pernah terisi → moderasi tak pernah dihitung. */
+    const z = hurufZ.reduce((a, p) => a.concat(kel[p]), []);
+    const y = hurufY.length ? kel[hurufY[hurufY.length - 1]][0] : '';
+
+    if (!x.length || !y) {
+      pesan('pesan-periksa',
+        'Tandai dulu peran kolomnya (minimal satu X dan satu Y), ' +
+        'lalu tekan "Cek dulu, benar atau tidak".', 'galat');
+      document.getElementById('pesan-peran') ||
+        document.getElementById('kartu-kolom')
+          .scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    kirim.kolom_x = x; kirim.kolom_y = y; kirim.kolom_m = m;
+    /* ⚠️ AKAR DITUTUP 21Sep26: `z` SUDAH dihitung di atas, tapi TIDAK PERNAH
+       dikirim → server selalu menerima kolom_z = [] → MODERASI jalan tanpa
+       moderator sama sekali. Terukur: kaitan.moderasi KOSONG walau mahasiswa
+       sudah menandai Z di dropdown. Kunci `kolom_z` WAJIB ada di sini. */
+    kirim.kolom_z = z;
+    kirim.peran = PERAN;          // dikirim juga supaya jejaknya jelas
+    /* Jawaban paralel/berjenjang. Server membaca kunci DАТAR
+       `bentuk_mediasi` (bukan seluruh objek BENTUK) supaya bentuknya
+       satu bahasa: mesin app/hitung/kaitan.py sudah menerima 'berjenjang'. */
+    kirim.bentuk_mediasi = (BENTUK && BENTUK.bentuk_mediasi) || null;
+  } else {
+    const konstruk = {};
+    document.querySelectorAll('#daftar-konstruk .kartu').forEach(k => {
+      const nama = k.querySelector('.nama-konstruk').value.trim();
+      const butir = Array.from(k.querySelector('.butir-konstruk').selectedOptions).map(o => o.value);
+      if (nama && butir.length) konstruk[nama] = butir;
+    });
+    const target = document.getElementById('target-pls').value;
+    if (Object.keys(konstruk).length < 2) {
+      pesan('pesan-periksa', 'Butuh minimal dua variabel supaya bisa diperiksa.', 'galat'); return;
+    }
+    if (!target) { pesan('pesan-periksa', 'Tunjuk dulu variabel yang mau dijelaskan.', 'galat'); return; }
+    kirim.konstruk = konstruk; kirim.kolom_y_konstruk = target;
+  }
+  pesan('pesan-periksa', 'Sedang memeriksa…');
+  const t = document.getElementById('tombol-periksa');
+  t.disabled = true;
+  try {
+    const r = await fetch('/api/diagnosis/periksa', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kirim) });
+    const d = await r.json();
+    if (!r.ok) { pesan('pesan-periksa', d.detail || 'Belum bisa diperiksa.', 'galat'); return; }
+    document.getElementById('pesan-periksa').innerHTML = '';
+    gambarHasil(d);
+  } catch (e) {
+    pesan('pesan-periksa', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  } finally { t.disabled = false; }
+}
+
+/* ── CONTOH SIAP-KLIK (Tahap 2.1d, ACC Bos 20Sep26) ──────────────────────
+   Data contoh DIBUAT DI BROWSER lalu diunggah lewat jalur yang SAMA seperti
+   berkas mahasiswa. Jadi tidak ada berkas contoh yang perlu disimpan di
+   server, dan halaman tidak punya "jalan rahasia" yang bisa berbeda dari
+   jalur sungguhan.
+
+   Dua rasa:
+     · 'sehat'  — sisa tetap besarnya (semua uji seharusnya hijau)
+     · 'sakit'  — sisa membesar mengikuti x1 (corong merah, Glejser menolak)
+
+   ⚠️ KENAPA 'sakit' PAKAI exp() DAN BUKAN derau linear (terukur 20Sep26):
+   Glejser menguji |sisa| lawan X SECARA LINEAR. Derau yang membesar linear
+   (mis. 1+3|x1|) justru TIDAK tertangkap (p=0,31 — malah dianggap aman).
+   Yang tertangkap adalah derau yang membesar mengikuti pangkat/eksponensial:
+   exp(1,1·x1) → p≈0,000. Tombol "bermasalah" WAJIB memakai bentuk yang
+   memang terdeteksi, kalau tidak tombolnya berbohong.
+
+   ⚠️ Derau dihitung dari sin(i) — BUKAN Math.random(). Alasannya: hasilnya
+   harus SAMA tiap kali diklik, supaya mahasiswa bisa membandingkan "sehat"
+   dan "bermasalah" tanpa variasi acak yang membingungkan. */
+function buatContohData(rasa) {
+  const n = 120;
+  const baris = ['X1,X2,Y'];
+  for (let i = 0; i < n; i++) {
+    const x1 = (Math.sin(i * 1.7) + Math.cos(i * 0.9)) * 0.85;
+    const x2 = (Math.cos(i * 1.3) + Math.sin(i * 2.1)) * 0.85;
+    const dasar = 0.45 * x1 + 0.30 * x2;
+    /* Derau deterministik — SATU gelombang TIDAK cukup (terukur 20Sep26:
+       `sin(i*5.7)` saja membuat Shapiro p=0,0000 → contoh "sehat" justru
+       GAGAL normalitas, tombolnya berbohong). Enam gelombang beda frekuensi
+       dijumlahkan → distribusinya mendekati normal (mirip teorema limit
+       pusat), tapi hasilnya TETAP sama tiap klik.
+       Terukur: SW p=0,6091 · Glejser p=0,438 · linearitas lolos. */
+    const derau = (Math.sin(i * 3.7) + Math.sin(i * 5.13) + Math.sin(i * 7.91)
+                 + Math.sin(i * 11.31) + Math.sin(i * 13.77) + Math.sin(i * 17.13)) / 1.9;
+    const sisa = (rasa === 'sakit')
+      ? derau * Math.exp(1.1 * x1)   /* membesar → corong (p=0,0000) */
+      : derau;                       /* tetap    → rata   (p=0,438)  */
+    baris.push([x1.toFixed(4), x2.toFixed(4), (dasar + sisa).toFixed(4)].join(','));
+  }
+  return baris.join('\n');
+}
+
+async function pakaiContoh(rasa) {
+  pesan('pesan-unggah', rasa === 'sakit'
+    ? 'Menyiapkan contoh data yang bermasalah…'
+    : 'Menyiapkan contoh data yang sehat…');
+  try {
+    const csv = buatContohData(rasa);
+    const nama = (rasa === 'sakit' ? 'contoh_bermasalah' : 'contoh_sehat') + '.csv';
+    const fd = new FormData();
+    fd.append('berkas', new Blob([csv], { type: 'text/csv' }), nama);
+    const r = await fetch('/api/diagnosis/unggah', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) {
+      pesan('pesan-unggah', d.detail || 'Contohnya belum bisa dimuat.', 'galat');
+      return;
+    }
+    /* Jalur penyiapan kolom — SAMA PERSIS seperti setelah unggah berkas
+       sungguhan (baca fungsi unggah di atas), supaya tidak ada dua jalan
+       berbeda yang bisa saling menyimpang. */
+    KUNCI = d.kunci;
+    KOLOM = d.kolom;
+    document.getElementById('pesan-unggah').innerHTML = '';
+    document.getElementById('nama-berkas').textContent = nama + ' — data contoh';
+    document.getElementById('ukuran-berkas').textContent = '  ·  dibuat otomatis';
+    document.getElementById('bentuk-berkas').textContent =
+      d.n_baris + ' responden  ·  ' + d.n_kolom + ' kolom';
+    document.getElementById('ringkas-berkas').hidden = false;
+    document.getElementById('kartu-kolom').hidden = false;
+    document.getElementById('daftar-konstruk').innerHTML = '';
+    if (ALAT === 'pls') { tambahKonstruk(); tambahKonstruk(); }
+    // Peran kolom (mode SPSS) — semua kolom ditampilkan, klik-klik saja
+    PERAN = {}; PERAN_DIPAKAI = peranBawaan();
+    bangunDaftarPeran(); segarkanPeran();
+    document.getElementById('kartu-hasil').hidden = true;
+
+    /* Susun perannya otomatis: kolom X* → X1, kolom Y* → Y1, sisanya
+       prediktor kedua — supaya mahasiswa tinggal tekan "Periksa sekarang". */
+    if (ALAT === 'spss') {
+      const nama2 = namaKolom();
+      nama2.forEach((nm, i) => {
+        if (/^Y/i.test(nm)) PERAN[nm] = 'Y1';
+        else if (/^M/i.test(nm)) PERAN[nm] = 'M1';
+        else if (i === 0) PERAN[nm] = 'X1';
+        else if (i === 1) PERAN[nm] = 'X2';
+        else PERAN[nm] = 'X1';
+      });
+      if (!nama2.some(nm => /^Y/i.test(nm)) && nama2.length) {
+        PERAN[nama2[nama2.length - 1]] = 'Y1';
+      }
+      PERAN_DIPAKAI = Array.from(new Set(
+        PERAN_DIPAKAI.concat(Object.values(PERAN).filter(Boolean)))).sort();
+      bangunDaftarPeran(); segarkanPeran();
+    }
+
+    const cat = document.getElementById('catatan-contoh');
+    if (cat) {
+      cat.hidden = false;
+      cat.innerHTML = (rasa === 'sakit'
+        ? '<strong>Ini contoh data yang SENGAJA bermasalah.<\/strong> Perhatikan ' +
+          'grafik heteroskedastisitas: titiknya melebar ke kanan seperti corong. ' +
+          'Di grafik normalitas, titiknya membelok menjauh dari garis. ' +
+          'Datamu sendiri nanti bisa berbeda — inilah gunanya memeriksa.'
+        : '<strong>Ini contoh data yang sehat.<\/strong> Semua syaratnya ' +
+          'terpenuhi, jadi semua tanda berwarna hijau. Coba juga tombol ' +
+          '"Lihat contoh data bermasalah" supaya kelihatan bedanya.');
+    }
+    pesan('pesan-unggah',
+          'Contoh sudah siap. Tekan "Periksa sekarang" di bawah ya.', 'sukses');
+    document.getElementById('kartu-kolom').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    pesan('pesan-unggah', 'Koneksi ke server terputus. Coba lagi ya.', 'galat');
+  }
+}
+</script>
+{% endblock %}

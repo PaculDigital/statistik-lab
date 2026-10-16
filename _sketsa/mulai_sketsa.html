@@ -1,0 +1,150 @@
+{% extends 'dasar.html' %}
+{#
+  HALAMAN PILIH JENIS PENELITIAN + DETEKSI JUDUL (ACC Bos 18Sep26)
+  ────────────────────────────────────────────────────────────────────────
+  MENGAPA HALAMAN INI ADA (akar, bukan tambalan):
+  /buat-data dulu langsung meminta angka β. Bagi orang awam itu seperti
+  mengisi formulir pajak — dia belum tahu mau model apa, tapi sudah diminta
+  mengisi koefisien. Hasilnya: bingung, dan mesin yang sebenarnya banyak
+  terasa menakutkan.
+  Solusinya: pilih JENIS dulu (dua pintu), baru pilih MODEL (kartu
+  bergambar berbahasa tujuan), baru masuk pengisian angka.
+
+  ⚠️ KEPUTUSAN BOS 18Sep26 — kotak judul ditaruh DI SINI (pilihan B),
+  bukan di /kuantitatif.
+
+  ⚠️ HYBRID 3 LAPIS (ACC Bos 18Sep26) — TAPI MAKSIMAL 2 PERTANYAAN:
+    Lapis 1: kata kunci (Rp 0, instan)  → terukur 40/42 benar, 0 salah
+    Lapis 2: AI 9router                 → hanya kalau Lapis 1 ragu
+    Lapis 3: kartu manual               → penutup, aplikasi TIDAK PERNAH buntu
+  Alasan maksimal 2 tanya (kata Bos): "hemat token dan user tidak
+  bertambah bingung". Jadi: 1 tanya = jenis penelitian, 1 tanya = pilihan
+  model. TIDAK ADA tanya berantai.
+
+  ⚠️ CATATAN JUJUR: kotak ini BELUM aktif. Tampilannya sudah jadi supaya
+  Bos punya gambaran FE (pola yang sama dengan pintu Kualitatif), tapi
+  mesin deteksi belum disambung ke sini.
+#}
+
+{% block isi %}
+
+<span class="eyebrow">{{ ikon('play-circle', 13) }} Mulai</span>
+<h1 style="margin:8px 0 10px">Mau meneliti apa?</h1>
+<p class="besar" style="max-width:720px;margin-bottom:22px">
+  Pilih jenis penelitianmu dulu. Dari sini jalurnya bercabang — kamu tidak
+  akan disuguhi hal-hal yang belum kamu butuhkan.
+</p>
+
+{# ── KOTAK DETEKSI JUDUL (Lapis 1) ────────────────────────────────────── #}
+<div class="kartu kotak-judul" style="margin:0 0 26px">
+  <div class="kepala-judul">
+    <div>
+      <span class="eyebrow teal">{{ ikon('search', 13) }} Cara cepat</span>
+      <h3 style="margin:7px 0 5px;font-size:17px">
+        Punya judul penelitian? Tempel di sini
+      </h3>
+      <p class="samar" style="font-size:13px;margin:0">
+        Wulan bacakan judulmu, lalu usulkan model penelitian yang paling
+        cocok — lengkap dengan alasannya.
+      </p>
+    </div>
+    <span class="pita pita-abu2">{{ ikon('clock', 11) }} segera aktif</span>
+  </div>
+
+  <div class="baris-judul">
+    <input type="text" id="judul" class="isian-judul"
+           placeholder="Contoh: Pengaruh Harga dan Promosi terhadap Keputusan Pembelian"
+           disabled>
+    <button class="tb tb-utama" disabled>
+      {{ ikon('sparkles', 15) }} Cek rekomendasi
+    </button>
+  </div>
+
+  <p class="samar" style="font-size:12.5px;margin:11px 0 0">
+    Belum punya judul? Tidak masalah —
+    <a href="#pilih-jenis" style="color:var(--teal);font-weight:600">pilih
+    jenis penelitian di bawah</a> saja.
+  </p>
+
+  {# contoh hasil rekomendasi — supaya Bos & user lihat bentuk outputnya #}
+  <div class="contoh-rekomendasi">
+    <span class="eyebrow amber" style="font-size:11px">
+      {{ ikon('lightbulb', 12) }} Bentuk hasilnya nanti
+    </span>
+    <div class="rekomendasi-isi">
+      <p class="rekomendasi-judul">
+        “Pengaruh Harga dan Promosi terhadap Keputusan Pembelian”
+      </p>
+      <p class="rekomendasi-model">
+        Sepertinya <strong>Regresi Linear Berganda</strong>
+      </p>
+      <p class="rekomendasi-alasan">
+        Alasannya: judulmu menyebut <strong>dua hal yang diuji bersama-sama</strong>
+        (Harga dan Promosi) ke satu tujuan (Keputusan Pembelian).
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <span class="tb-kecil tb-kecil-utama">Ya, pakai ini</span>
+        <span class="tb-kecil">Pilih model lain</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── DUA PINTU ────────────────────────────────────────────────────────── #}
+<div id="pilih-jenis" class="grid-jenis">
+
+  <a href="/kuantitatif" class="pintu pintu-kuant">
+    <span class="pintu-ikon">{{ ikon('bar-chart-3', 26) }}</span>
+    <h3>Kuantitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>angka</strong> — kuesioner, skor 1–5,
+      diolah dengan SPSS atau SmartPLS.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>mengukur seberapa besar</strong> pengaruh
+      sesuatu terhadap hal lain.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: pengaruh harga &amp; promosi → keputusan pembelian
+    </span>
+    <span class="pintu-aksi">
+      Pilih model penelitian {{ ikon('arrow-right', 14) }}
+    </span>
+  </a>
+
+  <a href="/segera/kualitatif" class="pintu pintu-kual">
+    <span class="pintu-lencana">
+      <span class="pita pita-abu2">{{ ikon('clock', 11) }} belum siap</span>
+    </span>
+    <span class="pintu-ikon">{{ ikon('message-square', 26) }}</span>
+    <h3>Kualitatif</h3>
+    <p class="pintu-tanya">
+      Penelitian pakai <strong>kata &amp; cerita</strong> — wawancara,
+      observasi, tanpa angka.
+    </p>
+    <p class="pintu-tanya" style="font-size:13px">
+      Cocok kalau kamu mau <strong>memahami alasan</strong> di balik
+      sesuatu — kenapa, bagaimana.
+    </p>
+    <span class="pintu-contoh">
+      Contoh: kenapa pelanggan tetap setia walau harganya naik
+    </span>
+    <span class="pintu-aksi">
+      Lihat rencananya {{ ikon('arrow-right', 14) }}
+    </span>
+  </a>
+
+</div>
+
+{# ── PENJELASAN ALUR ──────────────────────────────────────────────────── #}
+<div class="kartu" style="margin-top:24px">
+  <span class="eyebrow">{{ ikon('lightbulb', 13) }} Kenapa ditanyakan dulu?</span>
+  <p style="color:var(--tinta-2);font-size:13.5px;line-height:1.78;margin:9px 0 0">
+    Karena tiap jenis penelitian <strong>jalurnya berbeda</strong>. Setelah
+    kamu pilih, Wulan hanya menampilkan hal-hal yang kamu perlukan — jadi
+    kamu tidak tersesat di antara puluhan istilah statistik yang belum
+    kamu butuhkan. Pilihan bisa diganti kapan saja.
+  </p>
+</div>
+
+{% endblock %}

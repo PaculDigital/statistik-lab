@@ -1,0 +1,101 @@
+{
+  "catatan": "Galeri contoh model. Dipakai halaman kanvas: user ketuk contoh, kanvas terisi. SEMUA contoh di sini HARUS bisa dibangun mesin (app/hitung/spek_pembangun.py + kalibrasi_jalur.py).",
+  "contoh": [
+    {
+      "nama": "Regresi Sederhana",
+      "ringkas": "1 penyebab → 1 akibat",
+      "simpul": [
+        {"kode": "X1", "nama": "Motivasi", "jenis": "x", "x": 0.12, "y": 0.50},
+        {"kode": "Y", "nama": "Kinerja", "jenis": "y", "x": 0.72, "y": 0.50}
+      ],
+      "panah": [
+        {"dari": "X1", "ke": "Y", "jenis": "h", "beta": 0.35, "hipotesis": 1}
+      ]
+    },
+    {
+      "nama": "Mediasi",
+      "ringkas": "X → M → Y (perantara)",
+      "simpul": [
+        {"kode": "X1", "nama": "Gaya Kepemimpinan", "jenis": "x", "x": 0.10, "y": 0.50},
+        {"kode": "M1", "nama": "Kepuasan Kerja", "jenis": "m", "x": 0.41, "y": 0.50},
+        {"kode": "Y", "nama": "Kinerja", "jenis": "y", "x": 0.72, "y": 0.50}
+      ],
+      "panah": [
+        {"dari": "X1", "ke": "M1", "jenis": "h", "beta": 0.45, "hipotesis": 1},
+        {"dari": "M1", "ke": "Y", "jenis": "h", "beta": 0.40, "hipotesis": 2},
+        {"dari": "X1", "ke": "Y", "jenis": "h", "beta": 0.15, "hipotesis": 3}
+      ]
+    },
+    {
+      "nama": "Moderasi",
+      "ringkas": "Z memperkuat/melemahkan jalur X → Y",
+      "simpul": [
+        {"kode": "X1", "nama": "Beban Kerja", "jenis": "x", "x": 0.10, "y": 0.50},
+        {"kode": "Z1", "nama": "Dukungan Sosial", "jenis": "z", "x": 0.41, "y": 0.16},
+        {"kode": "Y", "nama": "Stres", "jenis": "y", "x": 0.72, "y": 0.50}
+      ],
+      "panah": [
+        {"dari": "X1", "ke": "Y", "jenis": "h", "beta": 0.38, "hipotesis": 1},
+        {"dari": "Z1", "ke": "Y", "jenis": "h", "beta": 0.20, "hipotesis": 2},
+        {"dari": "Z1", "ke": "X1:X1:Y", "jenis": "mod", "beta": 0.18, "hipotesis": 3,
+         "menempel_ke": "X1->Y"}
+      ]
+    },
+    {
+      "nama": "Mediasi Paralel",
+      "ringkas": "2 perantara bersamaan",
+      "simpul": [
+        {"kode": "X1", "nama": "Kepemimpinan", "jenis": "x", "x": 0.10, "y": 0.50},
+        {"kode": "M1", "nama": "Kepuasan", "jenis": "m", "x": 0.41, "y": 0.28},
+        {"kode": "M2", "nama": "Komitmen", "jenis": "m", "x": 0.41, "y": 0.72},
+        {"kode": "Y", "nama": "Kinerja", "jenis": "y", "x": 0.72, "y": 0.50}
+      ],
+      "panah": [
+        {"dari": "X1", "ke": "M1", "jenis": "h", "beta": 0.45, "hipotesis": 1},
+        {"dari": "X1", "ke": "M2", "jenis": "h", "beta": 0.40, "hipotesis": 2},
+        {"dari": "M1", "ke": "Y", "jenis": "h", "beta": 0.30, "hipotesis": 3},
+        {"dari": "M2", "ke": "Y", "jenis": "h", "beta": 0.28, "hipotesis": 4}
+      ]
+    },
+    {
+      "nama": "Goal-Directed — model Bos",
+      "ringkas": "9 konstruk · 12 hipotesis · 1 jalur NH · 2 keluaran",
+      "sumber": "Gambar model Bos (17 Sep 2026). Sudah terbukti bisa dibangun mesin (uji MODEL JURNAL BOS 13 LULUS).",
+      "simpul": [
+        {"kode": "X1", "nama": "Self-efficacy", "jenis": "x", "x": 0.06, "y": 0.50},
+
+        {"kode": "M1", "nama": "Mastery Goals", "jenis": "m", "x": 0.30, "y": 0.16},
+        {"kode": "M2", "nama": "Performance-Approach Goals", "jenis": "m", "x": 0.30, "y": 0.50},
+        {"kode": "M3", "nama": "Performance Avoidance Goals", "jenis": "m", "x": 0.30, "y": 0.84},
+
+        {"kode": "M4", "nama": "Positive Affect", "jenis": "m", "x": 0.55, "y": 0.30},
+        {"kode": "M5", "nama": "Decision Confidence", "jenis": "m", "x": 0.55, "y": 0.70},
+
+        {"kode": "M6", "nama": "Decision Satisfaction", "jenis": "m", "x": 0.78, "y": 0.50},
+
+        {"kode": "Y1", "nama": "Attitudinal Loyalty Intention", "jenis": "y", "x": 0.97, "y": 0.30},
+        {"kode": "Y2", "nama": "Switching Likelihood", "jenis": "y", "x": 0.97, "y": 0.70}
+      ],
+      "panah": [
+        {"dari": "X1", "ke": "M1", "jenis": "h", "beta": 0.40, "hipotesis": 1},
+        {"dari": "X1", "ke": "M2", "jenis": "h", "beta": 0.35, "hipotesis": 2},
+        {"dari": "X1", "ke": "M3", "jenis": "nh", "beta": 0.28, "hipotesis": null,
+         "catatan": "NH — tidak dihipotesiskan, panah putus-putus"},
+
+        {"dari": "M1", "ke": "M4", "jenis": "h", "beta": 0.30, "hipotesis": 3},
+        {"dari": "M2", "ke": "M4", "jenis": "h", "beta": 0.33, "hipotesis": 4},
+        {"dari": "M3", "ke": "M4", "jenis": "h", "beta": -0.22, "hipotesis": 5},
+
+        {"dari": "M1", "ke": "M5", "jenis": "h", "beta": 0.26, "hipotesis": 6},
+        {"dari": "M2", "ke": "M5", "jenis": "h", "beta": 0.31, "hipotesis": 7},
+        {"dari": "M3", "ke": "M5", "jenis": "h", "beta": -0.24, "hipotesis": 8},
+
+        {"dari": "M4", "ke": "M6", "jenis": "h", "beta": 0.36, "hipotesis": 9},
+        {"dari": "M5", "ke": "M6", "jenis": "h", "beta": 0.34, "hipotesis": 10},
+
+        {"dari": "M6", "ke": "Y1", "jenis": "h", "beta": 0.44, "hipotesis": 11},
+        {"dari": "M6", "ke": "Y2", "jenis": "h", "beta": -0.29, "hipotesis": 12}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KOTAK DETEKSI JUDUL di /mulai (ACC Bos 18Sep26, pilihan B)
+   ══════════════════════════════════════════════════════════════════════════
+   MENGAPA ADA: orang awam bingung kalau langsung disuguhi pilihan model.
+   Dengan menempelkan judul, dia dapat usulan model + ALASANNYA — jadi
+   tidak perlu tahu istilah "mediasi"/"moderasi" lebih dulu.
+
+   ⚠️ WAJIB: cegah ISI (input/kotak) meluber keluar kartu. Terukur 18Sep26:
+   tanpa ini tabel/input mendorong kolom BESAR & PERANNYA rusak.
+   Karena itu baris pakai minmax(0, 1fr) dan input pakai min-width:0.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.kotak-judul { border-left: 3px solid var(--teal); }
+
+.kepala-judul {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 12px; margin-bottom: 15px;
+}
+
+.baris-judul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px; align-items: stretch;
+}
+@media (max-width: 620px) {
+  .baris-judul { grid-template-columns: minmax(0, 1fr); }
+}
+
+.isian-judul {
+  min-width: 0; width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--garis);
+  border-radius: var(--r-s);
+  background: var(--kertas);
+  font-family: inherit; font-size: 14px; color: var(--tinta);
+}
+.isian-judul:disabled { background: var(--kertas-3); cursor: not-allowed; }
+.isian-judul::placeholder { color: var(--tinta-3); }
+
+/* contoh bentuk hasil rekomendasi */
+.contoh-rekomendasi {
+  margin-top: 18px; padding: 15px 16px;
+  background: var(--kertas);
+  border: 1px dashed var(--garis);
+  border-radius: var(--r-s);
+}
+.rekomendasi-isi { margin-top: 10px; }
+.rekomendasi-judul {
+  font-size: 13px; color: var(--tinta-3); font-style: italic;
+  margin: 0 0 9px;
+}
+.rekomendasi-model {
+  font-size: 16px; font-weight: 650; margin: 0 0 8px; color: var(--tinta);
+}
+.rekomendasi-alasan {
+  font-size: 13px; color: var(--tinta-2); line-height: 1.72; margin: 0;
+}
+
+/* tombol kecil (tampilan saja, belum aktif) */
+.tb-kecil {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 15px; border-radius: 20px;
+  border: 1.5px solid var(--garis);
+  font-size: 12.5px; font-weight: 600; color: var(--tinta-2);
+  background: var(--kertas-2);
+}
+.tb-kecil-utama {
+  background: var(--teal); border-color: var(--teal); color: #fff;
+}
+
+.eyebrow.teal { color: var(--teal); }

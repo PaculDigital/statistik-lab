@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ judul }} — Penelitian STATISTIK Lab.</title>
+{#
+  ⚠️ CAP VERSI PADA CSS (akar, 18Sep26) — JANGAN DIHAPUS.
+  MASALAH YANG DITUTUP: CSS disajikan dengan `cache-control: max-age=14400`
+  (4 JAM). Terukur 18Sep26: sesudah Wulan menambah 300 baris CSS baru,
+  domain PUBLIK masih menyajikan CSS LAMA (0 baris baru) sementara container
+  sudah benar (21 baris baru). Akibatnya halaman tampak RUSAK — elips jadi
+  hitam pekat, kartu tanpa bingkai — dan perbaikan tidak terlihat sampai
+  4 jam. Vision menemukannya; pengukuran CSS yang membuktikan akarnya.
+  SOLUSI: tempel cap versi di URL (gaya.css?v=<versi>) supaya setiap kali
+  versi naik, browser & Cloudflare menganggapnya berkas BARU. Ini obat
+  akar — bukan menunggu cache kedaluwarsa sendiri.
+#}
+<link rel="stylesheet" href="/static/gaya.css?v={{ versi_aset }}">
+{# ⚠️ DATA KARTU UJI t — DI DALAM <head>, BUKAN sebelum </body> (18Sep26).
+
+   MASALAHNYA (terukur, bukan dugaan): saat tag ini ditaruh SEBELUM </body>,
+   posisinya menjadi SETELAH {% block skrip %} — padahal skrip halaman BELAJAR
+   memanggil ujitLot() di baris 1140, sedangkan data (UJI_T) baru dimuat di
+   baris 1145. Akibatnya `UJI_T` BELUM ADA saat dipakai →
+   `ReferenceError: Cannot access 'ujitAktif' before initialization`
+   → seluruh skrip halaman berhenti → 0 kotak tampil, padahal halaman
+   HTTP 200 dan tampak "hidup".
+
+   Ini kelas kesalahan yang sama seperti catatan lama: URUTAN PEMUATAN
+   menentukan, dan cacatnya TIDAK terlihat dari tampilan.
+   Ditaruh di <head> → ikut ter-download paralel saat <head> dirender,
+   sedangkan skrip halaman baru dieksekusi di akhir <body>. Skrip tetap
+   berjalan SETELAH data tersedia. #}
+<script src="/static/kartu_uji_t.js?v={{ versi_aset }}"></script>
+{# ── GRAFIK HIDUP (Tahap 2, ACC Bos 20Sep26) ─────────────────────────────
+   Fungsi gambar grafik dari DATA YANG DIUNGGAH (svgHetero, svgPP,
+   svgHistogram, svgLinear, kotakGrafik, catatanTitik).
+
+   ⚠️ TARUH DI SINI (<head>), JANGAN sebelum </body> — alasan SAMA seperti
+   kartu_uji_t.js di atas: skrip yang di <head> dimuat LEBIH DULU, sehingga
+   halaman (yang memanggil fungsinya di dalam {% block skrip %}) sudah
+   mengenal fungsinya. Kalau ditaruh sebelum </body>, ia jatuh SETELAH
+   blok skrip → fungsi belum ada → halaman MATI SENYAP. #}
+<script src="/static/grafik_hidup.js?v={{ versi_aset }}"></script>
+</head>
+<body>
+{{ ikon_sprite() }}
+
+<header class="puncak">
+  <div class="bungkus puncak-isi">
+    <a href="/" class="merek">
+      <span class="lambang">{{ ikon('activity', 19) }}</span>
+      <span>Penelitian STATISTIK Lab.</span>
+    </a>
+    <nav class="utama">
+      <div class="nav-gulir">
+      {% for m in modul %}
+      <a href="{{ '/segera/' + m.slug if not m.siap else '/' + m.slug }}"
+         class="{{ 'aktif' if aktif == m.slug else '' }}">
+        {{ ikon(m.ikon, 15) }}<span class="teks-nav">{{ m.nama }}</span>
+      </a>
+      {% endfor %}
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="bungkus" style="padding-top:32px;padding-bottom:44px">
+{% block isi %}{% endblock %}
+</main>
+
+<footer class="kaki">
+  <div class="bungkus kaki-isi">
+    <span>Penelitian STATISTIK Lab. — media belajar statistik penelitian.</span>
+    <span class="baris">
+      <span class="pita {{ 'pita-hijau' if ai else 'pita-abu' }}">
+        {{ ikon('sparkles', 12) }} AI {{ 'AKTIF' if ai else 'MATI' }}
+      </span>
+    </span>
+  </div>
+</footer>
+
+<script>
+/* aman() — WAJIB untuk setiap teks dinamis; JANGAN tempel ke innerHTML langsung */
+function aman(s) {
+  const d = document.createElement('div');
+  d.textContent = (s === null || s === undefined) ? '' : String(s);
+  return d.innerHTML;
+}
+function ikonKecil(nama, ukuran) {
+  ukuran = ukuran || 15;
+  if (!/^[a-z0-9-]{1,40}$/.test(nama)) return '';
+  return '<svg class="ik" width="' + ukuran + '" height="' + ukuran +
+         '" aria-hidden="true"><use href="#ik-' + nama + '"><\/use><\/svg>';
+}
+/* saklar AI */
+async function alihkanAI(el) {
+  const aktif = !el.classList.contains('nyala');
+  try {
+    const r = await fetch('/api/ai', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({aktif: aktif})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    el.classList.toggle('nyala', d.ai_aktif);
+    el.querySelector('.saklar-teks').textContent = d.ai_aktif ? 'AI ON' : 'AI OFF';
+  } catch (e) {
+    console.error('alihkanAI gagal:', JSON.stringify(e));
+    alert('Tidak bisa mengubah setelan AI. Coba lagi.');
+  }
+}
+</script>
+{% block skrip %}{% endblock %}
+</body>
+</html>

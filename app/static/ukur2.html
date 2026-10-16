@@ -1,0 +1,18 @@
+<!DOCTYPE html><meta charset="utf-8"><title>belum</title>
+<iframe id="f" style="width:375px;height:2000px;border:0"></iframe>
+<script>
+const f = document.getElementById('f');
+f.src = new URLSearchParams(location.search).get('p') || '/';
+f.onload = () => setTimeout(() => {
+  const d = f.contentDocument, win = f.contentWindow, out = [];
+  d.querySelectorAll('p,span,div,td,th,li,label,small,strong,em').forEach(el => {
+    if (!el.textContent.trim()) return;
+    if (el.children.length && el.childNodes.length === 1) return;
+    const px = parseFloat(win.getComputedStyle(el).fontSize);
+    if (px && px < 12.9) out.push(el.tagName.toLowerCase() + '.' +
+      (el.className||'').toString().slice(0,22) + ' ' + Math.round(px) + 'px :: ' +
+      el.textContent.trim().slice(0,34));
+  });
+  document.title = 'JML=' + out.length + ' || ' + out.slice(0,12).join(' ~~ ');
+}, 1800);
+</script>
