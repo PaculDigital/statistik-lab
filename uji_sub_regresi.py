@@ -86,7 +86,11 @@ def main() -> int:
            '});})()')
     d = json.loads(nilai(t.kirim('Runtime.evaluate', {'expression': js1, 'returnByValue': True})))
 
-    catat(d['jml'] == 4, f"4 kartu INDUK aktif (dapat {d['jml']}, total DOM {d.get('jmlSemua')})")
+    # ⚠️ KOREKSI UJI 19Okt26 (Wulan): kartu INDUK aktif sekarang 5, bukan 4.
+    # Sejak kartu 'Campuran' (/buat-data?model=gabungan) ditambahkan, jumlahnya
+    # bertambah satu. Jadi hitung kartu aktif = BUKAN .kartu-kunci.
+    # Asersi tetap bermakna: kalau ada kartu hilang/duplikat, uji tetap gagal.
+    catat(d['jml'] == 5, f"5 kartu INDUK aktif (dapat {d['jml']}, total DOM {d.get('jmlSemua')})")
     catat('Regresi' in d['judul'], f"kartu 'Regresi' ada → {d['judul']}")
     catat(d['subAda'], 'panel #sub-regresi ADA di halaman')
     catat(d['subTersembunyi'] is True, f"sub-pilihan TERSEMBUNYI dulu (hidden={d['subTersembunyi']})")

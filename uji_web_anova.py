@@ -205,9 +205,14 @@ def main() -> int:
             cek('render hasil tanpa galat JS', True)
             cek('tabel ANOVA TAMPIL di halaman', render.get('adaTabelAnova') is True,
                 str(render.get('potongan', ''))[:150])
+            # ⚠️ Header dibandingkan TANPA beda huruf besar/kecil.
+            #    Tabel di-render dengan CSS text-transform:uppercase, jadi DOM
+            #    mengembalikan 'SUMBER'/'DF'/'P', bukan 'Sumber'/'df'/'p'.
+            #    Asersi lama case-sensitive → gagal palsu di master 20757a2 juga.
+            #    (Wulan, 19Okt26)
+            _hdr = [str(h).strip().lower() for h in (render.get('headerAnova') or [])]
             cek('header ANOVA = Sumber · SS · df · MS · F · p',
-                all(h in (render.get('headerAnova') or [])
-                    for h in ['Sumber', 'SS', 'df', 'MS', 'F', 'p']),
+                all(h in _hdr for h in ['sumber', 'ss', 'df', 'ms', 'f', 'p']),
                 str(render.get('headerAnova')))
             cek('tabel ANOVA 3 baris', render.get('barisAnova') == 3,
                 str(render.get('barisAnova')))

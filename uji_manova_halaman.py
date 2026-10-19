@@ -116,11 +116,24 @@ def main() -> int:
         catat(panel is True, 'panel MANOVA MUNCUL (pintu ?model=banding-kelompok)')
 
         # ── [2] form regresi DISEMBUNYIKAN (jangan dua form tampil bareng) ──
-        tersembunyi = js("(() => { const q = document.querySelector("
-                         "'.pilih-kisi');"
-                         " return q ? q.classList.contains('sembunyi') : false;"
-                         " })()")
-        catat(tersembunyi is True, 'form Regresi disembunyikan saat MANOVA')
+        # ⚠️ KOREKSI UJI 19Okt26 (Wulan): JANGAN pakai selector '.pilih-kisi'.
+        #    Kelas itu dipakai BANYAK elemen (form regresi, form MANOVA sendiri,
+        #    kisi pilihan lain) → querySelector bisa mengenai elemen yang salah
+        #    (kelas bug yang sama dengan yang diperbaiki di buat_data.html).
+        #    TerapkanPanelJalur() untuk 'banding-kelompok' menyembunyikan 7 ID
+        #    spesifik: kartu-setelan, medan-x, blok-cara, kartu-beta,
+        #    catatan-kelayakan, baris-buat, hasil. Uji harus memeriksa ITU.
+        PANEL_REG = ['kartu-setelan', 'medan-x', 'blok-cara', 'kartu-beta',
+                     'catatan-kelayakan', 'baris-buat']
+        _js_cek = ("(() => { const ids = " + json.dumps(PANEL_REG) + ";"
+                   " const r = {}; ids.forEach(i => { const q = el(i);"
+                   " r[i] = q ? q.classList.contains('sembunyi') : null; });"
+                   " return JSON.stringify(r); })()")
+        _st = json.loads(js(_js_cek) or '{}')
+        _semua_sembunyi = bool(_st) and all(v is True for v in _st.values())
+        catat(_semua_sembunyi,
+              'form Regresi disembunyikan saat MANOVA',
+              json.dumps(_st))
 
         # ── [3] rentang beda ditulis dari SATU SUMBER (window, bukan HTML) ─
         rentang = js("(() => { const r = el('mn-rentang');"
