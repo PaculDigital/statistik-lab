@@ -80,11 +80,11 @@
         lalu tekan tombolnya.
       </p>
       <div class="medan"><label>Judul penelitian</label>
-        <input type="text" id="tp-judul" style="width:100%" value="Pengaruh Review TikTok terhadap Keputusan Pembelian Skintific"></div>
+        <input type="text" id="tp-judul" style="width:100%" value="Makna Ulasan TikTok dalam Keputusan Pembelian Skintific di Kalangan Mahasiswa"></div>
       <div class="medan"><label>Rumusan masalah <span class="petunjuk">satu kalimat pernyataan</span></label>
-        <input type="text" id="tp-rumusan" style="width:100%" value="Bagaimana review TikTok memengaruhi keputusan pembelian Skintific di kalangan mahasiswa?"></div>
-      <div class="medan"><label>Indikator yang mau digali <span class="petunjuk">pisahkan dengan koma</span></label>
-        <input type="text" id="tp-indikator" style="width:100%" value="sumber informasi, pertimbangan harga, kepercayaan pada review"></div>
+        <input type="text" id="tp-rumusan" style="width:100%" value="Bagaimana mahasiswa memaknai ulasan TikTok ketika memutuskan membeli Skintific?"></div>
+      <div class="medan"><label>Fokus yang mau digali <span class="petunjuk">pisahkan dengan koma</span></label>
+        <input type="text" id="tp-indikator" style="width:100%" value="pengalaman mencari informasi, pertimbangan sebelum membeli, makna kepercayaan pada pengulas"></div>
       <div class="medan"><label>Jenis informan <span class="petunjuk">triangulasi sumber butuh keduanya</span></label>
         <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="internal" checked> Internal <span class="petunjuk">pelaku di dalam (pemilik, karyawan)</span></label><br>
         <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="eksternal" checked> Eksternal <span class="petunjuk">pelanggan, pemasok, pengamat luar</span></label></div>
@@ -198,9 +198,6 @@
       <div class="baris renggang" style="margin-top:12px">
         <button class="tb tb-sekunder" id="tafsir-ai">{{ ikon('sparkles', 15) }} Minta contoh tafsir dari AI</button>
         <button class="tb tb-utama" id="tafsir-unduh">{{ ikon('download', 15) }} Unduh untuk Bab 4 (.md)</button>
-        <button class="tb tb-sekunder" id="qdpx-unduh">{{ ikon('share-2', 15) }} Buka di NVivo / ATLAS.ti (.qdpx)</button>
-        <button class="tb tb-sekunder" id="qdc-unduh">{{ ikon('share-2', 15) }} Codebook saja (.qdc)</button>
-        <p class="samar" style="font-size:12.5px;margin-top:6px">Format <strong>REFI-QDA</strong> — standar resmi pertukaran data kualitatif. File .qdpx bisa dibuka langsung di NVivo, ATLAS.ti, atau MAXQDA untuk diuji/diolah lanjut.</p>
       </div>
       {# ⚠️ Wulan 19Okt26: tombol ekspor QDA TIDAK PERNAH ADA di HTML,
          padahal JS sudah punya listener #qdpx-unduh & #qdc-unduh.
@@ -384,7 +381,7 @@ async function saranAI(prompt, wadah, labelTombol) {
 }
 
 /* Konteks penelitian — WAJIB di tiap prompt AI (anti-halusinasi, 19Okt26).
-   AI harus "membaca dulu" judul, rumusan, indikator sebelum mengusulkan. */
+   AI harus "membaca dulu" judul, rumusan, fokus penelitian sebelum mengusulkan. */
 function konteksPenelitian() {
   const j = (el('tp-judul') || {}).value || '';
   const r = (el('tp-rumusan') || {}).value || '';
@@ -393,7 +390,7 @@ function konteksPenelitian() {
   let k = 'KONTEKS PENELITIAN (jadikan acuan utama, jangan mengarang di luar ini):\n';
   if (j.trim()) k += '- Judul: ' + j.trim() + '\n';
   if (r.trim()) k += '- Rumusan masalah: ' + r.trim() + '\n';
-  if (ind.trim()) k += '- Indikator: ' + ind.trim() + '\n';
+  if (ind.trim()) k += '- Fokus penelitian: ' + ind.trim() + '\n';
   if (usaha.trim()) k += '- Objek/usaha: ' + usaha.trim() + '\n';
   return k;
 }
@@ -406,14 +403,14 @@ function panduanManual() {
     .map(s => s.trim()).filter(Boolean);
   if (!indikator.length) {
     el('tp-hasil').innerHTML = '<div class="catatan merah renggang">' +
-      'Isi dulu indikatornya (contoh: sumber informasi, harga, kepercayaan).<\/div>';
+      'Isi dulu fokusnya (contoh: pengalaman mencari info, pertimbangan harga).<\/div>';
     return;
   }
   let h = '<div class="kartu"><span class="eyebrow">' +
     ikonKecil('clipboard-list', 13) + ' Panduan wawancaramu<\/span>';
   h += '<p class="samar" style="font-size:13px">Judul: <strong>' + aman(judul) +
     '<\/strong><br>Rumusan: ' + aman(rumusan || '—') + '<\/p>';
-  h += '<p class="samar" style="font-size:12.5px">Pola tiap indikator: ' +
+  h += '<p class="samar" style="font-size:12.5px">Pola tiap fokus: ' +
     '1 pertanyaan pembuka (ceritakan pengalaman) + 3 probing (gali lebih dalam). ' +
     'Ubah kalimatnya sesuai gayamu — polanya yang penting.<\/p>';
   const jenisDipilih = [...document.querySelectorAll('.tp-jenis:checked')].map(q => q.value);
@@ -423,7 +420,7 @@ function panduanManual() {
   };
   indikator.forEach((ind, i) => {
     h += '<div style="margin:10px 0;padding:10px;border:1px dashed var(--garis);border-radius:8px">' +
-      '<strong>Indikator ' + (i + 1) + ': ' + aman(ind) + '<\/strong>';
+      '<strong>Fokus ' + (i + 1) + ': ' + aman(ind) + '<\/strong>';
     jenisDipilih.forEach(j => {
       const pj = polaJenis[j] || polaJenis.internal;
       h += '<div style="margin-top:8px"><span class="pita">' + aman(j) + '<\/span>' +
@@ -448,7 +445,7 @@ el('tp-manual').addEventListener('click', panduanManual);
 el('tp-ai').addEventListener('click', () => {
   const jenis = [...document.querySelectorAll('.tp-jenis:checked')].map(q => q.value);
   const p = konteksPenelitian() +
-    '\nBuatkan panduan wawancara semi-terstruktur. Untuk tiap indikator beri ' +
+    '\nBuatkan panduan wawancara semi-terstruktur. Untuk tiap fokus penelitian beri ' +
     '1 pertanyaan pembuka + 2 probing, plus contoh jawabannya. ' +
     'Bedakan untuk informan ' + (jenis.join(' dan ') || 'internal dan eksternal') +
     ': untuk INTERNAL (pelaku di dalam) gali pengalaman & proses; ' +
@@ -620,7 +617,7 @@ el('kj-ai').addEventListener('click', () => {
   }
   const p = konteksPenelitian() +
     '\nBerikan USULAN KODE (nama pendek, 2-4 kata) untuk tiap potongan berikut, ' +
-    'SESUAI indikator di konteks. ' +
+    'SESUAI fokus penelitian di konteks. ' +
     'Format: "Potongan N: kode". Jangan menjelaskan panjang-panjang.\n' +
     terkode.map((s, i) => 'Potongan ' + (i + 1) + ' (' + s.informan + '): ' +
       s.teks).join('\n');
