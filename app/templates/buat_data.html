@@ -50,7 +50,7 @@
 <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;align-items:start">
 
   <!-- ══ PANEL SETELAN ══ -->
-  <div class="kartu">
+  <div class="kartu" id="kartu-setelan">
     <span class="eyebrow">{{ ikon('sliders-horizontal', 13) }} Setelan</span>
 
     <div class="medan">
@@ -1295,12 +1295,237 @@ const JALUR_UI = {
       {key: 'y', label: 'Y — akibat', def: 'Keputusan Pembelian'},
     ],
   },
+  'mediasi-paralel': {
+    eyebrow: "Model Jalur · Mediasi Paralel", judul: "Mediasi Paralel",
+    ket: "X memengaruhi Y lewat DUA perantara sekaligus — M1 dan M2 berjalan berdampingan, bukan bertingkat.",
+    ikon: 'split',
+    saran: ["Harga", "Kepuasan", "Kepercayaan", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m1', label:"M1 — Perantara 1", def:"Kepuasan"},
+      {key:'m2', label:"M2 — Perantara 2", def:"Kepercayaan"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a1', judul:"Jalur a1 · X → M1", sub:"Seberapa kuat X mendorong M1", def:0.5},
+      {key:'a2', judul:"Jalur a2 · X → M2", sub:"Seberapa kuat X mendorong M2", def:0.45},
+      {key:'b1', judul:"Jalur b1 · M1 → Y", sub:"Seberapa kuat M1 mendorong Y", def:0.35},
+      {key:'b2', judul:"Jalur b2 · M2 → Y", sub:"Seberapa kuat M2 mendorong Y", def:0.3},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const t = (v.a1||0)*(v.b1||0) + (v.a2||0)*(v.b2||0);
+      return 'Perkiraan total tak langsung: a1×b1 + a2×b2 = ' +
+        fmtB(v.a1,2) + '×' + fmtB(v.b1,2) + ' + ' + fmtB(v.a2,2) + '×' + fmtB(v.b2,2) +
+        ' = <strong>' + fmtB(t,3) + '<\/strong>.'; },
+    render: 'umum'
+  },
+  'mediasi-berjenjang': {
+    eyebrow: "Model Jalur · Mediasi Berjenjang", judul: "Mediasi Berjenjang",
+    ket: "X → M1 → M2 → Y: perantara disusun bertingkat, pengaruh mengalir lewat rantai.",
+    ikon: 'network',
+    saran: ["Harga", "Kepuasan", "Loyalitas", "Beli Lagi"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m1', label:"M1 — Perantara 1", def:"Kepuasan"},
+      {key:'m2', label:"M2 — Perantara 2", def:"Loyalitas"},
+      {key:'y', label:"Y — Variabel terikat", def:"Beli Lagi"},
+    ],
+    paths: [
+      {key:'a1', judul:"Jalur a1 · X → M1", sub:"Seberapa kuat X mendorong M1", def:0.55},
+      {key:'d', judul:"Jalur d · M1 → M2", sub:"Seberapa kuat M1 mendorong M2", def:0.45},
+      {key:'b2', judul:"Jalur b2 · M2 → Y", sub:"Seberapa kuat M2 mendorong Y", def:0.4},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const t = (v.a1||0)*(v.d||0)*(v.b2||0);
+      return 'Perkiraan tak langsung rantai: a1×d×b2 = ' +
+        fmtB(v.a1,2) + '×' + fmtB(v.d,2) + '×' + fmtB(v.b2,2) +
+        ' = <strong>' + fmtB(t,3) + '<\/strong>.'; },
+    render: 'berjenjang'
+  },
+  'mediasi-campuran': {
+    eyebrow: "Model Jalur · Mediasi Campuran", judul: "Mediasi Campuran",
+    ket: "Kombinasi paralel + berjenjang: X→M1→Y, X→M2→Y, plus M1→M2.",
+    ikon: 'merge',
+    saran: ["Harga", "Kepuasan", "Kepercayaan", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m1', label:"M1 — Perantara 1", def:"Kepuasan"},
+      {key:'m2', label:"M2 — Perantara 2", def:"Kepercayaan"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a1', judul:"Jalur a1 · X → M1", sub:"Seberapa kuat X mendorong M1", def:0.5},
+      {key:'a2', judul:"Jalur a2 · X → M2", sub:"Seberapa kuat X mendorong M2", def:0.4},
+      {key:'d', judul:"Jalur d · M1 → M2", sub:"Seberapa kuat M1 mendorong M2", def:0.35},
+      {key:'b1', judul:"Jalur b1 · M1 → Y", sub:"Seberapa kuat M1 mendorong Y", def:0.3},
+      {key:'b2', judul:"Jalur b2 · M2 → Y", sub:"Seberapa kuat M2 mendorong Y", def:0.3},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const t1 = (v.a1||0)*(v.b1||0), t2 = (v.a2||0)*(v.b2||0),
+            t3 = (v.a1||0)*(v.d||0)*(v.b2||0);
+      return 'Tiga jalur tak langsung: via M1 = <strong>' + fmtB(t1,3) +
+        '<\/strong>, via M2 = <strong>' + fmtB(t2,3) +
+        '<\/strong>, via M1→M2 = <strong>' + fmtB(t3,3) + '<\/strong>.'; },
+    render: 'umum'
+  },
+  'moderasi-dual': {
+    eyebrow: "Model Jalur · Moderasi Dual", judul: "Moderasi Dual",
+    ket: "DUA penguat (Z1, Z2) — masing-masing bisa mengubah pengaruh X → Y.",
+    ikon: 'share-2',
+    saran: ["Harga", "Kualitas", "Promosi", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'z1', label:"Z1 — Penguat 1", def:"Kualitas"},
+      {key:'z2', label:"Z2 — Penguat 2", def:"Promosi"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'bx', judul:"Pengaruh X → Y", sub:"Pengaruh langsung X ke Y", def:0.35},
+      {key:'bz1', judul:"Pengaruh Z1 → Y", sub:"Pengaruh langsung Z1 ke Y", def:0.2},
+      {key:'bz2', judul:"Pengaruh Z2 → Y", sub:"Pengaruh langsung Z2 ke Y", def:0.2},
+      {key:'i1', judul:"Interaksi X×Z1 → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.22},
+      {key:'i2', judul:"Interaksi X×Z2 → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.2},
+    ],
+    info: function(v) {
+      const arah = q => q > 0.05 ? 'memperkuat' : q < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'X×Z1 (' + fmtB(v.i1,2) + ') → <strong>' + arah(v.i1||0) +
+        '<\/strong>; X×Z2 (' + fmtB(v.i2,2) + ') → <strong>' + arah(v.i2||0) + '<\/strong>.'; },
+    render: 'umum'
+  },
+  'moderasi-jalur-a': {
+    eyebrow: "Model Jalur · Moderasi Jalur-a", judul: "Moderasi Jalur-a",
+    ket: "Z memperkuat atau melemahkan jalur X → M (jalur pertama mediasi).",
+    ikon: 'trending-up',
+    saran: ["Harga", "Kepuasan", "Kualitas", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m', label:"M — Perantara", def:"Kepuasan"},
+      {key:'z', label:"Z — Penguat (moderator)", def:"Kualitas"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a', judul:"Jalur a · X → M", sub:"Seberapa kuat X mendorong M", def:0.5},
+      {key:'az', judul:"Z → M", sub:"Pengaruh langsung Z ke M", def:0.15},
+      {key:'ia', judul:"Interaksi X×Z → M (penguat jalur a)", sub:"Negatif = melemahkan, positif = memperkuat", def:0.3},
+      {key:'b', judul:"Jalur b · M → Y", sub:"Seberapa kuat M mendorong Y", def:0.4},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const ia = v.ia||0;
+      const arah = ia > 0.05 ? 'memperkuat' : ia < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'Interaksi X×Z → M = ' + fmtB(ia,2) + ' → Z <strong>' + arah +
+        '<\/strong> jalur X → M.'; },
+    render: 'umum'
+  },
+  'moderasi-jalur-b': {
+    eyebrow: "Model Jalur · Moderasi Jalur-b", judul: "Moderasi Jalur-b",
+    ket: "Z memperkuat atau melemahkan jalur M → Y (jalur kedua mediasi).",
+    ikon: 'trending-down',
+    saran: ["Harga", "Kepuasan", "Kualitas", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m', label:"M — Perantara", def:"Kepuasan"},
+      {key:'z', label:"Z — Penguat (moderator)", def:"Kualitas"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a', judul:"Jalur a · X → M", sub:"Seberapa kuat X mendorong M", def:0.5},
+      {key:'b', judul:"Jalur b · M → Y", sub:"Seberapa kuat M mendorong Y", def:0.4},
+      {key:'bz', judul:"Z → Y", sub:"Pengaruh langsung Z ke Y", def:0.15},
+      {key:'ib', judul:"Interaksi M×Z → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.25},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const ib = v.ib||0;
+      const arah = ib > 0.05 ? 'memperkuat' : ib < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'Interaksi M×Z → Y = ' + fmtB(ib,2) + ' → Z <strong>' + arah +
+        '<\/strong> jalur M → Y.'; },
+    render: 'umum'
+  },
+  'moderasi-keduanya': {
+    eyebrow: "Model Jalur · Moderasi Kedua Jalur", judul: "Moderasi Kedua Jalur",
+    ket: "Satu penguat (Z) memoderasi X→M SEKALIGUS M→Y.",
+    ikon: 'workflow',
+    saran: ["Harga", "Kepuasan", "Kualitas", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m', label:"M — Perantara", def:"Kepuasan"},
+      {key:'z', label:"Z — Penguat (moderator)", def:"Kualitas"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a', judul:"Jalur a · X → M", sub:"Seberapa kuat X mendorong M", def:0.5},
+      {key:'az', judul:"Z → M", sub:"Pengaruh langsung Z ke M", def:0.15},
+      {key:'ia', judul:"Interaksi X×Z → M", sub:"Negatif = melemahkan, positif = memperkuat", def:0.22},
+      {key:'b', judul:"Jalur b · M → Y", sub:"Seberapa kuat M mendorong Y", def:0.4},
+      {key:'bz', judul:"Z → Y", sub:"Pengaruh langsung Z ke Y", def:0.15},
+      {key:'ib', judul:"Interaksi M×Z → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.22},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const arah = q => q > 0.05 ? 'memperkuat' : q < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'X×Z → M (' + fmtB(v.ia,2) + ') → <strong>' + arah(v.ia||0) +
+        '<\/strong>; M×Z → Y (' + fmtB(v.ib,2) + ') → <strong>' + arah(v.ib||0) + '<\/strong>.'; },
+    render: 'umum'
+  },
+  'moderasi-3jalur': {
+    eyebrow: "Model Jalur · Moderasi 3 Jalur", judul: "Moderasi Tiga Jalur",
+    ket: "Z1 memoderasi X→M, Z2 memoderasi M→Y — penguat berbeda di tiap jalur.",
+    ikon: 'puzzle',
+    saran: ["Harga", "Kepuasan", "Kualitas", "Promosi", "Keputusan"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m', label:"M — Perantara", def:"Kepuasan"},
+      {key:'z1', label:"Z1 — Penguat 1", def:"Kualitas"},
+      {key:'z2', label:"Z2 — Penguat 2", def:"Promosi"},
+      {key:'y', label:"Y — Variabel terikat", def:"Keputusan"},
+    ],
+    paths: [
+      {key:'a', judul:"Jalur a · X → M", sub:"Seberapa kuat X mendorong M", def:0.5},
+      {key:'az1', judul:"Z1 → M", sub:"Pengaruh langsung Z1 ke M", def:0.15},
+      {key:'ia', judul:"Interaksi X×Z1 → M", sub:"Negatif = melemahkan, positif = memperkuat", def:0.25},
+      {key:'b', judul:"Jalur b · M → Y", sub:"Seberapa kuat M mendorong Y", def:0.4},
+      {key:'bz2', judul:"Z2 → Y", sub:"Pengaruh langsung Z2 ke Y", def:0.15},
+      {key:'ib', judul:"Interaksi M×Z2 → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.25},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const arah = q => q > 0.05 ? 'memperkuat' : q < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'X×Z1 → M (' + fmtB(v.ia,2) + ') → <strong>' + arah(v.ia||0) +
+        '<\/strong>; M×Z2 → Y (' + fmtB(v.ib,2) + ') → <strong>' + arah(v.ib||0) + '<\/strong>.'; },
+    render: 'umum'
+  },
+  'gabungan': {
+    eyebrow: "Model Jalur · Gabungan", judul: "Model Gabungan",
+    ket: "Paket lengkap: X → M1 → M2 → Y, dengan Z memoderasi jalur M2 → Y.",
+    ikon: 'sparkles',
+    saran: ["Harga", "Kepuasan", "Loyalitas", "Kualitas", "Beli Lagi"],
+    names: [
+      {key:'x', label:"X — Variabel bebas", def:"Harga"},
+      {key:'m1', label:"M1 — Perantara 1", def:"Kepuasan"},
+      {key:'m2', label:"M2 — Perantara 2", def:"Loyalitas"},
+      {key:'z', label:"Z — Penguat (moderator)", def:"Kualitas"},
+      {key:'y', label:"Y — Variabel terikat", def:"Beli Lagi"},
+    ],
+    paths: [
+      {key:'a1', judul:"Jalur a1 · X → M1", sub:"Seberapa kuat X mendorong M1", def:0.55},
+      {key:'d', judul:"Jalur d · M1 → M2", sub:"Seberapa kuat M1 mendorong M2", def:0.45},
+      {key:'b2', judul:"Jalur b2 · M2 → Y", sub:"Seberapa kuat M2 mendorong Y", def:0.4},
+      {key:'bz', judul:"Z → Y", sub:"Pengaruh langsung Z ke Y", def:0.15},
+      {key:'ib', judul:"Interaksi M2×Z → Y", sub:"Negatif = melemahkan, positif = memperkuat", def:0.22},
+      {key:'langsung', judul:"Jalur langsung (c′) · X → Y", sub:"Sisa pengaruh X ke Y setelah semua perantara masuk", def:0.1},
+    ],
+    info: function(v) {
+      const t = (v.a1||0)*(v.d||0)*(v.b2||0), ib = v.ib||0;
+      const arah = ib > 0.05 ? 'memperkuat' : ib < -0.05 ? 'melemahkan' : 'hampir tidak ada efeknya';
+      return 'Tak langsung rantai ≈ <strong>' + fmtB(t,3) + '<\/strong>; ' +
+        'Z <strong>' + arah + '<\/strong> jalur M2 → Y.'; },
+    render: 'umum'
+  },
 };
-// Varian yang kartunya ADA di /kuantitatif tapi panelnya BELUM DIBUAT
-// (19Okt26). JUJUR: tampilkan pemberitahuan, jangan diam-diam regresi.
-const JALUR_BELUM = ['mediasi-paralel', 'mediasi-berjenjang', 'mediasi-campuran',
-  'moderasi-dual', 'moderasi-jalur-a', 'moderasi-jalur-b', 'moderasi-keduanya',
-  'moderasi-3jalur', 'gabungan'];
 
 let JALUR_AKTIF = null;   // 'mediasi' | 'moderasi' | null
 const JALUR_NILAI = {};   // key jalur -> koefisien
@@ -1326,6 +1551,8 @@ function fmtB(v, d) {
 function segarkanInfoJalur() {
   const info = el('jalur-info');
   if (!info || !JALUR_AKTIF) return;
+  const _ci = (JALUR_UI[JALUR_AKTIF] || {}).info;
+  if (typeof _ci === 'function') { info.innerHTML = _ci(JALUR_NILAI); return; }
   if (JALUR_AKTIF === 'mediasi') {
     const a = JALUR_NILAI.a || 0, b = JALUR_NILAI.b || 0;
     info.innerHTML = 'Perkiraan pengaruh tak langsung: a × b = ' +
@@ -1637,8 +1864,11 @@ el('jalur-tombol').addEventListener('click', async () => {
     if (!r.ok) throw new Error((d && d.detail) || ('Gagal (HTTP ' + r.status + ')'));
     const kotak = el('jalur-hasil');
     kotak.classList.remove('sembunyi');
-    kotak.innerHTML = JALUR_AKTIF === 'mediasi'
-      ? gambarHasilMediasi(d) : gambarHasilModerasi(d);
+    const _rc = (JALUR_UI[JALUR_AKTIF] || {}).render;
+    kotak.innerHTML = _rc === 'mediasi' ? gambarHasilMediasi(d)
+      : _rc === 'moderasi' ? gambarHasilModerasi(d)
+      : _rc === 'berjenjang' ? gambarHasilBerjenjang(d)
+      : gambarHasilUmum(d);
     kotak.scrollIntoView({behavior: 'smooth', block: 'start'});
   } catch (e) {
     const kotak = el('jalur-hasil');
@@ -1653,24 +1883,6 @@ el('jalur-tombol').addEventListener('click', async () => {
     btn.innerHTML = asli;
   }
 });
-}
-
-function pemberitahuanJalurBelum(slug, judul) {
-  // JUJUR (19Okt26): varian ini kartunya ada di /kuantitatif, tapi panel
-  // jalurnya belum dibuat. Sampaikan terus terang + arahkan ke yang sudah jadi,
-  // jangan biarkan user mengira regresi di bawah ini = model yang dipilih.
-  const bar = el('bar-model');
-  if (!bar || document.getElementById('info-jalur-belum')) return;
-  const info = document.createElement('div');
-  info.id = 'info-jalur-belum';
-  info.className = 'catatan renggang';
-  info.innerHTML =
-    '<div><strong>“' + aman(judul) + '” sedang disiapkan.<\/strong><br>' +
-    'Yang tampil di bawah ini masih <em>regresi biasa<\/em> — belum memodelkan ' +
-    'perantara/penguatnya. Yang sudah jadi dan bisa dipakai sekarang: ' +
-    '<a href="/buat-data?model=mediasi">Mediasi Tunggal<\/a> · ' +
-    '<a href="/buat-data?model=moderasi">Moderasi Tunggal<\/a>.<\/div>';
-  bar.parentNode.insertBefore(info, bar.nextSibling);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1804,7 +2016,7 @@ function terapkanJalurModel() {
 
   // 🚨 PANEL JALUR (Wulan, 19Okt26 — temuan audit 16Okt26): mediasi &
   // moderasi TUNGGAL kini punya panel sendiri (bukan preset regresi).
-  if (slug === 'mediasi' || slug === 'moderasi') {
+  if (JALUR_UI[slug]) {
     return terapkanPanelJalur(slug);
   }
 
@@ -1815,11 +2027,15 @@ function terapkanJalurModel() {
   if (slug === 'banding-kelompok') {
     const p = el('panel-manova');
     if (p) p.classList.remove('sembunyi');
-    // sembunyikan seluruh form regresi (kelas pembungkusnya di halaman).
-    // ⚠️ Nama kelas WAJIB yang benar-benar ada — dicek lewat grep ke gaya.css
-    //    (pelajaran #14: kelas halusinasi bikin JS diam-diam tidak bekerja).
-    document.querySelectorAll('.pilih-kisi, #blok-cara, #cara-kisi')
-      .forEach(q => q.classList.add('sembunyi'));
+    // sembunyikan form regresi SATU PER SATU pakai ID (pola terapkanPanelJalur).
+    // ⚠️ JANGAN pakai selector '.pilih-kisi' — kelas itu JUGA dipakai form
+    //    MANOVA sendiri (bug 19Okt26: form MANOVA ikut tersembunyi sehingga
+    //    user tidak bisa mengubah kelompok/isi/nama). Setelan 'Jumlah
+    //    responden' regresi juga disembunyikan: MANOVA memakai 'isi tiap
+    //    kelompok', bukan angka itu.
+    ['kartu-setelan', 'medan-x', 'blok-cara', 'kartu-beta',
+     'catatan-kelayakan', 'baris-buat', 'hasil']
+      .forEach(id => { const q = el(id); if (q) q.classList.add('sembunyi'); });
     const bar = el('bar-model');
     if (bar) { bar.hidden = false; }
     const nm = el('bar-model-nama');
@@ -1924,8 +2140,6 @@ function terapkanJalurModel() {
   const judulHalaman = document.querySelector('h1');
   if (judulHalaman) judulHalaman.textContent = J.judul;
 
-  // 8. JUJUR untuk varian yang panel jalurnya belum dibuat (19Okt26).
-  if (JALUR_BELUM.includes(slug)) pemberitahuanJalurBelum(slug, J.judul);
 
   return true;
 }
@@ -1999,6 +2213,157 @@ function aman(q) {
   return String(q === null || q === undefined ? '' : q)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function gambarHasilBerjenjang(d) {
+  const h = d.hasil, mnt = d.diminta || {}, nm = d.nama || {};
+  const X = aman(nm.x || 'X'), M1 = aman(nm.m1 || 'M1'),
+        M2 = aman(nm.m2 || 'M2'), Y = aman(nm.y || 'Y');
+  const jl = (h.jalur || []).map(j => `
+    <div style="margin:8px 0">
+      <div class="samar">${aman(j.nama)}<\/div>
+      <div style="display:flex;gap:14px;align-items:baseline;flex-wrap:wrap">
+        <div style="font-size:17px"><strong>${fmtB(j.b)}<\/strong><\/div>
+        <div class="samar" style="font-size:12.5px">[${fmtB(j.lo)}, ${fmtB(j.hi)}]<\/div>
+        <div>${j.signifikan
+          ? '<span class="pita pita-hijau">Signifikan<\/span>'
+          : '<span class="pita pita-merah">Tidak signifikan<\/span>'}<\/div>
+      <\/div>
+      <div class="samar" style="font-size:12px">${aman(j.ket || '')}<\/div>
+    <\/div>`).join('');
+  const s = `<div class="kartu">
+    <span class="eyebrow">Hasil uji mediasi berjenjang — ${X} → ${M1} → ${M2} → ${Y}<\/span>
+    <table class="data" style="margin-top:10px">
+      <thead><tr><th>Jalur<\/th><th>β diminta<\/th><th>β terbaca<\/th>
+      <th>t<\/th><th>p<\/th><th>Hasil uji<\/th><\/tr><\/thead>
+      <tbody>
+        ${barisJalur(`a1 — ${X} → ${M1}`, mnt.a1, h.a || {})}
+        ${barisJalur(`d — ${M1} → ${M2}`, mnt.d, h.d || {})}
+        ${barisJalur(`b2 — ${M2} → ${Y}`, mnt.b2, h.b || {})}
+        ${barisJalur(`c′ — ${X} → ${Y} (setelah rantai masuk)`, mnt.langsung, h.cp || {})}
+      <\/tbody>
+    <\/table>
+  <\/div>
+
+  <div class="kartu">
+    <span class="eyebrow">Pengaruh tak langsung (bootstrap 95%)<\/span>
+    ${jl}
+    <p class="samar" style="font-size:12.5px;margin:8px 0 0">Dua jalur di atas
+    saling tumpang-tindih — dilaporkan berdampingan, bukan dijumlahkan.<\/p>
+  <\/div>
+
+  <div class="catatan">
+    ${ikonKecil('info', 16)}
+    <div><strong>Simpulan: ${aman(h.jenis || '—')}.<\/strong><br>${aman(h.kalimat || '')}<\/div>
+  <\/div>
+
+  <div class="kartu">
+    <span class="eyebrow">β terbaca vs β diminta<\/span>
+    <div style="display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;margin:8px 0">
+      <div><div class="samar">Selisih terbesar<\/div>
+        <div class="angka-besar" style="color:${d.galat_maks <= 0.05 ? 'var(--hijau)' : 'var(--amber)'}">
+          ${fmtB(d.galat_maks, 4)}<\/div><\/div>
+      <div><div class="samar">Responden<\/div>
+        <div style="font-size:17px"><strong>${d.n}<\/strong><\/div><\/div>
+    <\/div>
+    ${peringatanTercapai(d)}
+    <div class="catatan">
+      ${ikonKecil('info', 16)}
+      <div>Kolom <strong>β terbaca<\/strong> adalah angka yang nanti muncul di SPSS —
+      inilah yang membuat kamu tahu target sebelum mengolah.<\/div>
+    <\/div>
+    ${blokUnduhJalur(d)}
+  <\/div>`;
+  return s;
+}
+
+function gambarHasilUmum(d) {
+  const h = d.hasil, nm = d.nama || {};
+  const kartuPersamaan = (h.persamaan || []).map(eq => {
+    const baris = (eq.koef || []).map(k => {
+      const labelKoef = k.interaksi
+        ? `Interaksi ${aman(k.nama_panjang || k.nama)}`
+        : `${aman(k.nama_panjang || k.nama)} → ${aman(eq.nama_target || eq.target)}`;
+      const pita = k.interaksi
+        ? (k.p < 0.05 ? '<span class="pita pita-hijau">Memoderasi<\/span>'
+                      : '<span class="pita pita-merah">Tidak memoderasi<\/span>')
+        : pitaP(k.p);
+      return `<tr>
+        <td data-label="Koefisien"><strong>${labelKoef}<\/strong><\/td>
+        <td class="angka" data-label="β diminta">${k.diminta == null ? '—' : fmtB(k.diminta)}<\/td>
+        <td class="angka" data-label="β terbaca">${fmtB(k.b)}<\/td>
+        <td class="angka" data-label="t">${fmtB(k.t, 2)}<\/td>
+        <td class="angka" data-label="p">${fmtB(k.p, 4)}<\/td>
+        <td data-label="Hasil uji">${pita}<\/td>
+      <\/tr>`;
+    }).join('');
+    const r2info = eq.delta_r2 != null
+      ? `R² = ${fmtB(eq.r2)} (naik ${fmtB(eq.delta_r2, 4)} setelah interaksi masuk)`
+      : `R² = ${fmtB(eq.r2)}`;
+    return `<div class="kartu">
+      <span class="eyebrow">Persamaan: ${aman(eq.nama_target || eq.target)}<\/span>
+      <div class="samar" style="font-size:13px;margin:6px 0">${r2info}<\/div>
+      <table class="data">
+        <thead><tr><th>Koefisien<\/th><th>β diminta<\/th><th>β terbaca<\/th>
+        <th>t<\/th><th>p<\/th><th>Hasil uji<\/th><\/tr><\/thead>
+        <tbody>${baris}<\/tbody>
+      <\/table>
+    <\/div>`;
+  }).join('');
+
+  const kotakTakLangsung = (h.tak_langsung && h.tak_langsung.length)
+    ? `<div class="kartu">
+      <span class="eyebrow">Pengaruh tak langsung (bootstrap 95%)<\/span>
+      ${(h.tak_langsung || []).map(t => `
+        <div style="display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin:8px 0">
+          <div class="samar" style="min-width:130px">${aman(t.nama)}<\/div>
+          <div style="font-size:17px"><strong>${fmtB(t.b)}<\/strong><\/div>
+          <div class="samar" style="font-size:12.5px">[${fmtB(t.lo)}, ${fmtB(t.hi)}]<\/div>
+          <div>${t.signifikan
+            ? '<span class="pita pita-hijau">Signifikan<\/span>'
+            : '<span class="pita pita-merah">Tidak signifikan<\/span>'}<\/div>
+        <\/div>`).join('')}
+    <\/div>` : '';
+
+  const kotakKondisional = (h.kondisional && h.kondisional.length)
+    ? `<div class="kartu">
+      <span class="eyebrow">Pengaruh tak langsung pada tiap tingkat penguat<\/span>
+      ${(h.kondisional || []).map(c => `
+        <div style="display:flex;gap:14px;align-items:baseline;margin:6px 0">
+          <div class="samar" style="min-width:130px">${aman(c.nama)}<\/div>
+          <div style="font-size:16px"><strong>${fmtB(c.b)}<\/strong><\/div>
+        <\/div>`).join('')}
+      <p class="samar" style="font-size:12px;margin:6px 0 0">Ilustrasi:
+      seberapa besar pengaruh tak langsung saat penguatnya rendah / sedang / tinggi.<\/p>
+    <\/div>` : '';
+
+  const s = `${kartuPersamaan}
+  ${kotakTakLangsung}
+  ${kotakKondisional}
+
+  <div class="catatan">
+    ${ikonKecil('info', 16)}
+    <div><strong>Simpulan: ${aman(h.jenis || '—')}.<\/strong><br>${aman(h.kalimat || '')}<\/div>
+  <\/div>
+
+  <div class="kartu">
+    <span class="eyebrow">β terbaca vs β diminta<\/span>
+    <div style="display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;margin:8px 0">
+      <div><div class="samar">Selisih terbesar<\/div>
+        <div class="angka-besar" style="color:${d.galat_maks <= 0.05 ? 'var(--hijau)' : 'var(--amber)'}">
+          ${fmtB(d.galat_maks, 4)}<\/div><\/div>
+      <div><div class="samar">Responden<\/div>
+        <div style="font-size:17px"><strong>${d.n}<\/strong><\/div><\/div>
+    <\/div>
+    ${peringatanTercapai(d)}
+    <div class="catatan">
+      ${ikonKecil('info', 16)}
+      <div>Kolom <strong>β terbaca<\/strong> adalah angka yang nanti muncul di SPSS —
+      inilah yang membuat kamu tahu target sebelum mengolah.<\/div>
+    <\/div>
+    ${blokUnduhJalur(d)}
+  <\/div>`;
+  return s;
 }
 
 function gambarHasilManova(r) {
@@ -2235,9 +2600,10 @@ if (tombolManova) tombolManova.addEventListener('click', jalankanManova);
   const mn = window.BEDA_MIN, mx = window.BEDA_MAKS;
   if (r) r.innerHTML = '<span class="mono">' + mn.toFixed(2) + ' – ' +
     mx.toFixed(2) + '<\/span>';
-  if (i) i.textContent = 'Angka yang dipakai untuk menguji adalah yang ' +
-    'TERBACA dari data — bukan setelan. Mode Presisi membuat keduanya paling ' +
-    'dekat.';
+  if (i) i.textContent = 'Total responden = jumlah kelompok × isi tiap ' +
+    'kelompok (mis. 2 kelompok × 60 = 120). Setelan "Jumlah responden" di ' +
+    'menu regresi TIDAK berlaku di sini. Angka yang dipakai untuk menguji ' +
+    'adalah yang TERBACA dari data — bukan setelan.';
 })();
 </script>
 {% endblock %}

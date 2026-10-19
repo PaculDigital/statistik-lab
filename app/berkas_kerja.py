@@ -498,6 +498,441 @@ def buat_data(n: int, x: int, beta: list[float], skala: int = 5,
 #            (mediasi bootstrap + simpulan; moderasi MRA + ΔR²).
 #            SATU SUMBER kebenaran: angka di sini = angka di klinik.
 # ═══════════════════════════════════════════════════════════════════════
+"""Spesifikasi 9 varian jalur lanjutan untuk buat_data_jalur() (Wulan, 19Okt26).
+
+Boss 19Okt26: "sambungkan semua". Sebelumnya ke-9 varian ini kartunya ADA
+tapi mesinnya TIDAK DISAMBUNG (hanya preset regresi yang menyesatkan +
+penanda jujur "segera disiapkan"). Sekarang semuanya membangun & mengukur
+struktur jalurnya sungguhan via kalibrasi_per_jalur + analis.
+
+Mesin yang dipakai (SEMUA sudah teruji):
+  - DGP + kalibrasi : kalibrasi_per_jalur() — generik untuk sembarang
+    jalur + interaksi (termasuk _ukur_interaksi_mra, 19Okt26).
+  - Analis          : kaitan.mediasi_berjenjang (ada, teruji) untuk
+    berjenjang; app/hitung/jalur_umum.py (analisis_jalur_umum) untuk
+    8 varian lainnya.
+"""
+
+# ── kesimpulan per varian (Bahasa Indonesia, gaya mengajar) ──────────────
+def _simpul_paralel(p, h, nm):
+    t = h['tak_langsung']
+    s1, s2 = t[0]['signifikan'], t[1]['signifikan']
+    cp_sig = _p_sig(_cari_p(h, 'Y', 'X'))
+    if s1 and s2:
+        jenis = 'mediasi paralel penuh' if not cp_sig else 'mediasi paralel parsial'
+    elif s1:
+        jenis = f'mediasi hanya via {nm["m1"]}'
+    elif s2:
+        jenis = f'mediasi hanya via {nm["m2"]}'
+    else:
+        jenis = 'tidak ada mediasi'
+    kalimat = (f'Pengaruh tak langsung via {nm["m1"]}: {t[0]["b"]:.3f} '
+               f'{"(signifikan)" if s1 else "(tidak signifikan)"}; '
+               f'via {nm["m2"]}: {t[1]["b"]:.3f} '
+               f'{"(signifikan)" if s2 else "(tidak signifikan)"}. '
+               f'Total tak langsung: {t[0]["b"]+t[1]["b"]:.3f}.')
+    return jenis, kalimat
+
+
+def _simpul_campuran(p, h, nm):
+    t = h['tak_langsung']
+    sig = [x['signifikan'] for x in t]
+    n_sig = sum(sig)
+    jenis = ('tidak ada mediasi' if n_sig == 0
+             else f'mediasi campuran ({n_sig} dari 3 jalur signifikan)')
+    kalimat = '; '.join(
+        f"{x['nama']}: {x['b']:.3f} "
+        f"({'signifikan' if x['signifikan'] else 'tidak signifikan'})"
+        for x in t)
+    return jenis, kalimat + '.'
+
+
+def _simpul_dual(p, h, nm):
+    ks = [k for e in h['persamaan'] if e['target'] == 'Y'
+          for k in e['koef'] if k['interaksi']]
+    s = [k['p'] < 0.05 for k in ks]
+    z1 = s[0] if len(s) > 0 else False
+    z2 = s[1] if len(s) > 1 else False
+    if z1 and z2:
+        jenis = 'kedua penguat memoderasi'
+    elif z1:
+        jenis = f'hanya {nm["z1"]} yang memoderasi'
+    elif z2:
+        jenis = f'hanya {nm["z2"]} yang memoderasi'
+    else:
+        jenis = 'tidak ada yang memoderasi'
+    d = next(e['delta_r2'] for e in h['persamaan'] if e['target'] == 'Y')
+    kalimat = (f'Interaksi X×{nm["z1"]}: b={ks[0]["b"]:.3f} (p={ks[0]["p"]:.4f}); '
+               f'X×{nm["z2"]}: b={ks[1]["b"]:.3f} (p={ks[1]["p"]:.4f}). '
+               f'Kenaikan R² setelah kedua interaksi masuk: {d:.4f}.')
+    return jenis, kalimat
+
+
+def _simpul_jalur_a(p, h, nm):
+    k = next(k for e in h['persamaan'] if e['target'] == 'M'
+             for k in e['koef'] if k['interaksi'])
+    sig = k['p'] < 0.05
+    arah = 'memperkuat' if k['b'] > 0 else 'melemahkan'
+    jenis = (f'{nm["z"]} memoderasi jalur X→M ({arah})'
+             if sig else f'{nm["z"]} tidak memoderasi jalur X→M')
+    d = next(e['delta_r2'] for e in h['persamaan'] if e['target'] == 'M')
+    kon = '; '.join(f"{c['nama']}: {c['b']:.3f}" for c in h['kondisional'])
+    kalimat = (f'Interaksi X×{nm["z"]} → {nm["m"]}: b={k["b"]:.3f} '
+               f'(p={k["p"]:.4f}, ΔR²={d:.4f}). '
+               f'Pengaruh tak langsung X→{nm["m"]}→{nm["y"]} '
+               f'pada tiga tingkat {nm["z"]} — {kon}.')
+    return jenis, kalimat
+
+
+def _simpul_jalur_b(p, h, nm):
+    k = next(k for e in h['persamaan'] if e['target'] == 'Y'
+             for k in e['koef'] if k['interaksi'])
+    sig = k['p'] < 0.05
+    arah = 'memperkuat' if k['b'] > 0 else 'melemahkan'
+    jenis = (f'{nm["z"]} memoderasi jalur M→Y ({arah})'
+             if sig else f'{nm["z"]} tidak memoderasi jalur M→Y')
+    d = next(e['delta_r2'] for e in h['persamaan'] if e['target'] == 'Y')
+    kon = '; '.join(f"{c['nama']}: {c['b']:.3f}" for c in h['kondisional'])
+    kalimat = (f'Interaksi {nm["m"]}×{nm["z"]} → {nm["y"]}: b={k["b"]:.3f} '
+               f'(p={k["p"]:.4f}, ΔR²={d:.4f}). '
+               f'Pengaruh tak langsung pada tiga tingkat {nm["z"]} — {kon}.')
+    return jenis, kalimat
+
+
+def _simpul_keduanya(p, h, nm):
+    ka = next(k for e in h['persamaan'] if e['target'] == 'M'
+              for k in e['koef'] if k['interaksi'])
+    kb = next(k for e in h['persamaan'] if e['target'] == 'Y'
+              for k in e['koef'] if k['interaksi'])
+    sa, sb = ka['p'] < 0.05, kb['p'] < 0.05
+    if sa and sb:
+        jenis = f'{nm["z"]} memoderasi kedua jalur'
+    elif sa:
+        jenis = f'{nm["z"]} hanya memoderasi jalur X→M'
+    elif sb:
+        jenis = f'{nm["z"]} hanya memoderasi jalur M→Y'
+    else:
+        jenis = f'{nm["z"]} tidak memoderasi jalur mana pun'
+    kalimat = (f'Jalur X→{nm["m"]}: interaksi b={ka["b"]:.3f} (p={ka["p"]:.4f}); '
+               f'jalur {nm["m"]}→{nm["y"]}: interaksi b={kb["b"]:.3f} '
+               f'(p={kb["p"]:.4f}).')
+    return jenis, kalimat
+
+
+def _simpul_3jalur(p, h, nm):
+    ka = next(k for e in h['persamaan'] if e['target'] == 'M'
+              for k in e['koef'] if k['interaksi'])
+    kb = next(k for e in h['persamaan'] if e['target'] == 'Y'
+              for k in e['koef'] if k['interaksi'])
+    sa, sb = ka['p'] < 0.05, kb['p'] < 0.05
+    if sa and sb:
+        jenis = f'{nm["z1"]} dan {nm["z2"]} masing-masing memoderasi'
+    elif sa:
+        jenis = f'hanya {nm["z1"]} yang memoderasi (jalur X→M)'
+    elif sb:
+        jenis = f'hanya {nm["z2"]} yang memoderasi (jalur M→Y)'
+    else:
+        jenis = 'tidak ada yang memoderasi'
+    kalimat = (f'X×{nm["z1"]} → {nm["m"]}: b={ka["b"]:.3f} (p={ka["p"]:.4f}); '
+               f'{nm["m"]}×{nm["z2"]} → {nm["y"]}: b={kb["b"]:.3f} '
+               f'(p={kb["p"]:.4f}).')
+    return jenis, kalimat
+
+
+def _simpul_gabungan(p, h, nm):
+    t = h['tak_langsung'][0]
+    kb = next(k for e in h['persamaan'] if e['target'] == 'Y'
+              for k in e['koef'] if k['interaksi'])
+    sb = kb['p'] < 0.05
+    arah = 'memperkuat' if kb['b'] > 0 else 'melemahkan'
+    if t['signifikan'] and sb:
+        jenis = f'rentetan berjenjang signifikan + {nm["z"]} memoderasi ({arah})'
+    elif t['signifikan']:
+        jenis = 'rentetan berjenjang signifikan, tanpa moderasi'
+    elif sb:
+        jenis = f'tidak ada rentetan, tapi {nm["z"]} memoderasi ({arah})'
+    else:
+        jenis = 'tidak ada rentetan maupun moderasi'
+    kalimat = (f'Pengaruh tak langsung X→{nm["m1"]}→{nm["m2"]}→{nm["y"]}: '
+               f'{t["b"]:.3f} [{t["lo"]:.3f}, {t["hi"]:.3f}] '
+               f'{"(signifikan)" if t["signifikan"] else "(tidak signifikan)"}; '
+               f'interaksi {nm["m2"]}×{nm["z"]}: b={kb["b"]:.3f} '
+               f'(p={kb["p"]:.4f}).')
+    return jenis, kalimat
+
+
+def _p_sig(p):
+    return p is not None and p < 0.05
+
+
+def _cari_p(h, target, nama):
+    for e in h['persamaan']:
+        if e['target'] == target:
+            for k in e['koef']:
+                if k['nama'] == nama and not k['interaksi']:
+                    return k['p']
+    return None
+
+
+# ── tabel spesifikasi 9 varian (dibaca buat_data_jalur) ────────────────────
+# roles   : [(kunci_nama, konstruk), ...] — konstruk 'Y' selalu terakhir
+# params  : [(kunci, default, label_untuk_slider), ...]
+# nama_def: label ramah default per peran
+# spek(p) : -> (jalur, interaksi) untuk kalibrasi_per_jalur
+# persamaan/rantai/kondisional: untuk analisis_jalur_umum
+# diminta : {(target, nama_koef): kunci_param} — kolom "β diminta"
+VARIAN_JALUR = {
+'mediasi-paralel': {
+    'roles': [('x', 'X'), ('m1', 'M1'), ('m2', 'M2'), ('y', 'Y')],
+    'params': [('a1', 0.50, 'Jalur a1 · X → M1'), ('a2', 0.45, 'Jalur a2 · X → M2'),
+               ('b1', 0.35, 'Jalur b1 · M1 → Y'), ('b2', 0.30, 'Jalur b2 · M2 → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm1': 'Kepuasan', 'm2': 'Kepercayaan',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M1', 'dari': {'X': p['a1']}},
+                        {'target': 'M2', 'dari': {'X': p['a2']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M1': p['b1'], 'M2': p['b2']}}],
+                       []),
+    'persamaan': [{'target': 'M1', 'pred': ['X']},
+                  {'target': 'M2', 'pred': ['X']},
+                  {'target': 'Y', 'pred': ['X', 'M1', 'M2']}],
+    'rantai': [{'nama': 'X→M1→Y', 'jalur': ['X', 'M1', 'Y']},
+               {'nama': 'X→M2→Y', 'jalur': ['X', 'M2', 'Y']}],
+    'kondisional': [],
+    'diminta': {('M1', 'X'): 'a1', ('M2', 'X'): 'a2', ('Y', 'X'): 'langsung',
+                ('Y', 'M1'): 'b1', ('Y', 'M2'): 'b2'},
+    'simpulan': _simpul_paralel,
+},
+'mediasi-berjenjang': {
+    'roles': [('x', 'X'), ('m1', 'M1'), ('m2', 'M2'), ('y', 'Y')],
+    'params': [('a1', 0.55, 'Jalur a1 · X → M1'), ('d', 0.45, 'Jalur d · M1 → M2'),
+               ('b2', 0.40, 'Jalur b2 · M2 → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm1': 'Kepuasan', 'm2': 'Loyalitas',
+                 'y': 'Beli Lagi'},
+    'analisis': 'berjenjang',  # kaitan.mediasi_berjenjang (teruji)
+},
+'mediasi-campuran': {
+    'roles': [('x', 'X'), ('m1', 'M1'), ('m2', 'M2'), ('y', 'Y')],
+    'params': [('a1', 0.50, 'Jalur a1 · X → M1'), ('a2', 0.40, 'Jalur a2 · X → M2'),
+               ('d', 0.35, 'Jalur d · M1 → M2'),
+               ('b1', 0.30, 'Jalur b1 · M1 → Y'), ('b2', 0.30, 'Jalur b2 · M2 → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm1': 'Kepuasan', 'm2': 'Kepercayaan',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M1', 'dari': {'X': p['a1']}},
+                        {'target': 'M2', 'dari': {'X': p['a2'], 'M1': p['d']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M1': p['b1'], 'M2': p['b2']}}],
+                       []),
+    'persamaan': [{'target': 'M1', 'pred': ['X']},
+                  {'target': 'M2', 'pred': ['X', 'M1']},
+                  {'target': 'Y', 'pred': ['X', 'M1', 'M2']}],
+    'rantai': [{'nama': 'X→M1→Y', 'jalur': ['X', 'M1', 'Y']},
+               {'nama': 'X→M2→Y', 'jalur': ['X', 'M2', 'Y']},
+               {'nama': 'X→M1→M2→Y', 'jalur': ['X', 'M1', 'M2', 'Y']}],
+    'kondisional': [],
+    'diminta': {('M1', 'X'): 'a1', ('M2', 'X'): 'a2', ('M2', 'M1'): 'd',
+                ('Y', 'X'): 'langsung', ('Y', 'M1'): 'b1', ('Y', 'M2'): 'b2'},
+    'simpulan': _simpul_campuran,
+},
+'moderasi-dual': {
+    'roles': [('x', 'X'), ('z1', 'Z1'), ('z2', 'Z2'), ('y', 'Y')],
+    'params': [('bx', 0.35, 'Pengaruh X → Y'), ('bz1', 0.20, 'Pengaruh Z1 → Y'),
+               ('bz2', 0.20, 'Pengaruh Z2 → Y'),
+               ('i1', 0.22, 'Interaksi X×Z1 → Y'),
+               ('i2', 0.20, 'Interaksi X×Z2 → Y')],
+    'nama_def': {'x': 'Harga', 'z1': 'Kualitas', 'z2': 'Promosi',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'Y', 'dari': {'X': p['bx'], 'Z1': p['bz1'],
+                                                 'Z2': p['bz2']} }],
+                       [{'target': 'Y', 'x': 'X', 'z': 'Z1', 'bobot': p['i1']},
+                        {'target': 'Y', 'x': 'X', 'z': 'Z2', 'bobot': p['i2']}]),
+    'persamaan': [{'target': 'Y', 'pred': ['X', 'Z1', 'Z2'],
+                   'interaksi': [{'x': 'X', 'z': 'Z1'}, {'x': 'X', 'z': 'Z2'}]}],
+    'rantai': [],
+    'kondisional': [],
+    'diminta': {('Y', 'X'): 'bx', ('Y', 'Z1'): 'bz1', ('Y', 'Z2'): 'bz2',
+                ('Y', 'X×Z1'): 'i1', ('Y', 'X×Z2'): 'i2'},
+    'simpulan': _simpul_dual,
+},
+'moderasi-jalur-a': {
+    'roles': [('x', 'X'), ('m', 'M'), ('z', 'Z'), ('y', 'Y')],
+    'params': [('a', 0.50, 'Jalur a · X → M'), ('az', 0.15, 'Z → M'),
+               ('ia', 0.30, 'Interaksi X×Z → M (penguat jalur a)'),
+               ('b', 0.40, 'Jalur b · M → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm': 'Kepuasan', 'z': 'Kualitas',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M', 'dari': {'X': p['a'], 'Z': p['az']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M': p['b']}}],
+                       [{'target': 'M', 'x': 'X', 'z': 'Z',
+                         'bobot': p['ia']}]),
+    'persamaan': [{'target': 'M', 'pred': ['X', 'Z'],
+                   'interaksi': [{'x': 'X', 'z': 'Z'}]},
+                  {'target': 'Y', 'pred': ['X', 'M']}],
+    'rantai': [{'nama': 'X→M→Y', 'jalur': ['X', 'M', 'Y']}],
+    'kondisional': [
+        {'nama': 'Z rendah (−1 SD)', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('X', 'M'): ('X', 'Z', -1.0)}},
+        {'nama': 'Z sedang', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('X', 'M'): ('X', 'Z', 0.0)}},
+        {'nama': 'Z tinggi (+1 SD)', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('X', 'M'): ('X', 'Z', 1.0)}}],
+    'diminta': {('M', 'X'): 'a', ('M', 'Z'): 'az', ('M', 'X×Z'): 'ia',
+                ('Y', 'X'): 'langsung', ('Y', 'M'): 'b'},
+    'simpulan': _simpul_jalur_a,
+},
+'moderasi-jalur-b': {
+    'roles': [('x', 'X'), ('m', 'M'), ('z', 'Z'), ('y', 'Y')],
+    'params': [('a', 0.50, 'Jalur a · X → M'), ('b', 0.40, 'Jalur b · M → Y'),
+               ('bz', 0.15, 'Z → Y'), ('ib', 0.25, 'Interaksi M×Z → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm': 'Kepuasan', 'z': 'Kualitas',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M', 'dari': {'X': p['a']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M': p['b'], 'Z': p['bz']}}],
+                       [{'target': 'Y', 'x': 'M', 'z': 'Z',
+                         'bobot': p['ib']}]),
+    'persamaan': [{'target': 'M', 'pred': ['X']},
+                  {'target': 'Y', 'pred': ['X', 'M', 'Z'],
+                   'interaksi': [{'x': 'M', 'z': 'Z'}]}],
+    'rantai': [{'nama': 'X→M→Y', 'jalur': ['X', 'M', 'Y']}],
+    'kondisional': [
+        {'nama': 'Z rendah (−1 SD)', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('M', 'Y'): ('M', 'Z', -1.0)}},
+        {'nama': 'Z sedang', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('M', 'Y'): ('M', 'Z', 0.0)}},
+        {'nama': 'Z tinggi (+1 SD)', 'jalur': ['X', 'M', 'Y'],
+         'mod': {('M', 'Y'): ('M', 'Z', 1.0)}}],
+    'diminta': {('M', 'X'): 'a', ('Y', 'X'): 'langsung', ('Y', 'M'): 'b',
+                ('Y', 'Z'): 'bz', ('Y', 'M×Z'): 'ib'},
+    'simpulan': _simpul_jalur_b,
+},
+'moderasi-keduanya': {
+    'roles': [('x', 'X'), ('m', 'M'), ('z', 'Z'), ('y', 'Y')],
+    'params': [('a', 0.50, 'Jalur a · X → M'), ('az', 0.15, 'Z → M'),
+               ('ia', 0.22, 'Interaksi X×Z → M'),
+               ('b', 0.40, 'Jalur b · M → Y'), ('bz', 0.15, 'Z → Y'),
+               ('ib', 0.22, 'Interaksi M×Z → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm': 'Kepuasan', 'z': 'Kualitas',
+                 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M', 'dari': {'X': p['a'], 'Z': p['az']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M': p['b'], 'Z': p['bz']}}],
+                       [{'target': 'M', 'x': 'X', 'z': 'Z', 'bobot': p['ia']},
+                        {'target': 'Y', 'x': 'M', 'z': 'Z',
+                         'bobot': p['ib']}]),
+    'persamaan': [{'target': 'M', 'pred': ['X', 'Z'],
+                   'interaksi': [{'x': 'X', 'z': 'Z'}]},
+                  {'target': 'Y', 'pred': ['X', 'M', 'Z'],
+                   'interaksi': [{'x': 'M', 'z': 'Z'}]}],
+    'rantai': [{'nama': 'X→M→Y', 'jalur': ['X', 'M', 'Y']}],
+    'kondisional': [],
+    'diminta': {('M', 'X'): 'a', ('M', 'Z'): 'az', ('M', 'X×Z'): 'ia',
+                ('Y', 'X'): 'langsung', ('Y', 'M'): 'b', ('Y', 'Z'): 'bz',
+                ('Y', 'M×Z'): 'ib'},
+    'simpulan': _simpul_keduanya,
+},
+'moderasi-3jalur': {
+    'roles': [('x', 'X'), ('m', 'M'), ('z1', 'Z1'), ('z2', 'Z2'), ('y', 'Y')],
+    'params': [('a', 0.50, 'Jalur a · X → M'), ('az1', 0.15, 'Z1 → M'),
+               ('ia', 0.25, 'Interaksi X×Z1 → M'),
+               ('b', 0.40, 'Jalur b · M → Y'), ('bz2', 0.15, 'Z2 → Y'),
+               ('ib', 0.25, 'Interaksi M×Z2 → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm': 'Kepuasan', 'z1': 'Kualitas',
+                 'z2': 'Promosi', 'y': 'Keputusan'},
+    'spek': lambda p: ([{'target': 'M', 'dari': {'X': p['a'], 'Z1': p['az1']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M': p['b'], 'Z2': p['bz2']}}],
+                       [{'target': 'M', 'x': 'X', 'z': 'Z1', 'bobot': p['ia']},
+                        {'target': 'Y', 'x': 'M', 'z': 'Z2',
+                         'bobot': p['ib']}]),
+    'persamaan': [{'target': 'M', 'pred': ['X', 'Z1'],
+                   'interaksi': [{'x': 'X', 'z': 'Z1'}]},
+                  {'target': 'Y', 'pred': ['X', 'M', 'Z2'],
+                   'interaksi': [{'x': 'M', 'z': 'Z2'}]}],
+    'rantai': [{'nama': 'X→M→Y', 'jalur': ['X', 'M', 'Y']}],
+    'kondisional': [],
+    'diminta': {('M', 'X'): 'a', ('M', 'Z1'): 'az1', ('M', 'X×Z1'): 'ia',
+                ('Y', 'X'): 'langsung', ('Y', 'M'): 'b', ('Y', 'Z2'): 'bz2',
+                ('Y', 'M×Z2'): 'ib'},
+    'simpulan': _simpul_3jalur,
+},
+'gabungan': {
+    'roles': [('x', 'X'), ('m1', 'M1'), ('m2', 'M2'), ('z', 'Z'), ('y', 'Y')],
+    'params': [('a1', 0.55, 'Jalur a1 · X → M1'), ('d', 0.45, 'Jalur d · M1 → M2'),
+               ('b2', 0.40, 'Jalur b2 · M2 → Y'), ('bz', 0.15, 'Z → Y'),
+               ('ib', 0.22, 'Interaksi M2×Z → Y'),
+               ('langsung', 0.10, 'Jalur langsung (c′) · X → Y')],
+    'nama_def': {'x': 'Harga', 'm1': 'Kepuasan', 'm2': 'Loyalitas',
+                 'z': 'Kualitas', 'y': 'Beli Lagi'},
+    'spek': lambda p: ([{'target': 'M1', 'dari': {'X': p['a1']}},
+                        {'target': 'M2', 'dari': {'M1': p['d']}},
+                        {'target': 'Y', 'dari': {'X': p['langsung'],
+                                                 'M2': p['b2'], 'Z': p['bz']}}],
+                       [{'target': 'Y', 'x': 'M2', 'z': 'Z',
+                         'bobot': p['ib']}]),
+    'persamaan': [{'target': 'M1', 'pred': ['X']},
+                  {'target': 'M2', 'pred': ['M1']},
+                  {'target': 'Y', 'pred': ['X', 'M2', 'Z'],
+                   'interaksi': [{'x': 'M2', 'z': 'Z'}]}],
+    'rantai': [{'nama': 'X→M1→M2→Y', 'jalur': ['X', 'M1', 'M2', 'Y']}],
+    'kondisional': [],
+    'diminta': {('M1', 'X'): 'a1', ('M2', 'M1'): 'd', ('Y', 'X'): 'langsung',
+                ('Y', 'M2'): 'b2', ('Y', 'Z'): 'bz', ('Y', 'M2×Z'): 'ib'},
+    'simpulan': _simpul_gabungan,
+},
+}
+
+
+def _hasil_umum(model: str, df, spec: dict, p: dict, nama_lb: dict) -> dict:
+    """Analisis untuk 8 varian via analisis_jalur_umum + simpulan."""
+    from app.hitung.jalur_umum import analisis_jalur_umum
+    h = analisis_jalur_umum(
+        df, persamaan=spec['persamaan'],
+        rantai=spec.get('rantai') or [],
+        kondisional=spec.get('kondisional') or [])
+    if not h.get('boleh'):
+        raise ValueError(h.get('sebab', 'Analisis jalur gagal.'))
+    # tempel nama ramah + β diminta ke tiap koefisien
+    kode_nama = {k: nama_lb.get(kk, k) for kk, k in spec['roles']}
+    peta_diminta = spec.get('diminta') or {}
+    for eq in h['persamaan']:
+        eq['nama_target'] = kode_nama.get(eq['target'], eq['target'])
+        for kf in eq['koef']:
+            kf['diminta'] = p.get(peta_diminta.get((eq['target'], kf['nama'])))
+            if kf['interaksi']:
+                x_, z_ = kf['nama'].split('×')
+                kf['nama_panjang'] = (
+                    f"{kode_nama.get(x_, x_)}×{kode_nama.get(z_, z_)}")
+            else:
+                kf['nama_panjang'] = kode_nama.get(kf['nama'], kf['nama'])
+    for r in h['tak_langsung']:
+        for kk, k in spec['roles']:
+            r['nama'] = r['nama'].replace(k, nama_lb.get(kk, k))
+    jenis, kalimat = spec['simpulan'](p, h, nama_lb)
+    h['jenis'] = jenis
+    h['kalimat'] = kalimat
+    return h
+
+
+def _hasil_berjenjang(df, p: dict, nama_lb: dict) -> dict:
+    """Bungkus kaitan.mediasi_berjenjang + β diminta untuk tabel."""
+    from app.hitung import kaitan as _kaitan
+    from app.hitung.berurutan import sk_mediasi_berjenjang
+    h = _kaitan.mediasi_berjenjang(df, 'X', 'M1', 'M2', 'Y')
+    if not h.get('boleh'):
+        raise ValueError(h.get('sebab', 'Analisis jalur gagal.'))
+    h['diminta'] = dict(p)
+    return h
+
+
 def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
                     skala: int = 5, alpha: float = 0.85,
                     mode: str = 'presisi', seed: int | None = None) -> dict:
@@ -511,10 +946,11 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
     """
     import pandas as pd
     from app.hitung import kaitan as _kaitan
-    from app.hitung.berurutan import sk_mediasi, sk_moderasi
+    from app.hitung.berurutan import sk_mediasi, sk_moderasi, sk_mediasi_berjenjang
 
     model = str(model or '').strip()
-    if model not in ('mediasi', 'moderasi'):
+    _MODEL_JALUR = ('mediasi', 'moderasi') + tuple(VARIAN_JALUR.keys())
+    if model not in _MODEL_JALUR:
         raise ValueError(f"Model jalur '{model}' belum didukung.")
 
     n = max(30, min(2000, int(n or 150)))
@@ -547,7 +983,10 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
         kode_x = ['X', 'M']
         label_x = [_label('x', 'X'), _label('m', 'M')]
         diminta = {'a': a, 'b': b, 'langsung': c2}
-    else:  # moderasi
+        analisis_kind = 'mediasi'
+        nama_lb = {'x': _label('x', 'X'), 'm': _label('m', 'M'),
+                   'y': _label('y', 'Y')}
+    elif model == 'moderasi':
         bx = _batas(params.get('bx'), 0.35)
         bz = _batas(params.get('bz'), 0.20)
         bi = _batas(params.get('interaksi'), 0.25)
@@ -557,6 +996,38 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
         kode_x = ['X', 'Z']
         label_x = [_label('x', 'X'), _label('z', 'Z')]
         diminta = {'bx': bx, 'bz': bz, 'interaksi': bi}
+        analisis_kind = 'moderasi'
+        nama_lb = {'x': _label('x', 'X'), 'z': _label('z', 'Z'),
+                   'y': _label('y', 'Y')}
+    elif model == 'mediasi-berjenjang':
+        spec = VARIAN_JALUR[model]
+        p = {k: _batas(params.get(k), dflt) for k, dflt, _ in spec['params']}
+        jalur = sk_mediasi_berjenjang('X', p['a1'], p['d'], p['b2'],
+                                      langsung=p['langsung'], m1='M1', m2='M2')
+        interaksi = None
+        konstruk = ['X', 'M1', 'M2', 'Y']
+        kode_x = ['X', 'M1', 'M2']
+        label_x = [_label(kk, k) for kk, k in spec['roles'] if k != 'Y']
+        diminta = p
+        analisis_kind = 'berjenjang'
+        nama_lb = {kk: _label(kk, dv)
+                   for kk, dv in spec['nama_def'].items()}
+    else:  # 8 varian generik
+        spec = VARIAN_JALUR[model]
+        p = {k: _batas(params.get(k), dflt) for k, dflt, _ in spec['params']}
+        jalur, interaksi = spec['spek'](p)
+        # nama konstruk suku interaksi — CARA SAMA seperti spek_pembangun.py
+        # (kalibrasi MENYALIN dict ini, jadi setdefault harus di sini supaya
+        #  kolom interaksi bisa dibuang dari unduhan di bawah).
+        for _it in (interaksi or []):
+            _it.setdefault('sumber', f"{_it['x']}x{_it['z']}")
+        konstruk = [k for _kk, k in spec['roles']]
+        kode_x = [k for _kk, k in spec['roles'] if k != 'Y']
+        label_x = [_label(kk, k) for kk, k in spec['roles'] if k != 'Y']
+        diminta = p
+        analisis_kind = 'umum'
+        nama_lb = {kk: _label(kk, dv)
+                   for kk, dv in spec['nama_def'].items()}
 
     # toleransi mengikuti mode (sama seperti buat_data())
     if mode == 'natural':
@@ -592,10 +1063,14 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
         return (s - s.mean()) / sd if sd > 0 else s * 0.0
     df = df.apply(_z)
 
-    if model == 'mediasi':
+    if analisis_kind == 'mediasi':
         hasil = _kaitan.mediasi(df, 'X', 'M', 'Y')
-    else:
+    elif analisis_kind == 'moderasi':
         hasil = _kaitan.moderasi(df, 'X', 'Z', 'Y')
+    elif analisis_kind == 'berjenjang':
+        hasil = _hasil_berjenjang(df, diminta, nama_lb)
+    else:
+        hasil = _hasil_umum(model, df, VARIAN_JALUR[model], diminta, nama_lb)
     if not hasil.get('boleh'):
         raise ValueError(hasil.get('sebab', 'Analisis jalur gagal.'))
 
@@ -619,11 +1094,9 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
                              'kode_x': kode_x})
 
     galat_maks = float(kel.get('galat_maks', 0.0) or 0.0)
-    kunci_nama = (('x', 'm', 'y') if model == 'mediasi'
-                  else ('x', 'z', 'y'))
     return {'model': model, 'n': n, 'diminta': diminta,
             'hasil': hasil,
-            'nama': {k: _label(k, k.upper()) for k in kunci_nama},
+            'nama': {k: _label(k, k.upper()) for k in nama_lb},
             'galat_maks': galat_maks,
             'tercapai': bool(kel.get('tercapai', False)),
             'mode': mode,
