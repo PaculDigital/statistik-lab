@@ -322,6 +322,43 @@ async def kualitatif_saran(payload: dict):
             status_code=502)
 
 
+@app.post('/api/kualitatif/ekspor-qdpx')
+async def kualitatif_ekspor_qdpx(payload: dict):
+    """Ekspor REFI-QDA Project (.qdpx) — dibuka di NVivo/ATLAS.ti/MAXQDA.
+
+    Data koding dikirim dari browser (localStorage); server merakit
+    project.qde yang VALID terhadap XSD resmi REFI-QDA 1.0.
+    (Wulan, 19Okt26)"""
+    from fastapi.responses import Response
+    from app.hitung.refi_qda import bangun_proyek
+    payload = payload or {}
+    try:
+        data = bangun_proyek(payload.get('nama_proyek', 'Proyek statistik-lab'),
+                             payload.get('segmen', []),
+                             payload.get('informan', []))
+    except ValueError as e:
+        return JSONResponse({'boleh': False, 'sebab': str(e)}, status_code=400)
+    nama = 'koding-statistik-lab.qdpx'
+    return Response(data, media_type='application/octet-stream',
+                    headers={'Content-Disposition':
+                             'attachment; filename="%s"' % nama})
+
+
+@app.post('/api/kualitatif/ekspor-qdc')
+async def kualitatif_ekspor_qdc(payload: dict):
+    """Ekspor REFI-QDA Codebook (.qdc) — codebook saja. (Wulan, 19Okt26)"""
+    from fastapi.responses import Response
+    from app.hitung.refi_qda import bangun_codebook
+    payload = payload or {}
+    try:
+        data = bangun_codebook(payload.get('segmen', []))
+    except ValueError as e:
+        return JSONResponse({'boleh': False, 'sebab': str(e)}, status_code=400)
+    return Response(data, media_type='application/xml',
+                    headers={'Content-Disposition':
+                             'attachment; filename="codebook-statistik-lab.qdc"'})
+
+
 @app.post('/api/baca-judul')
 async def api_baca_judul(payload: dict):
     """LAPIS 1: baca judul → usul model + ALASAN. TANPA AI (Rp 0, instan).

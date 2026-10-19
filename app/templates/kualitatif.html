@@ -725,6 +725,35 @@ el('tafsir-ai').addEventListener('click', () => {
     }).join('\n');
   saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.');
 });
+async function unduhQDA(jenis) {
+  const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
+  if (!terkode.length) {
+    alert('Belum ada segmen yang dikode. Selesaikan Langkah 2 (Koding) dulu.');
+    return;
+  }
+  const tubuh = {
+    nama_proyek: ((el('tp-judul') || {}).value) || 'Proyek statistik-lab',
+    segmen: terkode, informan: KUAL.tematik.informan
+  };
+  try {
+    const r = await fetch('/api/kualitatif/ekspor-' + jenis, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(tubuh)});
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      alert(e.sebab || 'Gagal membuat file.');
+      return;
+    }
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = jenis === 'qdpx' ? 'koding-statistik-lab.qdpx' : 'codebook-statistik-lab.qdc';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) { alert('Gagal mengunduh: ' + e.message); }
+}
+el('qdpx-unduh').addEventListener('click', () => unduhQDA('qdpx'));
+el('qdc-unduh').addEventListener('click', () => unduhQDA('qdc'));
 function unduhMD(namaBerkas, isi) {
   const blob = new Blob([isi], {type: 'text/markdown;charset=utf-8'});
   const a = document.createElement('a');
