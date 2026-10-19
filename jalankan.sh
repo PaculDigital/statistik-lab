@@ -32,10 +32,28 @@ docker rm -f "$NAMA" >/dev/null 2>&1 || true
 echo "   ✓ Bersih"
 
 echo "▶ 4/5  Jalankan kontainer"
+# ── Kunci AI (opsional) — dibaca dari .env di folder ini, JANGAN dari repo ──
+# ⚠️ Tanpa kunci, modul AI mati dengan pesan jujur (503 + mode manual),
+#    bukan error. Jadi deploy tetap jalan walau .env belum ada.
+ENV_AI=()
+if [ -f "${DIR}/.env" ]; then
+  for VAR in ROUTER9_API_KEY ROUTER9_BASE ROUTER9_MODEL; do
+    NILAI=$(grep -E "^${VAR}=" "${DIR}/.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+    if [ -n "${NILAI}" ]; then
+      ENV_AI+=(-e "${VAR}=${NILAI}")
+      echo "   ✓ ${VAR} disuntik dari .env"
+    fi
+  done
+  [ ${#ENV_AI[@]} -eq 0 ] && echo "   ⚠️  .env ada tapi tidak memuat ROUTER9_* — AI akan mati (503 jujur)"
+else
+  echo "   ⚠️  ${DIR}/.env tidak ada — AI akan mati (503 jujur, mode manual tetap jalan)"
+fi
+
 docker run -d --name "$NAMA" \
   --restart unless-stopped \
   -p "127.0.0.1:${PORT}:8000" \
   -v "${DIR}/data:/app/data" \
+  "${ENV_AI[@]}" \
   --health-cmd "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=4).status==200 else 1)\"" \
   --health-interval 30s --health-timeout 5s --health-retries 3 \
   "${NAMA}:${TAG}" >/dev/null

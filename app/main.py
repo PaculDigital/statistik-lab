@@ -17,6 +17,7 @@ Aturan induk:
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 
 from fastapi import FastAPI, Request, UploadFile, File
@@ -105,6 +106,10 @@ MODUL = [
     {'slug': 'pengaturan', 'nama': 'PENGATURAN', 'ikon': 'settings',
      'warna': '#5F6B70', 'siap': True,
      'ringkas': 'Atur AI, tampilan, dan unduhan.'},
+    {'slug': 'kualitatif', 'nama': 'KUALITATIF', 'ikon': 'file-text',
+     'warna': '#7A5AA8', 'siap': True,
+     'ringkas': 'Penelitian kata & cerita — panduan wawancara, koding, '
+                'triangulasi, sampai SWOT.'},
 ]
 
 
@@ -204,6 +209,12 @@ async def diagnosis(request: Request):
                                       _konteks(request, 'klinik', 'Diagnosis Data'))
 
 
+@app.get('/kualitatif', response_class=HTMLResponse)
+async def kualitatif(request: Request):
+    k = _konteks(request, 'kualitatif', 'Kualitatif — Penelitian Kata & Cerita')
+    return templates.TemplateResponse(request, 'kualitatif.html', k)
+
+
 @app.get('/buat-data', response_class=HTMLResponse)
 async def buat_data(request: Request):
     k = _konteks(request, 'buat-data', 'BUAT DATA')
@@ -250,6 +261,225 @@ async def api_status():
 @app.post('/api/ai')
 async def api_ai(payload: dict):
     return {'ai_aktif': set_ai(bool(payload.get('aktif')))}
+
+
+def _teks_dari_balasan(mentah: str) -> str:
+    """Ambil isi jawaban dari balasan 9router — TAHAN bentuk aneh.
+
+    ⚠️ KENAPA PERLU (Wulan, 19Okt26 — terukur, bukan tebakan):
+      9router membalas satu objek JSON, lalu MENEMPEL `data: [DONE]` di
+      ekornya TANPA baris baru:
+
+          {"choices":[{...}]}data: [DONE]
+
+    Parser lama: mentah[find('{'):rfind('}')+1] → karena '}' terakhir ada
+    di dalam "[DONE]" hasilnya JSON RUSAK → endpoint balas 200 tapi
+    `content` tidak terambil → user melihat kotak KOSONG (bug senyap).
+    Bukti: panjang respons 1426 char, jumlah '"content"' = 1, tapi
+    teks terambil = 0 char. Jawaban asli memang ada di dalamnya.
+
+    Urutan percobaan:
+      1) JSON utuh / objek pertama via raw_decode (paling sering benar)
+      2) buang ekor SSE `data: [DONE]` lalu coba lagi
+      3) gabungkan delta SSE kalau balasannya memang streaming
+    """
+    if not mentah or not mentah.strip():
+        return ''
+
+    def _dari_objek(o):
+        """Tarik teks dari satu objek balasan (utuh, bukan delta)."""
+        if not isinstance(o, dict):
+            return ''
+        for ch in (o.get('choices') or []):
+            # bentuk non-stream
+            isi = ((ch.get('message') or {}).get('content') or '').strip()
+            if isi:
+                return isi
+        return ''
+
+    def _gabung_delta(teks: str) -> str:
+        """Gabungkan delta SSE jadi satu teks utuh."""
+        potongan = []
+        for baris in teks.splitlines():
+            baris = baris.strip()
+            if not baris.startswith('data:'):
+                continue
+            isi_baris = baris[5:].strip()
+            if not isi_baris or isi_baris == '[DONE]':
+                continue
+            try:
+                o = json.loads(isi_baris)
+            except Exception:
+                continue
+            for ch in (o.get('choices') or []):
+                d = (ch.get('delta') or {}).get('content')
+                if d:
+                    potongan.append(d)
+        return ''.join(potongan).strip()
+
+    # ── (0) STREAMING MURNI: banyak baris "data: {...}" ──────────────────
+    # ⚠️ Harus dicek DULU. Kalau tidak, raw_decode berhenti di objek
+    #    PERTAMA dan cuma dapat potongan pertama ("Halo", bukan "Halo dunia").
+    if mentah.count('data:') >= 2:
+        hasil = _gabung_delta(mentah)
+        if hasil:
+            return hasil
+
+    # ── (1) JSON utuh / (2) objek pertama via raw_decode ─────────────────
+    kandidat = [mentah.strip()]
+    # buang ekor SSE "data: [DONE]" (bisa nempel tanpa newline)
+    bersih = mentah.strip()
+    for tanda in ('data:', 'data ', '\ndata'):
+        pos = bersih.find(tanda)
+        if pos > 0:
+            bersih = bersih[:pos].strip()
+            break
+    if bersih and bersih != kandidat[0]:
+        kandidat.append(bersih)
+
+    for teks_uji in kandidat:
+        try:
+            isi = _dari_objek(json.loads(teks_uji))
+            if isi:
+                return isi
+        except Exception:
+            pass
+        awal = teks_uji.find('{')
+        if awal >= 0:
+            try:
+                obj, _akhir = json.JSONDecoder().raw_decode(teks_uji[awal:])
+                isi = _dari_objek(obj)
+                if isi:
+                    return isi
+            except Exception:
+                pass
+
+    # ── (3) sisa: coba gabung delta sekali lagi ──────────────────────────
+    return _gabung_delta(mentah)
+
+
+@app.post('/api/kualitatif/saran')
+async def kualitatif_saran(payload: dict):
+    """Proksi saran AI untuk modul kualitatif (Wulan, 19Okt26).
+
+    POLA SAMA DENGAN APLIKASI INI (judul.py / jatah.py):
+      · saklar AI dihormati  -> kalau `ai_aktif()` mati, jawab 503 jujur
+      · kunci API dari ENV   -> ROUTER9_API_KEY, TIDAK PERNAH ke browser
+      · tanpa kunci          -> 503 jujur (mode manual tetap jalan)
+      · 9router menolak UA Python-urllib -> pakai UA netral
+      · respons 9router berekor SSE ("data: [DONE]") -> dibersihkan dulu
+
+    ⚠️ KENAPA PARSER DIPERBAIKI (Wulan, 19Okt26):
+      9router membalas SATU objek JSON lalu menempel `data: [DONE]` di
+      ekornya — tanpa baris baru. Parser lama memakai rfind('}') yang
+      mengenai penutup "[DONE]" sehingga JSON rusak -> SUKSES tapi isi
+      KOSONG (bug senyap: user lihat kotak kosong, bukan pesan galat).
+      Sekarang: buang ekor SSE dulu, lalu pakai JSONDecoder.raw_decode
+      yang berhenti tepat di akhir objek pertama. Teruji 2.9 detik.
+    """
+    import json as _json
+    import urllib.request as _url
+
+    # ── 1. Hormati saklar AI aplikasi (sama seperti jalur judul) ──────────
+    if not ai_aktif():
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'AI sedang dimatikan di aplikasi. Nyalakan saklar AI '
+                      'dulu, atau pakai mode manual — hasilnya sama baiknya.'},
+            status_code=503)
+
+    # ── 2. Kunci dari environment (tidak pernah ke browser) ───────────────
+    kunci = os.environ.get('ROUTER9_API_KEY', '').strip()
+    if not kunci:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'AI belum disambung (kunci API belum diisi di server). '
+                      'Pakai mode manual — hasilnya sama baiknya.'},
+            status_code=503)
+    dasar = os.environ.get('ROUTER9_BASE',
+                           'https://9router.bikinaja.id/v1').rstrip('/')
+    model = os.environ.get('ROUTER9_MODEL', 'EduAi')
+
+    prompt = str((payload or {}).get('prompt', ''))[:4000]
+    if not prompt.strip():
+        return JSONResponse({'boleh': False, 'sebab': 'Prompt kosong.'},
+                            status_code=400)
+
+    tubuh = _json.dumps({
+        'model': model, 'max_tokens': 800, 'temperature': 0.7,
+        'messages': [
+            {'role': 'system',
+             'content': 'Kamu asisten penelitian kualitatif untuk mahasiswa '
+                        'S1 Manajemen Indonesia. Jawab Bahasa Indonesia '
+                        'sederhana, kalimat pendek, SELALU sertai contoh '
+                        'konkret yang mudah diikuti. Jangan bertele-tele.'},
+            {'role': 'user', 'content': prompt},
+        ]}).encode()
+    try:
+        import http.client as _http
+        req = _url.Request(dasar + '/chat/completions', data=tubuh, headers={
+            'Authorization': 'Bearer ' + kunci,
+            'Content-Type': 'application/json',
+            # 9router menolak UA Python-urllib (403) — pakai UA netral
+            'User-Agent': 'statistik-lab/1.0'})
+        try:
+            mentah = _url.urlopen(req, timeout=90).read().decode(
+                'utf-8', 'replace')
+        except _http.IncompleteRead as _ir:
+            # 9router menutup stream SSE lebih awal — pakai yang terbaca
+            mentah = _ir.partial.decode('utf-8', 'replace')
+
+        teks = _teks_dari_balasan(mentah)
+        if not teks:
+            return JSONResponse(
+                {'boleh': False,
+                 'sebab': 'AI menjawab tapi isinya kosong. Coba lagi, atau '
+                          'pakai mode manual.'},
+                status_code=502)
+        return {'boleh': True, 'saran': teks,
+                'model': model}
+    except Exception as e:
+        return JSONResponse(
+            {'boleh': False, 'sebab': f'AI tidak menjawab ({e}). Coba lagi '
+                                     'atau pakai mode manual.'},
+            status_code=502)
+
+
+@app.post('/api/kualitatif/ekspor-qdpx')
+async def kualitatif_ekspor_qdpx(payload: dict):
+    """Ekspor REFI-QDA Project (.qdpx) — dibuka di NVivo/ATLAS.ti/MAXQDA.
+
+    Data koding dikirim dari browser (localStorage); server merakit
+    project.qde yang VALID terhadap XSD resmi REFI-QDA 1.0.
+    (Wulan, 19Okt26)"""
+    from fastapi.responses import Response
+    from app.hitung.refi_qda import bangun_proyek
+    payload = payload or {}
+    try:
+        data = bangun_proyek(payload.get('nama_proyek', 'Proyek statistik-lab'),
+                             payload.get('segmen', []),
+                             payload.get('informan', []))
+    except ValueError as e:
+        return JSONResponse({'boleh': False, 'sebab': str(e)}, status_code=400)
+    nama = 'koding-statistik-lab.qdpx'
+    return Response(data, media_type='application/octet-stream',
+                    headers={'Content-Disposition':
+                             'attachment; filename="%s"' % nama})
+
+
+@app.post('/api/kualitatif/ekspor-qdc')
+async def kualitatif_ekspor_qdc(payload: dict):
+    """Ekspor REFI-QDA Codebook (.qdc) — codebook saja. (Wulan, 19Okt26)"""
+    from fastapi.responses import Response
+    from app.hitung.refi_qda import bangun_codebook
+    payload = payload or {}
+    try:
+        data = bangun_codebook(payload.get('segmen', []))
+    except ValueError as e:
+        return JSONResponse({'boleh': False, 'sebab': str(e)}, status_code=400)
+    return Response(data, media_type='application/xml',
+                    headers={'Content-Disposition':
+                             'attachment; filename="codebook-statistik-lab.qdc"'})
 
 
 @app.post('/api/baca-judul')
