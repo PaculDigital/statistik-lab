@@ -54,8 +54,18 @@ def kelas_p(p: float) -> tuple[str, str]:
 
 
 def _skor_item(data: dict, nama: str) -> np.ndarray:
-    """Skor konstruk = jumlah item (cara SPSS: Compute Variable = SUM(item))."""
-    return data['item'][nama].sum(axis=1).astype(float)
+    """Skor konstruk = rata-rata item VALID (-1 = sel kosong, diabaikan).
+
+    (Wulan, 19Okt26 — bug uji Boss) VERSI LAMA menjumlah MENTAH termasuk
+    -1: satu sel kosong menurunkan skor seenaknya (FATAL untuk produk
+    X×Z). Versi ini SAMA dengan skor_item() di kalibrasi_jalur.py —
+    satu cara mengukur di hulu (kalibrasi) dan hilir (tampilan).
+    Catatan: rata-rata vs jumlah tidak mengubah apa pun setelah
+    standardisasi (cara SPSS/PLS membaca beta)."""
+    it = np.asarray(data['item'][nama], dtype=float)
+    it = np.where(it < 0, np.nan, it)
+    with np.errstate(invalid='ignore'):
+        return np.nanmean(it, axis=1)
 
 
 def _regresi_terstandar(X, y):
@@ -561,20 +571,11 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
         interaksi=interaksi)
     data = kel['data']
 
-    # skor konstruk = rata-rata item VALID (-1 = sel kosong, diabaikan).
-    # (Wulan, 19Okt26 — bug dari uji Boss, lapis 2) VERSI LAMA memakai
-    # _skor_item = jumlah MENTAH termasuk -1, sehingga satu sel kosong
-    # merusak skor — FATAL untuk suku interaksi X×Z (satu -1 di X dapat
-    # membalik tanda/besaran produk). Versi ini SAMA dengan skor_item()
-    # yang dipakai kalibrasi (app/hitung/kalibrasi_jalur.py): yang diukur
-    # saat kalibrasi = yang ditampilkan ke user. Baris yang semua itemnya
-    # kosong menjadi NaN lalu dibuang oleh kaitan (dropna).
-    def _skor_bersih(nm):
-        it = np.asarray(data['item'][nm], dtype=float)
-        it = np.where(it < 0, np.nan, it)
-        with np.errstate(invalid='ignore'):
-            return np.nanmean(it, axis=1)
-    df = pd.DataFrame({k: _skor_bersih(k) for k in konstruk})
+    # skor konstruk via _skor_item() = rata-rata item VALID (-1 = sel
+    # kosong diabaikan), SAMA dengan skor_item() yang dipakai kalibrasi.
+    # Prinsip: yang diukur saat kalibrasi = yang ditampilkan ke user.
+    # Baris yang semua itemnya kosong menjadi NaN lalu dibuang kaitan.
+    df = pd.DataFrame({k: _skor_item(data, k) for k in konstruk})
 
     # ── UKUR TERSTANDARDISASI (cara SPSS: koefisien beta) ──────────
     # Alasan (Wulan, 19Okt26): kaitan._reg menghitung OLS MENTAH (b dalam

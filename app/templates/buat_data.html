@@ -1462,6 +1462,19 @@ function blokUnduhJalur(d) {
     <\/div>`;
 }
 
+function peringatanTercapai(d) {
+  // JUJUR (19Okt26): kalau kalibrasi tidak mencapai target (biasanya
+  // kombinasi koefisien terlalu ekstrem untuk skala Likert), katakan
+  // terus terang + beri jalan keluar, jangan biarkan user bingung.
+  if (d.tercapai !== false) return '';
+  return `<div class="catatan merah" style="margin-top:10px">
+    ${ikonKecil('alert-triangle', 16)}
+    <div><strong>Target belum tercapai sepenuhnya<\/strong> (selisih terbesar
+    ${fmtB(d.galat_maks, 3)}). Kombinasi angka yang diminta terlalu ekstrem
+    untuk skala 1–5 — coba kecilkan salah satu koefisien, lalu buat ulang.<\/div>
+  <\/div>`;
+}
+
 function gambarHasilMediasi(d) {
   const h = d.hasil, mnt = d.diminta, nm = d.nama || {};
   const X = aman(nm.x || 'X'), M = aman(nm.m || 'M'), Y = aman(nm.y || 'Y');
@@ -1515,6 +1528,7 @@ function gambarHasilMediasi(d) {
       <div><div class="samar">Responden<\/div>
         <div style="font-size:17px"><strong>${d.n}<\/strong><\/div><\/div>
     <\/div>
+    ${peringatanTercapai(d)}
     <div class="catatan">
       ${ikonKecil('info', 16)}
       <div>Kolom <strong>β terbaca<\/strong> adalah angka yang nanti muncul di SPSS —
@@ -1587,6 +1601,7 @@ function gambarHasilModerasi(d) {
       <div><div class="samar">Responden<\/div>
         <div style="font-size:17px"><strong>${d.n}<\/strong><\/div><\/div>
     <\/div>
+    ${peringatanTercapai(d)}
     ${blokUnduhJalur(d)}
   <\/div>`;
   return s;
