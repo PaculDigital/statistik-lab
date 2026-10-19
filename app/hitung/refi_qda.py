@@ -39,6 +39,35 @@ def _rapikan(nama):
     return nama or "Tanpa nama"
 
 
+def _normal_informan(informan):
+    """Samakan bentuk informan → list of dict {nama, teknik, jenis}.
+
+    ⚠️ Wulan 19Okt26: endpoint menerima payload dari BROWSER (localStorage),
+    jadi bentuknya tidak dijamin. Dulu `informan` list of STRING atau string
+    tunggal atau None langsung bikin 'str' object has no attribute 'get'
+    → HTTP 500. Sekarang dinormalkan; yang tak terpakai dibuang.
+    """
+    if not informan:
+        return []
+    if isinstance(informan, (str, int, float)):
+        informan = [informan]
+    if not isinstance(informan, (list, tuple)):
+        return []
+    hasil = []
+    for f in informan:
+        if isinstance(f, str):
+            nama = f.strip()
+            if nama:
+                hasil.append({'nama': nama, 'teknik': '', 'jenis': ''})
+        elif isinstance(f, dict):
+            nama = _rapikan(f.get('nama') or f.get('name') or '')
+            if nama:
+                hasil.append({'nama': nama,
+                              'teknik': _rapikan(f.get('teknik') or ''),
+                              'jenis': _rapikan(f.get('jenis') or '')})
+    return hasil
+
+
 def bangun_proyek(nama_proyek, segmen, informan=()):
     """segmen: list dict {teks, kode, tema, informan, teknik, jenis}.
     Hanya segmen yang sudah punya kode & tema yang diekspor.
@@ -46,8 +75,16 @@ def bangun_proyek(nama_proyek, segmen, informan=()):
 
     Urutan elemen mengikuti XSD resmi: CodeBook, Cases, Sources.
     """
+    # ⚠️ Wulan 19Okt26: tahan payload rusak (dari browser, tak dijamin bentuk)
+    if not segmen:
+        raise ValueError("belum ada segmen yang dikode")
+    if not isinstance(segmen, (list, tuple)):
+        raise ValueError("segmen harus berupa daftar")
+    segmen = [s for s in segmen if isinstance(s, dict)]
+    informan = _normal_informan(informan)
+
     terkode = [s for s in segmen
-               if (s.get("kode") or "").strip() and (s.get("tema") or "").strip()]
+               if _rapikan(s.get("kode")) and _rapikan(s.get("tema"))]
     if not terkode:
         raise ValueError("belum ada segmen yang dikode")
 

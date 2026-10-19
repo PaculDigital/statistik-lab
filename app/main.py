@@ -461,6 +461,15 @@ async def kualitatif_ekspor_qdpx(payload: dict):
                              payload.get('informan', []))
     except ValueError as e:
         return JSONResponse({'boleh': False, 'sebab': str(e)}, status_code=400)
+    except Exception as e:
+        # ⚠️ Wulan 19Okt26: payload dari browser (localStorage) bentuknya tak
+        #    dijamin. Dulu AttributeError/TypeError lolos jadi HTTP 500 mentah.
+        #    Sekarang ditangkap -> 400 ramah, user tahu harus apa.
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': f'Data koding tidak bisa diekspor ({type(e).__name__}: '
+                      f'{e}). Periksa kembali segmen & informanmu.'},
+            status_code=400)
     nama = 'koding-statistik-lab.qdpx'
     return Response(data, media_type='application/octet-stream',
                     headers={'Content-Disposition':
