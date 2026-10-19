@@ -105,6 +105,10 @@ MODUL = [
     {'slug': 'pengaturan', 'nama': 'PENGATURAN', 'ikon': 'settings',
      'warna': '#5F6B70', 'siap': True,
      'ringkas': 'Atur AI, tampilan, dan unduhan.'},
+    {'slug': 'kualitatif', 'nama': 'KUALITATIF', 'ikon': 'file-text',
+     'warna': '#7A5AA8', 'siap': True,
+     'ringkas': 'Penelitian kata & cerita — panduan wawancara, koding, '
+                'triangulasi, sampai SWOT.'},
 ]
 
 
@@ -204,6 +208,12 @@ async def diagnosis(request: Request):
                                       _konteks(request, 'klinik', 'Diagnosis Data'))
 
 
+@app.get('/kualitatif', response_class=HTMLResponse)
+async def kualitatif(request: Request):
+    k = _konteks(request, 'kualitatif', 'Kualitatif — Penelitian Kata & Cerita')
+    return templates.TemplateResponse(request, 'kualitatif.html', k)
+
+
 @app.get('/buat-data', response_class=HTMLResponse)
 async def buat_data(request: Request):
     k = _konteks(request, 'buat-data', 'BUAT DATA')
@@ -250,6 +260,66 @@ async def api_status():
 @app.post('/api/ai')
 async def api_ai(payload: dict):
     return {'ai_aktif': set_ai(bool(payload.get('aktif')))}
+
+
+@app.post('/api/kualitatif/saran')
+async def kualitatif_saran(payload: dict):
+    """Proksi saran AI untuk modul kualitatif (Wulan, 19Okt26).
+
+    Kunci API TIDAK PERNAH ke browser: dibaca dari environment
+    ROUTER9_API_KEY di server. Tanpa kunci -> 503 jujur (mode manual).
+    """
+    import json as _json
+    import urllib.request as _url
+    kunci = os.environ.get('ROUTER9_API_KEY', '').strip()
+    if not kunci:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'AI belum disambung (kunci API belum diisi di server). '
+                      'Pakai mode manual — hasilnya sama baiknya.'},
+            status_code=503)
+    dasar = os.environ.get('ROUTER9_BASE',
+                           'https://9router.bikinaja.id/v1').rstrip('/')
+    model = os.environ.get('ROUTER9_MODEL', 'EduAi')
+    prompt = str((payload or {}).get('prompt', ''))[:4000]
+    if not prompt.strip():
+        return JSONResponse({'boleh': False, 'sebab': 'Prompt kosong.'},
+                            status_code=400)
+    tubuh = _json.dumps({
+        'model': model, 'max_tokens': 800, 'temperature': 0.7,
+        'messages': [
+            {'role': 'system',
+             'content': 'Kamu asisten penelitian kualitatif untuk mahasiswa '
+                        'S1 Manajemen Indonesia. Jawab Bahasa Indonesia '
+                        'sederhana, kalimat pendek, SELALU sertai contoh '
+                        'konkret yang mudah diikuti. Jangan bertele-tele.'},
+            {'role': 'user', 'content': prompt},
+        ]}).encode()
+    try:
+        import http.client as _http
+        req = _url.Request(dasar + '/chat/completions', data=tubuh, headers={
+            'Authorization': 'Bearer ' + kunci,
+            'Content-Type': 'application/json',
+            # 9router menolak UA Python-urllib (403) — pakai UA netral
+            'User-Agent': 'statistik-lab/1.0'})
+        try:
+            mentah = _url.urlopen(req, timeout=60).read().decode(
+                'utf-8', 'replace')
+        except _http.IncompleteRead as _ir:
+            # 9router menutup stream SSE lebih awal — pakai yang terbaca
+            mentah = _ir.partial.decode('utf-8', 'replace')
+        # respons kadang berekor SSE ("data: [DONE]") — ambil objek JSON pertama
+        awal = mentah.find('{')
+        data = _json.loads(mentah[awal:mentah.rfind('}') + 1] if awal >= 0
+                           else mentah)
+        teks = (data.get('choices') or [{}])[0].get('message', {}).get(
+            'content', '')
+        return {'boleh': True, 'saran': teks.strip()}
+    except Exception as e:
+        return JSONResponse(
+            {'boleh': False, 'sebab': f'AI tidak menjawab ({e}). Coba lagi '
+                                     'atau pakai mode manual.'},
+            status_code=502)
 
 
 @app.post('/api/baca-judul')
