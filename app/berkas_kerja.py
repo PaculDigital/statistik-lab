@@ -472,6 +472,154 @@ def buat_data(n: int, x: int, beta: list[float], skala: int = 5,
             'data': data}
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# MODEL JALUR — MEDIASI & MODERASI (Wulan, 19Okt26 — temuan audit 16Okt26)
+#
+# MASALAH: halaman /buat-data?model=mediasi|moderasi dulu hanya menampilkan
+# UI REGRESI biasa — tidak ada variabel mediator (M), tidak ada jalur a/b,
+# tidak ada efek tak langsung, tidak ada suku interaksi X×Z. Fitur mediasi/
+# moderasi di sisi PEMBANGUNAN DATA tidak berfungsi sama sekali.
+#
+# PERBAIKAN (memakai yang SUDAH TERUJI, bukan mesin baru):
+#   bangun : kalibrasi_per_jalur() + spek sk_mediasi()/sk_moderasi()
+#            (kalibrasi iteratif — koefisien terukur = yang diminta,
+#             toleransi mengikuti mode, sama seperti buat_data())
+#   ukur   : app/hitung/kaitan.py — analis yang SAMA dengan /klinik
+#            (mediasi bootstrap + simpulan; moderasi MRA + ΔR²).
+#            SATU SUMBER kebenaran: angka di sini = angka di klinik.
+# ═══════════════════════════════════════════════════════════════════════
+def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
+                    skala: int = 5, alpha: float = 0.85,
+                    mode: str = 'presisi', seed: int | None = None) -> dict:
+    """Bangun data model jalur + ukur ulang HASILNYA SENDIRI (jujur).
+
+    model  : 'mediasi' | 'moderasi'
+    params : mediasi  -> {'a': X→M, 'b': M→Y, 'langsung': X→Y (c')}
+             moderasi -> {'bx': X→Y, 'bz': Z→Y, 'interaksi': X×Z→Y}
+    nama   : label ramah user, mis. {'x': 'Harga', 'm': 'Kepuasan',
+             'y': 'Keputusan'}
+    """
+    import pandas as pd
+    from app.hitung import kaitan as _kaitan
+    from app.hitung.berurutan import sk_mediasi, sk_moderasi
+
+    model = str(model or '').strip()
+    if model not in ('mediasi', 'moderasi'):
+        raise ValueError(f"Model jalur '{model}' belum didukung.")
+
+    n = max(30, min(2000, int(n or 150)))
+    skala = int(skala or 5)
+    alpha = min(0.95, max(0.60, float(alpha or 0.85)))
+    seed_pakai = seed if seed is not None else 7
+    params = dict(params or {})
+    nama = dict(nama or {})
+
+    def _batas(v, baku=0.0):
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            v = baku
+        if v != v:  # NaN
+            v = baku
+        return max(-0.90, min(0.90, v))
+
+    def _label(kunci, baku):
+        t = str(nama.get(kunci, '') or '').strip()
+        return t[:40] if t else baku
+
+    if model == 'mediasi':
+        a = _batas(params.get('a'), 0.50)
+        b = _batas(params.get('b'), 0.40)
+        c2 = _batas(params.get('langsung'), 0.10)
+        jalur = sk_mediasi({'X': a}, b, langsung={'X': c2}, m='M')
+        interaksi = None
+        konstruk = ['X', 'M', 'Y']
+        kode_x = ['X', 'M']
+        label_x = [_label('x', 'X'), _label('m', 'M')]
+        diminta = {'a': a, 'b': b, 'langsung': c2}
+    else:  # moderasi
+        bx = _batas(params.get('bx'), 0.35)
+        bz = _batas(params.get('bz'), 0.20)
+        bi = _batas(params.get('interaksi'), 0.25)
+        spek = sk_moderasi('X', 'Z', bx, bz, bi)
+        jalur, interaksi = spek['jalur'], spek['interaksi']
+        konstruk = ['X', 'Z', 'Y']
+        kode_x = ['X', 'Z']
+        label_x = [_label('x', 'X'), _label('z', 'Z')]
+        diminta = {'bx': bx, 'bz': bz, 'interaksi': bi}
+
+    # toleransi mengikuti mode (sama seperti buat_data())
+    if mode == 'natural':
+        tol, putaran = 0.40, 1
+    else:  # 'presisi' & 'presisi_variasi' -> kalibrasi penuh
+        tol, putaran = 0.02, 40
+
+    kel = kalibrasi_per_jalur(
+        jalur, n_resp=n, item_per=3, skala=skala,
+        alpha_rentang=(alpha, alpha), toleransi=tol,
+        maks_putaran=putaran, seed=seed_pakai,
+        interaksi=interaksi)
+    data = kel['data']
+
+    # skor konstruk = jumlah item (cara SPSS) — SAMA seperti buat_data()
+    df = pd.DataFrame({k: _skor_item(data, k) for k in konstruk})
+
+    # ── UKUR TERSTANDARDISASI (cara SPSS: koefisien beta) ──────────
+    # Alasan (Wulan, 19Okt26): kaitan._reg menghitung OLS MENTAH (b dalam
+    # satuan skor), sedangkan user menyetel koefisien TERSTANDARDISASI.
+    # Tanpa pembakuan, "β diminta vs β terbaca" meleset jauh — terukur:
+    # interaksi moderasi diminta 0,30 → terbaca 0,77 (Y tidak dibakukan
+    # di kaitan.moderasi). Setelah dibakukan: b = β, sejajar dengan halaman
+    # regresi (yang juga menampilkan β terstandardisasi). T/p/R²/CI/
+    # simpulan TIDAK berubah (invariant terhadap standardisasi).
+    # Catatan: /klinik menampilkan B mentah untuk data unggahan — sama
+    # seperti kartu regresi klinik yang menampilkan kolom 'B', bukan 'β'.
+    def _z(s):
+        sd = float(s.std(ddof=1))
+        return (s - s.mean()) / sd if sd > 0 else s * 0.0
+    df = df.apply(_z)
+
+    if model == 'mediasi':
+        hasil = _kaitan.mediasi(df, 'X', 'M', 'Y')
+    else:
+        hasil = _kaitan.moderasi(df, 'X', 'Z', 'Y')
+    if not hasil.get('boleh'):
+        raise ValueError(hasil.get('sebab', 'Analisis jalur gagal.'))
+
+    # ── siapkan struktur unduhan (format SAMA seperti buat_data()) ──
+    # Kolom SUKU INTERAKSI (mis. 'XxZ') TIDAK ikut diunduh — mahasiswa
+    # menghitungnya sendiri di SPSS/SmartPLS (alur belajar yang benar;
+    # kalau sudah jadi kolom, mahasiswa bingung "ini variabel apa").
+    for _it in (interaksi or []):
+        _nm_suku = _it.get('sumber')
+        if _nm_suku and _nm_suku in data['item']:
+            del data['item'][_nm_suku]
+    kolom = []
+    for nm in data['item']:
+        for i in range(data['item'][nm].shape[1]):
+            kolom.append(f'{nm}{i+1}')
+    pratinjau = [[int(data['item'][nm][i, j])
+                  for nm in data['item']
+                  for j in range(data['item'][nm].shape[1])]
+                 for i in range(min(6, n))]
+    kolom_pls = _header_pls({'kolom': kolom, 'nama_x': label_x,
+                             'kode_x': kode_x})
+
+    galat_maks = float(kel.get('galat_maks', 0.0) or 0.0)
+    kunci_nama = (('x', 'm', 'y') if model == 'mediasi'
+                  else ('x', 'z', 'y'))
+    return {'model': model, 'n': n, 'diminta': diminta,
+            'hasil': hasil,
+            'nama': {k: _label(k, k.upper()) for k in kunci_nama},
+            'galat_maks': galat_maks,
+            'tercapai': bool(kel.get('tercapai', False)),
+            'mode': mode,
+            'kolom': kolom, 'kolom_pls': kolom_pls,
+            'jumlah_item': len(kolom), 'pratinjau': pratinjau,
+            'nama_x': label_x, 'kode_x': kode_x,
+            'data': data}
+
+
 # ── simpan hasil terakhir untuk unduhan ─────────────────────────────────
 # ⚠️ Disimpan ke BERKAS, bukan hanya memori: kalau server restart atau ada
 # beberapa pekerja (uvicorn worker), memori proses bisa berbeda → unduhan 404.

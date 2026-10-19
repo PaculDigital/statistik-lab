@@ -576,7 +576,7 @@ function gambarHasil(d) {
         ? 'Ada ' + nMasalah + ' hal yang perlu kamu lihat'
         : 'Semua syarat sudah terpenuhi') + '<\/h2>' +
     '<p style="margin:0;color:#6B6259">' +
-      d.n + ' responden diperiksa · ' + (d.n_kolom || '') +
+      d.n + ' responden diperiksa' + (d.n_kolom ? ' · ' + d.n_kolom : '') +
       (nMasalah
         ? '. Tidak semua harus dibetulkan — lihat penjelasan tiap bagian.'
         : '. Datamu siap diolah lebih lanjut.') +
@@ -594,7 +594,7 @@ function gambarHasil(d) {
         '<p style="margin:9px 0 0;font-size:.92rem">' +
         '<strong>R² = ' + angka(d.r2) + '<\/strong> (R² terkoreksi ' + angka(d.r2_adj) + ') — ' +
         'artinya ' + angka(d.r2 * 100, 1) + '% keragaman Y bisa dijelaskan model. ' +
-        '<strong>' + (d.prediktor || []).length + '<\/strong> responden dianalisis: ' + d.n + '.<\/p>');
+        '<strong>' + (d.prediktor || []).length + '<\/strong> prediktor dianalisis dari ' + d.n + ' responden.<\/p>');
     }
 
     /* ① Normalitas */
