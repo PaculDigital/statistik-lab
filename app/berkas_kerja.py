@@ -1280,7 +1280,10 @@ def ke_csv(d: dict, untuk: str = 'spss', pemisah: str = ',') -> bytes:
     buf = io.StringIO()
     buf.write(pemisah.join(judul) + '\n')
     for baris in _baris(d):
-        buf.write(pemisah.join(str(v) for v in baris) + '\n')
+        # -1 = sel kosong (konvensi internal). Di SPSS/SmartPLS harus jadi
+        # sel KOSONG (SYSMIS/missing) — bukan angka -1. (Wulan, 19Okt26)
+        buf.write(pemisah.join('' if v == -1 else str(v)
+                               for v in baris) + '\n')
     return buf.getvalue().encode('utf-8')
 
 
@@ -1291,7 +1294,9 @@ def ke_xlsx(d: dict, untuk: str = 'spss') -> bytes:
     ws.title = 'Data Penelitian'
     ws.append(_header_pls(d) if untuk == 'pls' else _header_ramah(d))
     for baris in _baris(d):
-        ws.append(baris)
+        # -1 = sel kosong → None = sel kosong di Excel (SYSMIS di SPSS,
+        # missing di SmartPLS). (Wulan, 19Okt26)
+        ws.append([None if v == -1 else v for v in baris])
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
