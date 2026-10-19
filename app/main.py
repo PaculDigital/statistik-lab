@@ -341,6 +341,33 @@ async def api_buat_data(payload: dict):
     return JSONResponse(d_kirim)
 
 
+@app.post('/api/buat-data/jalur')
+async def api_buat_data_jalur(payload: dict):
+    """Bangun data MODEL JALUR (mediasi/moderasi) + ukur hasilnya sendiri.
+
+    (Wulan, 19Okt26 — temuan audit 16Okt26: halaman ?model=mediasi|moderasi
+    dulu hanya menampilkan UI regresi biasa. Sekarang membangun & mengukur
+    struktur jalurnya sungguhan: kalibrasi_per_jalur + kaitan.py.)
+    """
+    from fastapi import HTTPException
+    from app.berkas_kerja import buat_data_jalur, simpan_terakhir
+    try:
+        d = buat_data_jalur(
+            model=str(payload.get('model', '')),
+            n=int(payload.get('n', 150)),
+            params=dict(payload.get('params') or {}),
+            nama=dict(payload.get('nama') or {}),
+            skala=int(payload.get('skala', 5)),
+            alpha=float(payload.get('alpha', 0.85)),
+            mode=str(payload.get('mode', 'presisi')),
+        )
+    except Exception as e:                       # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f'Gagal membuat data: {e}')
+    simpan_terakhir(d)
+    d_kirim = {k: v for k, v in d.items() if k != 'data'}
+    return JSONResponse(d_kirim)
+
+
 # ── MANOVA: BANDING KELOMPOK (ACC Bos 21Sep26: "Ok buka untuk manova") ────
 # Pola yang sudah jalan sejak awal — MASUK + KELUAR:
 #   /api/manova/buat  → mesin MEMBANGUN data berkelompok (+ kunci jawaban)
