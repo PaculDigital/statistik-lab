@@ -68,6 +68,47 @@ def ukur_jalur(data: dict, target: str, sumber: list[str]) -> np.ndarray:
     return regresi_terstandar(S[:, :len(sumber)], S[:, len(sumber)])
 
 
+def _ukur_interaksi_mra(data: dict, target: str,
+                        its: list[dict]) -> dict[str, float]:
+    """Koefisien PARTIAL terstandardisasi tiap suku interaksi (cara MRA baku).
+
+    (Wulan, 19Okt26 — bug dari uji Boss, JANGAN merge sebelum ini)
+    VERSI LAMA mengukur interaksi via regresi SEDERHANA pada konstruk
+    'XxZ' (ukur_jalur(data, t, [sumber])), sedangkan yang DITAMPILKAN ke
+    user adalah koefisien PARTIAL dari Y ~ X + Z + (X×Z) dengan X, Z
+    terstandardisasi (kaitan.moderasi). Akibatnya kalibrasi mengklaim
+    'tercapai' tapi angka tampil meleset jauh dan tidak stabil antar-seed
+    (terukur: minta -0.30 → tampil -0.11, p=0.11 'tidak memoderasi';
+    seed lain → -0.39).
+    Fungsi ini mengukur PERSIS statistik yang dilihat user: beta partial
+    dari MRA (semua peubah terstandardisasi, INT = Xs×Zs seperti
+    kaitan.moderasi, lalu OLS dengan intersep seperti kaitan._reg).
+    Prinsipnya: YANG DIKALIBRASI = YANG DITAMPILKAN.
+    """
+    nama_xz = sorted({it['x'] for it in its} | {it['z'] for it in its})
+    S = skor_item(data, nama_xz + [target])
+
+    def _z(v):
+        v = np.asarray(v, float)
+        sd = v.std(ddof=1)
+        return (v - v.mean()) / sd if sd > 0 else np.zeros_like(v)
+
+    Zxz = np.column_stack([_z(S[:, i]) for i in range(len(nama_xz))])
+    yz = _z(S[:, len(nama_xz)])
+    ke = {nm: i for i, nm in enumerate(nama_xz)}
+
+    # tiru kaitan.moderasi: Xs, Zs terstandardisasi, INT = Xs × Zs
+    pred, nama_pred = [Zxz], list(nama_xz)
+    for it in its:
+        inter = (Zxz[:, ke[it['x']]] * Zxz[:, ke[it['z']]]).reshape(-1, 1)
+        pred.append(inter)
+        nama_pred.append(it['sumber'])
+    Xd = np.column_stack(pred)
+    A = np.column_stack([np.ones(len(yz)), Xd])
+    coef, *_ = np.linalg.lstsq(A, yz, rcond=None)
+    return {nm: float(v) for nm, v in zip(nama_pred, coef[1:])}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # KALIBRASI PER JALUR
 # ─────────────────────────────────────────────────────────────────────────────
@@ -240,15 +281,21 @@ def kalibrasi_per_jalur(jalur: list[dict],
             for i, s in enumerate(sumber):
                 bobot[t][s] = float(np.clip(bobot[t][s] + 0.85 * galat[i],
                                             -0.98, 0.98))
-        # suku interaksi: ukur & geser juga
+        # suku interaksi: ukur & geser juga — CARA MRA (partial),
+        # BUKAN regresi sederhana (lihat _ukur_interaksi_mra).
+        inter_per_target: dict[str, list[dict]] = {}
         for it in interaksi:
-            t, s = it["target"], it["sumber"]
-            ada = ukur_jalur(data, t, [s])
-            g = float(target_minta[t][s] - ada[0])
-            galat_maks = max(galat_maks, abs(g))
-            if abs(g) > toleransi:
-                semua_pas = False
-            it["bobot"] = float(np.clip(it["bobot"] + 0.85 * g, -0.98, 0.98))
+            inter_per_target.setdefault(it["target"], []).append(it)
+        for t, its in inter_per_target.items():
+            ukur = _ukur_interaksi_mra(data, t, its)
+            for it in its:
+                s = it["sumber"]
+                g = float(target_minta[t][s] - ukur[s])
+                galat_maks = max(galat_maks, abs(g))
+                if abs(g) > toleransi:
+                    semua_pas = False
+                it["bobot"] = float(np.clip(it["bobot"] + 0.85 * g,
+                                            -0.98, 0.98))
         for j in jalur_kerja:
             j["dari"] = dict(bobot[j["target"]])
         riwayat.append({"putaran": putaran, "galat_maks": round(galat_maks, 4)})
@@ -270,12 +317,17 @@ def kalibrasi_per_jalur(jalur: list[dict],
         for i, s in enumerate(sumber):
             hasil[f"{s}->{t}"] = round(float(dapat[i]), 4)
             galat_akhir[f"{s}->{t}"] = round(float(dapat[i] - minta[i]), 4)
+    inter_akhir: dict[str, list[dict]] = {}
     for it in interaksi:
-        t, s = it["target"], it["sumber"]
-        a = ukur_jalur(data, t, [s])
-        hasil[f"{s}->{t}"] = round(float(a[0]), 4)
-        galat_akhir[f"{s}->{t}"] = round(
-            float(a[0] - target_minta[t][s]), 4)
+        inter_akhir.setdefault(it["target"], []).append(it)
+    for t, its in inter_akhir.items():
+        ukur = _ukur_interaksi_mra(data, t, its)
+        for it in its:
+            s = it["sumber"]
+            a = ukur[s]
+            hasil[f"{s}->{t}"] = round(float(a), 4)
+            galat_akhir[f"{s}->{t}"] = round(
+                float(a - target_minta[t][s]), 4)
     maks = max((abs(v) for v in galat_akhir.values()), default=0.0)
 
     return {"data": data, "jalur_final": jalur_kerja,
