@@ -195,6 +195,18 @@
         <button class="tb tb-sekunder" id="tafsir-ai">{{ ikon('sparkles', 15) }} Minta contoh tafsir dari AI</button>
         <button class="tb tb-utama" id="tafsir-unduh">{{ ikon('download', 15) }} Unduh untuk Bab 4 (.md)</button>
       </div>
+      {# ⚠️ Wulan 19Okt26: tombol ekspor QDA TIDAK PERNAH ADA di HTML,
+         padahal JS sudah punya listener #qdpx-unduh & #qdc-unduh.
+         Akibatnya listener kena null -> SELURUH blok skrip berhenti ->
+         kartu Tema & SWOT tidak bisa diklik. Ditambahkan di sini. #}
+      <div class="baris renggang" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">Buka di software analisis kualitatif</div>
+          <div class="samar" style="font-size:12px">Berkas bisa dibuka langsung di NVivo, ATLAS.ti, atau MAXQDA.</div>
+        </div>
+        <button class="tb tb-sekunder" id="qdpx-unduh" title="Project lengkap: kode, tema, informan, kutipan">{{ ikon('download', 15) }} .qdpx (NVivo / ATLAS.ti)</button>
+        <button class="tb tb-sekunder" id="qdc-unduh" title="Codebook saja: daftar kode & tema">{{ ikon('download', 15) }} .qdc (Codebook)</button>
+      </div>
       <div id="tafsir-saran"></div>
     </div>
   </div>
@@ -939,5 +951,5 @@ el('sw-unduh').addEventListener('click', () => {
 gambarFaktor(); gambarMatriks(); gambarIFAS(); gambarTafsir();
 aturLangkah('tematik', 1);
 aturLangkah('swot', 1);
-<\/script>
+</script>
 {% endblock %}
