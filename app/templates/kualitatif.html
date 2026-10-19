@@ -30,8 +30,10 @@
   </p>
 </div>
 
-<div id="kual-pintu" class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-  <button class="kartu" id="pintu-tematik" style="text-align:left;cursor:pointer">
+<div id="kual-pintu" style="display:grid;grid-template-columns:1fr;gap:14px">
+<style>@media(min-width:640px){ div[id="kual-pintu"]{grid-template-columns:1fr 1fr} }
+@media(max-width:639px){ .kepala-judul{flex-direction:column;gap:8px} }</style>
+  <button class="kartu" id="pintu-tematik" style="text-align:left;cursor:pointer;position:relative;padding-bottom:44px">
     <span class="eyebrow">{{ ikon('users', 13) }} Analisis Tematik</span>
     <h3 style="margin:8px 0 4px">Wawancara → Tema</h3>
     <p class="samar" style="font-size:13px;margin:0">
@@ -40,8 +42,9 @@
       Contoh: <em>"saya beli karena review TikTok"</em> → kode
       <em>pengaruh review</em>.
     </p>
+    <span style="position:absolute;left:22px;bottom:16px;font-weight:700;color:var(--teal)">Mulai →</span>
   </button>
-  <button class="kartu" id="pintu-swot" style="text-align:left;cursor:pointer">
+  <button class="kartu" id="pintu-swot" style="text-align:left;cursor:pointer;position:relative;padding-bottom:44px">
     <span class="eyebrow">{{ ikon('target', 13) }} Analisis SWOT</span>
     <h3 style="margin:8px 0 4px">Faktor → Strategi</h3>
     <p class="samar" style="font-size:13px;margin:0">
@@ -49,6 +52,7 @@
       <strong>S-W-O-T</strong>, dirumuskan jadi strategi
       <strong>SO/WO/ST/WT</strong>, plus skor IFAS/EFAS.
     </p>
+    <span style="position:absolute;left:22px;bottom:16px;font-weight:700;color:var(--teal)">Mulai →</span>
   </button>
 </div>
 
@@ -194,6 +198,9 @@
       <div class="baris renggang" style="margin-top:12px">
         <button class="tb tb-sekunder" id="tafsir-ai">{{ ikon('sparkles', 15) }} Minta contoh tafsir dari AI</button>
         <button class="tb tb-utama" id="tafsir-unduh">{{ ikon('download', 15) }} Unduh untuk Bab 4 (.md)</button>
+        <button class="tb tb-sekunder" id="qdpx-unduh">{{ ikon('share-2', 15) }} Buka di NVivo / ATLAS.ti (.qdpx)</button>
+        <button class="tb tb-sekunder" id="qdc-unduh">{{ ikon('share-2', 15) }} Codebook saja (.qdc)</button>
+        <p class="samar" style="font-size:12.5px;margin-top:6px">Format <strong>REFI-QDA</strong> — standar resmi pertukaran data kualitatif. File .qdpx bisa dibuka langsung di NVivo, ATLAS.ti, atau MAXQDA untuk diuji/diolah lanjut.</p>
       </div>
       {# ⚠️ Wulan 19Okt26: tombol ekspor QDA TIDAK PERNAH ADA di HTML,
          padahal JS sudah punya listener #qdpx-unduh & #qdc-unduh.
@@ -764,8 +771,8 @@ async function unduhQDA(jenis) {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   } catch (e) { alert('Gagal mengunduh: ' + e.message); }
 }
-el('qdpx-unduh').addEventListener('click', () => unduhQDA('qdpx'));
-el('qdc-unduh').addEventListener('click', () => unduhQDA('qdc'));
+if (el('qdpx-unduh')) el('qdpx-unduh').addEventListener('click', () => unduhQDA('qdpx'));
+if (el('qdc-unduh')) el('qdc-unduh').addEventListener('click', () => unduhQDA('qdc'));
 function unduhMD(namaBerkas, isi) {
   const blob = new Blob([isi], {type: 'text/markdown;charset=utf-8'});
   const a = document.createElement('a');

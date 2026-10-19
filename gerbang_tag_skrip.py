@@ -27,6 +27,11 @@ POLA_GABUNG = re.compile(r"<' \+ '/")
 
 
 def blok_skrip(s: str):
+    # ⚠️ PELAJARAN 20Okt26 (bug kualitatif.html): escape yang terlalu rakus
+    # mengubah penutup '</script>' ASLI jadi '<\\/script>' → browser tidak
+    # mengenalinya → SELURUH blok JS mati (tidak ada handler yang jalan).
+    # Gerbang lama diam saja karena langsung 'break' tanpa '</script>'.
+    # Kini: <script> tanpa penutup = PELANGGARAN.
     pos = 0
     while True:
         a = s.find('<script>', pos)
@@ -34,6 +39,8 @@ def blok_skrip(s: str):
             break
         b = s.find('</script>', a)
         if b == -1:
+            baris = s[:a].count('\n') + 1
+            yield a, -1, ('__TANPA_PENUTUP__:[baris %d]' % baris)
             break
         yield a, b, s[a + 8:b]
         pos = b + 9
@@ -47,6 +54,13 @@ def main() -> int:
         s = open(P).read()
         for a, b, blok in blok_skrip(s):
             baris_awal = s[:a].count('\n') + 1
+            if b == -1:
+                pelanggaran.append(
+                    (P, baris_awal, 'TANPA PENUTUP',
+                     '<script> tanpa </script>',
+                     'SELURUH JavaScript halaman ini MATI (handler tak jalan). '
+                     'Periksa: penutup ikut ke-escape jadi <\\/script>?'))
+                continue
             for m in POLA_MENTAH.finditer(blok):
                 no = baris_awal + blok[:m.start()].count('\n')
                 pelanggaran.append(
