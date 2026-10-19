@@ -81,6 +81,9 @@
         <input type="text" id="tp-rumusan" style="width:100%" value="Bagaimana review TikTok memengaruhi keputusan pembelian Skintific di kalangan mahasiswa?"></div>
       <div class="medan"><label>Indikator yang mau digali <span class="petunjuk">pisahkan dengan koma</span></label>
         <input type="text" id="tp-indikator" style="width:100%" value="sumber informasi, pertimbangan harga, kepercayaan pada review"></div>
+      <div class="medan"><label>Jenis informan <span class="petunjuk">triangulasi sumber butuh keduanya</span></label>
+        <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="internal" checked> Internal <span class="petunjuk">pelaku di dalam (pemilik, karyawan)</span></label><br>
+        <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="eksternal" checked> Eksternal <span class="petunjuk">pelanggan, pemasok, pengamat luar</span></label></div>
       <div class="baris renggang">
         <button class="tb tb-utama" id="tp-manual">{{ ikon('wand-2', 15) }} Susun manual</button>
         <button class="tb tb-sekunder" id="tp-ai">{{ ikon('sparkles', 15) }} Minta saran AI</button>
@@ -124,7 +127,7 @@
     <div id="koding-kerja" class="sembunyi">
       <div class="kartu">
         <span class="eyebrow">{{ ikon('table', 13) }} Meja kerja — datamu sendiri</span>
-        <div class="baris" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="baris" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
           <div class="medan"><label>Nama informan / sumber</label>
             <input type="text" id="kj-informan" placeholder="cth: Informan 1" style="width:100%"></div>
           <div class="medan"><label>Teknik</label>
@@ -132,6 +135,11 @@
               <option value="wawancara">Wawancara</option>
               <option value="observasi">Observasi</option>
               <option value="dokumentasi">Dokumentasi</option>
+            </select></div>
+          <div class="medan"><label>Jenis</label>
+            <select id="kj-jenis" style="width:100%">
+              <option value="internal">Internal</option>
+              <option value="eksternal">Eksternal</option>
             </select></div>
           <div class="medan"><label>&nbsp;</label>
             <button class="tb tb-sekunder" id="kj-tambah-informan" style="width:100%">Tambah</button></div>
@@ -227,6 +235,8 @@
         <div class="medan"><label>&nbsp;</label>
           <button class="tb tb-utama" id="sw-tambah" style="width:100%">Tambah</button></div>
       </div>
+      <div class="medan"><label>Deskripsikan usaha/objek penelitian <span class="petunjuk">agar saran AI presisi, bukan generik</span></label>
+        <input type="text" id="sw-konteks" style="width:100%" placeholder="cth: Warung kopi kecil di Cikarang, pelanggan mahasiswa, jual via GoFood"></div>
       <div class="baris renggang">
         <button class="tb tb-sekunder" id="sw-ai-faktor">{{ ikon('sparkles', 15) }} Minta saran AI</button>
         <span class="samar" style="font-size:12px">Ceritakan usahamu, AI mengusulkan faktor — kamu yang memilih.</span>
@@ -354,6 +364,21 @@ async function saranAI(prompt, wadah, labelTombol) {
   }
 }
 
+/* Konteks penelitian — WAJIB di tiap prompt AI (anti-halusinasi, 19Okt26).
+   AI harus "membaca dulu" judul, rumusan, indikator sebelum mengusulkan. */
+function konteksPenelitian() {
+  const j = (el('tp-judul') || {}).value || '';
+  const r = (el('tp-rumusan') || {}).value || '';
+  const ind = (el('tp-indikator') || {}).value || '';
+  const usaha = (el('sw-konteks') || {}).value || '';
+  let k = 'KONTEKS PENELITIAN (jadikan acuan utama, jangan mengarang di luar ini):\n';
+  if (j.trim()) k += '- Judul: ' + j.trim() + '\n';
+  if (r.trim()) k += '- Rumusan masalah: ' + r.trim() + '\n';
+  if (ind.trim()) k += '- Indikator: ' + ind.trim() + '\n';
+  if (usaha.trim()) k += '- Objek/usaha: ' + usaha.trim() + '\n';
+  return k;
+}
+
 /* ═══════════ TEMATIK — Langkah 1: Panduan ═══════════ */
 function panduanManual() {
   const judul = el('tp-judul').value.trim() || 'Penelitianmu';
@@ -372,13 +397,23 @@ function panduanManual() {
   h += '<p class="samar" style="font-size:12.5px">Pola tiap indikator: ' +
     '1 pertanyaan pembuka (ceritakan pengalaman) + 3 probing (gali lebih dalam). ' +
     'Ubah kalimatnya sesuai gayamu — polanya yang penting.<\/p>';
+  const jenisDipilih = [...document.querySelectorAll('.tp-jenis:checked')].map(q => q.value);
+  const polaJenis = {
+    internal: {tanya: 'Ceritakan bagaimana proses', probing: '"Kendala apa yang dihadapi saat itu?"'},
+    eksternal: {tanya: 'Bagaimana penilaianmu tentang', probing: '"Apa yang membuatmu menilai begitu?"'}
+  };
   indikator.forEach((ind, i) => {
     h += '<div style="margin:10px 0;padding:10px;border:1px dashed var(--garis);border-radius:8px">' +
-      '<strong>Indikator ' + (i + 1) + ': ' + aman(ind) + '<\/strong><ol style="margin:6px 0 0;font-size:14px">' +
-      '<li><em>Pembuka:<\/em> "Ceritakan pengalamanmu terkait ' + aman(ind) + '."<\/li>' +
-      '<li><em>Probing:<\/em> "Bisa dijelaskan lebih detail maksudnya?"<\/li>' +
-      '<li><em>Probing:<\/em> "Kapan / di mana itu terjadi?"<\/li>' +
-      '<li><em>Probing:<\/em> "Kenapa begitu menurutmu?"<\/li><\/ol><\/div>';
+      '<strong>Indikator ' + (i + 1) + ': ' + aman(ind) + '<\/strong>';
+    jenisDipilih.forEach(j => {
+      const pj = polaJenis[j] || polaJenis.internal;
+      h += '<div style="margin-top:8px"><span class="pita">' + aman(j) + '<\/span>' +
+        '<ol style="margin:6px 0 0;font-size:14px">' +
+        '<li><em>Pembuka:<\/em> "' + pj.tanya + ' ' + aman(ind) + '."<\/li>' +
+        '<li><em>Probing:<\/em> "Bisa dijelaskan lebih detail maksudnya?"<\/li>' +
+        '<li><em>Probing:<\/em> ' + pj.probing + '<\/li><\/ol><\/div>';
+    });
+    h += '<\/div>';
   });
   h += '<p class="samar" style="font-size:13px"><strong>Panduan observasi:<\/strong> ' +
     'amati (1) perilaku yang terlihat, (2) suasana/konteks, (3) hal tak terduga. ' +
@@ -392,10 +427,13 @@ function panduanManual() {
 }
 el('tp-manual').addEventListener('click', panduanManual);
 el('tp-ai').addEventListener('click', () => {
-  const p = 'Buatkan panduan wawancara semi-terstruktur.\nJudul: ' +
-    el('tp-judul').value + '\nRumusan masalah: ' + el('tp-rumusan').value +
-    '\nIndikator: ' + el('tp-indikator').value +
-    '\nUntuk tiap indikator beri 1 pertanyaan pembuka + 2 probing, plus contoh jawabannya.';
+  const jenis = [...document.querySelectorAll('.tp-jenis:checked')].map(q => q.value);
+  const p = konteksPenelitian() +
+    '\nBuatkan panduan wawancara semi-terstruktur. Untuk tiap indikator beri ' +
+    '1 pertanyaan pembuka + 2 probing, plus contoh jawabannya. ' +
+    'Bedakan untuk informan ' + (jenis.join(' dan ') || 'internal dan eksternal') +
+    ': untuk INTERNAL (pelaku di dalam) gali pengalaman & proses; ' +
+    'untuk EKSTERNAL (pelanggan/pengamat luar) gali penilaian & persepsi.';
   saranAI(p, 'tp-hasil');
 });
 
@@ -489,12 +527,13 @@ function gambarInforman() {
   }
   d.innerHTML = 'Informan: ' + KUAL.tematik.informan.map((f, i) =>
     '<span class="pita">' + aman(f.nama) + ' <span class="samar">(' +
-    aman(f.teknik) + ')<\/span><\/span>').join(' ');
+    aman(f.teknik) + ' · ' + aman(f.jenis || 'internal') + ')<\/span><\/span>').join(' ');
 }
 el('kj-tambah-informan').addEventListener('click', () => {
   const nama = el('kj-informan').value.trim();
   if (!nama) return;
-  KUAL.tematik.informan.push({nama: nama, teknik: el('kj-teknik').value});
+  KUAL.tematik.informan.push({nama: nama, teknik: el('kj-teknik').value,
+    jenis: el('kj-jenis').value});
   el('kj-informan').value = '';
   gambarInforman(); simpan();
 });
@@ -504,10 +543,11 @@ function pecahSegmen() {
   if (!teks) return;
   const aktif = KUAL.tematik.informan.length
     ? KUAL.tematik.informan[KUAL.tematik.informan.length - 1]
-    : {nama: 'Informan 1', teknik: 'wawancara'};
+    : {nama: 'Informan 1', teknik: 'wawancara', jenis: 'internal'};
   const pot = teks.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
   pot.forEach(p => KUAL.tematik.segmen.push(
-    {teks: p, kode: '', tema: '', informan: aktif.nama, teknik: aktif.teknik}));
+    {teks: p, kode: '', tema: '', informan: aktif.nama, teknik: aktif.teknik,
+     jenis: aktif.jenis || 'internal'}));
   el('kj-teks').value = '';
   gambarSegmen(); simpan();
 }
@@ -528,7 +568,8 @@ function gambarSegmen() {
   w.innerHTML = KUAL.tematik.segmen.map((s, i) =>
     '<div style="margin:10px 0;padding:10px;border:1px solid var(--garis);border-radius:8px">' +
     '<div style="font-size:13.5px;margin-bottom:6px"><span class="samar">' +
-    aman(s.informan) + ' · ' + aman(s.teknik) + ' · #' + (i + 1) + '<\/span><br>' +
+    aman(s.informan) + ' · ' + aman(s.teknik) + ' · ' + aman(s.jenis || 'internal') +
+    ' · #' + (i + 1) + '<\/span><br>' +
     aman(s.teks) + '<\/div>' +
     '<div class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
     '<div class="medan" style="margin:0"><label>Kode<\/label>' +
@@ -558,9 +599,12 @@ el('kj-ai').addEventListener('click', () => {
       'Kosongkan satu kode dulu kalau mau minta saran AI.<\/div>';
     return;
   }
-  const p = 'Berikan USULAN KODE (nama pendek, 2-4 kata) untuk tiap potongan berikut. ' +
+  const p = konteksPenelitian() +
+    '\nBerikan USULAN KODE (nama pendek, 2-4 kata) untuk tiap potongan berikut, ' +
+    'SESUAI indikator di konteks. ' +
     'Format: "Potongan N: kode". Jangan menjelaskan panjang-panjang.\n' +
-    terkode.map((s, i) => 'Potongan ' + (i + 1) + ': ' + s.teks).join('\n');
+    terkode.map((s, i) => 'Potongan ' + (i + 1) + ' (' + s.informan + '): ' +
+      s.teks).join('\n');
   saranAI(p, 'kj-saran',
     'ketik manual kode yang cocok ke kolom Kode tiap potongan.');
 });
@@ -613,6 +657,27 @@ function hitungTriangulasi() {
       '<\/tr>';
   });
   h += '<\/tbody><\/table><\/div>';
+
+  /* ── matriks tema × JENIS informan (internal vs eksternal) ── */
+  const jenisAda = [...new Set(seg.map(x => x.jenis || 'internal'))];
+  if (jenisAda.length) {
+    h += '<div class="kartu"><span class="eyebrow">Matriks tema × jenis informan<\/span>' +
+      '<table class="data" style="margin-top:8px"><thead><tr><th>Tema<\/th>' +
+      jenisAda.map(j => '<th>' + aman(j) + '<\/th>').join('') +
+      '<th>Penilaian<\/th><\/tr><\/thead><tbody>';
+    temas.forEach(t => {
+      const perJ = jenisAda.map(j => sel(t, 'jenis', j));
+      const duaSisi = perJ.filter(n => n > 0).length >= 2;
+      h += '<tr><td><strong>' + aman(t) + '<\/strong><\/td>' +
+        perJ.map(n => '<td class="angka">' + (n || '–') + '<\/td>').join('') +
+        '<td>' + (duaSisi ? '<span class="pita pita-hijau">tertriangulasi<\/span>'
+          : '<span class="pita">satu sisi saja<\/span>') + '<\/td><\/tr>';
+    });
+    h += '<\/tbody><\/table>' +
+      '<p class="samar" style="font-size:12.5px">Tema yang didukung <strong>kedua ' +
+      'jenis informan<\/strong> (internal + eksternal) = triangulasi sumber penuh. ' +
+      'Kalau hanya satu sisi, cari informan dari sisi lainnya.<\/p><\/div>';
+  }
   w.innerHTML = h;
 }
 el('tri-hitung').addEventListener('click', hitungTriangulasi);
@@ -649,8 +714,10 @@ el('tafsir-ai').addEventListener('click', () => {
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const temas = [...new Set(seg.map(s => s.tema))].slice(0, 4);
   if (!temas.length) return;
-  const p = 'Berikan CONTOH tafsir 2-3 kalimat untuk tiap tema berikut ' +
-    '(penelitian mahasiswa S1). Format: "Tema X: ...".\n' +
+  const p = konteksPenelitian() +
+    '\nBerikan CONTOH tafsir 2-3 kalimat untuk tiap tema berikut, ' +
+    'KAITKAN dengan rumusan masalah di konteks. ' +
+    'Format: "Tema X: ...".\n' +
     temas.map(t => {
       const d = seg.filter(s => s.tema === t);
       return 'Tema ' + t + ' (' + d.length + ' kutipan). Contoh: "' +
@@ -719,10 +786,10 @@ el('sw-tambah').addEventListener('click', () => {
   gambarFaktor(); gambarMatriks(); gambarIFAS(); simpan();
 });
 el('sw-ai-faktor').addEventListener('click', () => {
-  const p = 'Saya mahasiswa S1 Manajemen meneliti sebuah usaha kecil. ' +
-    'Usulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang UMUM untuk ' +
-    'usaha kecil kuliner/fashion. Format: "S: ...". Satu baris satu faktor, ' +
-    'pendek saja.';
+  const p = konteksPenelitian() +
+    '\nUsulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang SPESIFIK ' +
+    'untuk objek di konteks (jangan yang generik). Format: "S: ...". ' +
+    'Satu baris satu faktor, pendek saja.';
   saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.');
 });
 function gambarMatriks() {
@@ -748,8 +815,9 @@ function gambarMatriks() {
 el('sw-ai-strategi').addEventListener('click', () => {
   const f = KUAL.swot.faktor;
   if (!f.length) return;
-  const p = 'Berdasarkan faktor SWOT berikut, usulkan SATU strategi untuk tiap ' +
-    'pasangan SO, WO, ST, WT (satu kalimat tiap strategi).\n' +
+  const p = konteksPenelitian() +
+    '\nBerdasarkan faktor SWOT berikut, usulkan SATU strategi untuk tiap ' +
+    'pasangan SO, WO, ST, WT (satu kalimat tiap strategi, spesifik untuk objek di konteks).\n' +
     f.map(x => x.k + ': ' + x.teks).join('\n');
   saranAI(p, 'sw-saran-strategi',
     'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.');
