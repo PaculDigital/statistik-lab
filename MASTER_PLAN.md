@@ -27,53 +27,24 @@ lain, **berkas ini yang menang**.
 > **hitung ulang**.
 
 - **Tanggal mulai:** 17 September 2026
-- **Status:** **TAHAP 2.7 SELESAI DIKODING** (IDENTIFIKASI DATA: mahasiswa tandai PERAN kolom → **skor konstruk**) — **BELUM DEPLOY** (tunggu ACC Bos) · gerbang **60 grup EXIT 0** · SOT selaras
-- **Berikutnya:** **deploy** (tunggu ACC) → tahap lanjut sesuai urutan resmi: **Pemilih alat → Ujian → Kualitatif → Login**
+- **Status & angka:** ⚠️ **BUKAN DI SINI** — lihat **`STATUS.md`** (satu-satunya tempat
+  angka resmi) atau jalankan `.venv/bin/python sot.py` (menghitung dari kode).
+- **Posisi kerja terakhir:** `FLAG_LANJUT_DISINI.md`
 - **Cara tahu keadaan terkini:** `.venv/bin/python sot.py`  ← **satu pintu (SOT)**
 
 ---
 
-## 0. RINGKASAN TERKINI (20 Sep 2026)
+## 0. RINGKASAN TERKINI
 
-> ⚠️ **Angka di bawah adalah SNAPSHOT.** Untuk keadaan **sekarang**, jalankan
-> `.venv/bin/python sot.py --periksa` — ia **MENGHITUNG dari kode**, bukan mengingat.
+> ⚠️ **Angka TIDAK ditulis di sini.** Tempat resminya **`STATUS.md`**.
+> Lebih tepat lagi: jalankan `.venv/bin/python sot.py` — ia **MENGHITUNG dari
+> kode**, bukan mengingat.
+>
+> Tabel rincian asersi per grup (snapshot 21 Sep 2026) sudah dipindah ke
+> `STATUS.md` → jalankan `sot.py` untuk angka yang benar SEKARANG. Tabel
+> snapshot lama yang dulu ada di sini **dihapus** karena menyesatkan (angka
+> per-grup berubah setiap tahap baru ditambahkan).
 
-**Gerbang uji: 60 grup** (`gerbang_uji.py`). Snapshot 21Sep26:
-
-| Grup uji | Asersi |
-|---|---|
-| INTI — semua model | 29 LULUS |
-| MODEL JURNAL BOS (12 hipotesis) | 13 LULUS |
-| PENUTUP — 2 mode + sampel kecil | 7 LULUS |
-| KELAYAKAN SETELAN | 19 LULUS |
-| MODEL LANJUTAN | 10 LULUS |
-| WEB — 1–8 variabel + nama + n=2000 | 21 LULUS |
-| WEB — istilah, tata letak, lingkaran, tag skrip, galat JS, kode tumpah | LULUS |
-| **MESIN — cara menguji sederhana vs berganda** | **12 LULUS** |
-| **MESIN — 10 bentuk model (mediasi/moderasi/gabungan)** | **10 LULUS** |
-| WEB — slider & teks terpotong | LULUS |
-| **WEB — sub-pilihan model (Regresi/Mediasi/Moderasi)** | **46 LULUS** |
-| **WEB — nama ikon ada di sprite** | **LULUS** |
-| **WEB — sintaks `<script>` inline setelah render Jinja** ⭐ BARU 20Sep26 | **14 LULUS** |
-| **WEB — normalitas (slider 2 arah) + pintasan hetero** ⭐ BARU 20Sep26 | **57 LULUS** |
-| **DIAGNOSIS — mesin SPSS & PLS (6+5 uji)** | **23 LULUS** |
-| **DIAGNOSIS — teks 'cara membetulkan' 11 masalah** | **63 LULUS** |
-| **DIAGNOSIS — jalur web (unggah → periksa → hasil)** | **37 LULUS** |
-| **ALAT UKUR UJI — terbukti BISA GAGAL** | **9 LULUS** |
-| ⭐ **GRAFIK — bahan gambar dari mesin (P-P, histogram, scatter)** | **33 LULUS** |
-| ⭐ **GRAFIK — fungsi SVG dari data** | **24 LULUS** |
-| ⭐ **GRAFIK — sampai ke halaman /klinik (jalur API)** | **18 LULUS** |
-| ⭐ **GRAFIK — tombol contoh + tab Baca Grafik (jalur mahasiswa)** | **16 LULUS** |
-| ⭐ **GRAFIK — uji grafiknya sendiri terbukti BISA GAGAL** | **22 LULUS** |
-| ⭐ **PERAN — periksa penandaan + skor konstruk (murni)** ⭐ BARU 21Sep26 | **35 LULUS** |
-| ⭐ **PERAN — skor konstruk: gabung kolom seperan** ⭐ BARU 21Sep26 | **35 LULUS** |
-| ⭐ **PERAN — rute web periksa-peran (HTTP sungguhan)** ⭐ BARU 21Sep26 | **30 LULUS** |
-| ⭐ **PERAN — alur halaman: unggah → peran → Hasil** ⭐ BARU 21Sep26 | **20 LULUS** |
-| ⭐ **PERAN — peran sampai ke MESIN sebagai skor konstruk** ⭐ BARU 21Sep26 | **15 LULUS** |
-| ⭐ **MESIN — S3 berantai dari pintu produksi** ⭐ BARU 21Sep26 | **LULUS** |
-| ⭐ **KAITAN — mediasi & moderasi, mesin murni** ⭐ BARU 21Sep26 | **LULUS** |
-| ⭐ **KAITAN — mediasi & moderasi sampai ke HASIL (pintu produksi)** ⭐ BARU 21Sep26 | **LULUS** |
-| **Total** | **60 grup, SEMUA LULUS** |
 
 ### ⭐ TAHAP 2.1 SELESAI & LIVE (20Sep26) — GRAFIK HIDUP + TAB "BACA GRAFIK"
 
@@ -190,7 +161,7 @@ Media pembelajaran statistik penelitian berbasis **browser web** untuk:
 4. **Modul kualitatif** (menyusul, mesin berbeda).
 
 **Nama tampil:** "Penelitian STATISTIK Lab."
-**Domain rencana:** `statistik.bikinaja.id`
+**Domain:** `statistik.bikinaja.id` — **LIVE** (lihat `STATUS.md`)
 **Kontainer:** `simulasi-olah-data` (port **8120**, bridge default)
 **Deploy:** pola `jalankan.sh` seperti EduAi & Bayana
 

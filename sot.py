@@ -533,7 +533,9 @@ def periksa(d: dict) -> int:
                               r'jangan dibaca sebagai keadaan kini', awal_blok, re.I))
 
     nyata = d['grup_gerbang']
-    for nama in ('MASTER_PLAN.md', 'FLAG_LANJUT_DISINI.md'):
+    # 20Okt26: STATUS.md ditambahkan sebagai pemegang angka RESMI.
+    # Dokumen di `arsip/` SENGAJA tidak diperiksa — isinya riwayat beku.
+    for nama in ('STATUS.md', 'MASTER_PLAN.md', 'FLAG_LANJUT_DISINI.md', 'README.md'):
         t = _baca(BASE / nama)
         for m in re.finditer(r'(\d+)\s+grup', t):
             if int(m.group(1)) != nyata and not _angka_riwayat(t, m.start()):
@@ -546,11 +548,43 @@ def periksa(d: dict) -> int:
         r'78 asersi': 'jumlah asersi usang',
         r'49 asersi': 'jumlah asersi usang',
     }
-    for nama in ('MASTER_PLAN.md', 'FLAG_LANJUT_DISINI.md'):
+    for nama in ('STATUS.md', 'MASTER_PLAN.md', 'FLAG_LANJUT_DISINI.md', 'README.md'):
         t = _baca(BASE / nama)
         for pola, pesan in usang.items():
             if re.search(pola, t):
                 masalah.append(f'{nama}: {pesan}')
+
+    # 4) PETA DOKUMEN vs KENYATAAN (BARU 20Okt26)
+    #    Akar: dokumen bertambah terus tapi tidak ada yang menjaga daftarnya,
+    #    sehingga berkas usang tetap dibaca sebagai acuan keadaan kini.
+    #    Aturan Bos 20Okt26: STATUS.md = satu-satunya tempat angka resmi.
+    status = BASE / 'STATUS.md'
+    if not status.exists():
+        masalah.append('STATUS.md HILANG — tidak ada pemegang angka resmi')
+    else:
+        t_status = _baca(status)
+        # (a) setiap dokumen .md aktif di root WAJIB terdaftar di peta dokumen
+        aktif = {p.name for p in BASE.glob('*.md')}
+        for nama in sorted(aktif - {'STATUS.md'}):
+            if nama not in t_status:
+                masalah.append(
+                    f'{nama}: belum didaftarkan di peta dokumen STATUS.md')
+        # (b) dokumen yang sudah dipindah ke arsip TIDAK boleh didaftar
+        #     sebagai dokumen aktif
+        for p in sorted((BASE / 'arsip').glob('*.md')):
+            if p.name == 'README.md':
+                continue
+            if p.name in t_status and 'arsip/' not in t_status:
+                masalah.append(
+                    f'{p.name}: ada di arsip/ tapi didaftar sebagai aktif')
+        # (c) folder arsip WAJIB punya penanda beku
+        penanda = BASE / 'arsip' / 'README.md'
+        if not penanda.exists():
+            masalah.append('arsip/README.md HILANG — arsip tanpa penanda beku')
+        else:
+            tp = _baca(penanda)
+            if 'BEKU' not in tp.upper():
+                masalah.append('arsip/README.md tidak menyatakan arsip BEKU')
 
     print('\n' + '═' * 74)
     if masalah:
