@@ -94,6 +94,16 @@ Jenis gerbang yang ada:
 - `uji_*.py` — uji perilaku per fitur (variabel, SPSS, grafik, halaman, dsb.)
 - `ukur_*.py` — alat ukur kecepatan, deteksi judul, kualitas gambar
 
+**Dua uji berjalan PASCA-deploy, bukan di gerbang:**
+
+| Uji | Kenapa | Dijalankan di |
+|---|---|---|
+| `uji_seo.py` | menembak **kontainer** — di gerbang pra-deploy ia menilai versi LAMA → GAGAL PALSU | `jalankan.sh` langkah **5b** |
+| `uji_web_container.sh` | uji E2E dari **dalam** kontainer | setelah deploy |
+
+⚠️ Uji yang menembak kontainer **tidak bisa** membuktikan kode yang belum
+terdeploy. Untuk verifikasi pra-deploy pakai `BASE_UJI=http://127.0.0.1:8122`.
+
 **Jumlah grup & asersi:** lihat `STATUS.md` (tidak ditulis di sini — cepat basi).
 
 ## Aturan dokumentasi

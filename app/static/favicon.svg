@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Favicon Penelitian STATISTIK Lab. (Wulan, 20Okt26)
+     Garis "activity" (denyut data) di atas bidang hijau tua — sama dengan
+     lambang di header aplikasi. SVG supaya tajam di semua ukuran, tanpa
+     dependensi gambar. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Penelitian STATISTIK Lab.">
+  <rect width="64" height="64" rx="14" fill="#2E7D6F"/>
+  <path d="M10 34h9l5-13 8 26 6-19 4 6h12"
+        fill="none" stroke="#FBF8F3" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

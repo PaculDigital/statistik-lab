@@ -353,6 +353,26 @@ UJI = [
     ("PINTU — kartu ①② terbukti di HALAMAN (jalur nyata user)",
      "uji_web_pintu.py",
      "⚠️ lewat ?model= (bukan /buat-data polos — halaman SENGAJA redirect)"),
+
+    # ══ BARU 20Okt26 ══════════════════════════════════════════════════════
+    ("ATRIBUSI — brand pemilik tampil di footer SEMUA halaman",
+     "uji_atribusi_footer.py",
+     "Powered by: Jizenji T Wirastomo, SSos, MM, DBA — di <footer>, bukan <header>"),
+
+    # ⚠️ uji_seo.py TIDAK di sini — SENGAJA (putusan Bos 20Okt26, opsi A).
+    #    Sebab: uji SEO menembak KONTAINER. Kalau ditaruh di gerbang pra-deploy,
+    #    ia mengukur kontainer LAMA yang belum punya rute baru → gerbang GAGAL
+    #    PALSU dan deploy selalu dibatalkan (terukur: 53 GAGAL padahal kode
+    #    sudah benar 65/65 di server uji). SEO hanya bisa dibuktikan pada
+    #    kontainer HIDUP → dijalankan di jalankan.sh LANGKAH 5 (pasca-deploy).
+    #    Uji bergigi-nya TETAP di gerbang karena ia pakai server sendiri :8199.
+    ("SEO — uji SEO terbukti BISA GAGAL (3 suntikan)",
+     "_sketsa/bukti_uji_seo_gagal.py",
+     "favicon dihapus · meta dibuang · sitemap kosong → HARUS tertangkap"),
+
+    ("VARIAN JALUR — 9 varian benar-benar berfungsi (klik nyata)",
+     "_sketsa/bukti_varian_ui_berfungsi.py",
+     "klik 'Buatkan data' → tabel hasil + tombol unduh muncul di 9/9 varian"),
 ]
 
 

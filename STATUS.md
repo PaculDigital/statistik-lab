@@ -16,11 +16,22 @@ deploy — mereka cukup menautkan ke sini.
 
 | Hal | Nilai |
 |---|---|
-| Grup gerbang uji | **60** — dihitung otomatis oleh `sot.py` dari `gerbang_uji.py` |
+| Grup gerbang uji | **dihitung otomatis** oleh `sot.py` dari `gerbang_uji.py` — jangan ditulis manual di sini |
 | Kontainer | `simulasi-olah-data` · port **8120 → 8000** |
 | Domain | **`statistik.bikinaja.id`** — LIVE ✅ |
-| Deploy | **WAJIB** `bash jalankan.sh` (gerbang → build → ganti kontainer → `/health`) |
+| Deploy | **WAJIB** `bash jalankan.sh` (gerbang → build → ganti kontainer → `/health` → **uji SEO pasca-deploy**) |
 | SOT | `sot.py` = gerbang uji **nomor 1** (`--periksa` → EXIT ≠ 0 kalau dokumen melenceng) |
+
+### ⚠️ Uji SEO sengaja PASCA-deploy (putusan Bos 20Okt26, opsi A)
+
+`uji_seo.py` mengukur **KONTAINER**. Kalau dijalankan di gerbang pra-deploy, ia
+menilai kontainer **LAMA** → GAGAL PALSU (terukur: 53 GAGAL padahal kode sudah
+benar 65/65 di server uji :8122) → deploy selalu dibatalkan.
+
+⇒ Urutan benar: gerbang (tanpa SEO) → build → ganti kontainer → `/health`
+→ **`uji_seo.py` pada kontainer hidup** (`jalankan.sh` langkah **5b**).
+Uji **bergigi**-nya (`_sketsa/bukti_uji_seo_gagal.py`) tetap di gerbang sebab
+ia memakai server sendiri (:8199) — jadi penjaminnya tidak hilang.
 
 **Selalu periksa sendiri, jangan percaya tabel di atas:**
 
@@ -57,6 +68,16 @@ bash gerbang_uji.sh                  # gerbang penuh, EXIT 0 = aman
 | `FLAG_LANJUT_DISINI.md` | posisi kerja terakhir (blok teratas) |
 | `README.md` | pintu masuk repo: teknologi, cara jalan, daftar gerbang |
 | `CATATAN_KESALAHAN_21SEP2026.md` | **K-01…K-25** — kesalahan + cara betulnya (WAJIB) |
+
+### Aktif — berkas uji penjaga (baru 20Okt26)
+
+| Berkas | Isi |
+|---|---|
+| `uji_seo.py` | **uji favicon · sitemap · robots · meta description** (65 asersi) |
+| `uji_atribusi_footer.py` | **uji brand "Powered by" di footer** (23 asersi, 8 halaman) |
+| `_sketsa/bukti_uji_seo_gagal.py` | bukti uji SEO BISA GAGAL (3 suntikan tertangkap) |
+| `_sketsa/bukti_varian_ui_berfungsi.py` | bukti 9 varian jalur jalan (klik nyata) |
+| `_sketsa/bukti_penjaga_dokumen.py` | bukti penjaga SOT BISA GAGAL (5 suntikan) |
 
 ### Aktif — rujukan keputusan (masih berlaku)
 

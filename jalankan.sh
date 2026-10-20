@@ -4,6 +4,12 @@
 #
 # ATURAN: deploy produksi WAJIB lewat skrip ini (DILARANG `docker cp app/...`).
 # Port host 8120 -> kontainer 8000. Bridge DEFAULT (cloudflared di host).
+#
+# URUTAN (putusan Bos 20Okt26, opsi A):
+#   1. gerbang uji  → 2. build → 3. ganti kontainer → 4. /health
+#   → 5b. UJI SEO pada kontainer HIDUP (favicon/sitemap/robots/meta)
+# ⚠️ Uji SEO SENGAJA tidak di gerbang: ia mengukur KONTAINER, jadi kalau
+#    dijalankan sebelum build ia menilai versi LAMA → GAGAL PALSU.
 # ═══════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -83,6 +89,25 @@ print('     ' + urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5
 done
 
 if [ "$LULUS" = "1" ]; then
+  # ── UJI PASCA-DEPLOY: SEO (putusan Bos 20Okt26, opsi A) ─────────────────
+  # ⚠️ KENAPA DI SINI, BUKAN DI GERBANG: uji SEO menembak KONTAINER. Kalau
+  #    dijalankan sebelum kontainer baru hidup, ia mengukur versi LAMA →
+  #    GAGAL PALSU (terukur 53 GAGAL padahal kode sudah benar 65/65).
+  #    SEO hanya bisa dibuktikan pada kontainer HIDUP. Karena itu di sini.
+  echo
+  echo "▶ 5b   Uji SEO pada kontainer HIDUP (favicon · sitemap · robots · meta)"
+  if [ -f uji_seo.py ]; then
+    if .venv/bin/python uji_seo.py; then
+      echo "   ✓ SEO LULUS"
+    else
+      echo "❌ SEO GAGAL — kontainer sudah diganti, TAPI kelengkapan SEO bermasalah."
+      echo "   Rollback: docker rm -f ${NAMA} && docker run ... image sebelumnya"
+      exit 1
+    fi
+  else
+    echo "   ⚠️  uji_seo.py tidak ada — dilewati"
+  fi
+
   echo
   echo "✅ SELESAI — ${NAMA} LIVE di port ${PORT}"
   echo "   Domain (setelah ingress dipasang): statistik.bikinaja.id"
