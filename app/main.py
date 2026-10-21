@@ -524,6 +524,13 @@ async def kualitatif_saran(payload: dict):
 
     tubuh = _json.dumps({
         'model': model, 'max_tokens': SARAN_MAX_TOKEN, 'temperature': 0.7,
+        #  MATIKAN BERPIKIR (putusan Bos 21Okt26: "reasoning = false aja").
+        #  Model reasoning (cb/deepseek-v4.1-flash) memakai token untuk
+        #  `reasoning_content` DULU; kalau habis, `content` keluar KOSONG
+        #  dengan finish_reason=length -> itulah akar "HTTP 502".
+        #  Terukur 21Okt26: tanpa param jawaban bisa kosong, dengan param
+        #  jawaban langsung terisi (~2 dtk).
+        'enable_thinking': False,
         'messages': [
             {'role': 'system',
              'content': 'Kamu asisten penelitian kualitatif untuk mahasiswa '
@@ -562,6 +569,7 @@ async def kualitatif_saran(payload: dict):
                 tubuh2 = _json.dumps({
                     'model': model, 'max_tokens': SARAN_MAX_TOKEN * 2,
                     'temperature': 0.7,
+                    'enable_thinking': False,
                     'messages': _json.loads(tubuh.decode())['messages'],
                 }).encode()
                 asli, tubuh = tubuh, tubuh2

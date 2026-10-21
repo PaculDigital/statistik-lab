@@ -63,6 +63,15 @@ cek('D3 tidak lagi "d.sebab || (HTTP + status)" polos',
     "d.sebab || ('HTTP ' + r.status)" not in layar, 'masih polos')
 
 print()
+print('=== F. MATIKAN BERPIKIR (putusan Bos 21Okt26: "reasoning = false aja") ===')
+#  AKAR: model reasoning memakai token untuk `reasoning_content` DULU.
+#  Terukur: max_tokens=200 TANPA param -> content KOSONG finish=length.
+#  Dengan enable_thinking=False -> content TERISI finish=stop, pikir=0.
+cek('F1 payload utama memuat enable_thinking', "'enable_thinking': False" in src, 'tidak ada')
+cek('F2 payload coba-ulang JUGA memuat (kalau lupa, coba-ulang tak menolong)',
+    src.count("'enable_thinking': False") >= 2, f'hanya {src.count("enable_thinking")}×')
+
+print()
 print('=== E. Uji HIDUP: panggil rute dengan prompt asli layar ===')
 try:
     import urllib.request as u
