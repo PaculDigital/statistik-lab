@@ -88,3 +88,53 @@ Perbaikan (pagar 3 lapis di `_cek_tumpang_tindih`):
 Uji bagian 6 di `uji_jembatan.py` bersifat bergigi (gagal bila pagar
 dicabut), dan klien uji memakai raise_server_exceptions=False supaya
 kegagalan terbaca sebagai asersi, bukan crash.
+
+---
+
+## VONIS REVIEW KETIGA — LULUS, SIAP MERGE (21 Okt 2026)
+
+Reviewer: Wulan (pemegang kendali `main`). Branch yang diperiksa:
+`agen/wulan/jembatan-bab4` @ **848c0d0**. Metode: baca kode baris-per-baris
++ jalankan uji bawaan + **38 uji tepi independen** + **uji mutasi**
+(pagar dimatikan untuk membuktikan uji bisa GAGAL).
+
+### Status 4 bug
+
+| # | Bug | Status | Bukti |
+|---|---|---|---|
+| 1 | Branch tertinggal master (SEO hilang) | ✅ TUNTAS | `8c1e9cc` merge; `main.py` memuat ulang favicon/sitemap/robots (13 kemunculan) |
+| 2 | Kunci non-ASCII → 500 | ✅ TUNTAS | header raw bytes `kunci-\xea` → **401** (bukan 500) |
+| 3 | Peran tumpang tindih diterima | ✅ TUNTAS + BERGIGI | `peran` terbelah X/Y → **400**; pagar dimatikan → **200** (uji menangkap) |
+| 4 | Kolom tanpa nomor salah kelompok | ✅ TUNTAS | `Kualitas, Harga, Minat` → **400** + pesan menyebut pola |
+
+### Uji mutasi (bukti uji tidak hijau palsu)
+
+| Keadaan pagar | `peran` terbelah |
+|---|---|
+| Kode asli | 400 ✅ |
+| Pagar dimatikan total | **200** ← tertangkap |
+| Pagar buta untuk bentuk `peran` (bug versi pertama) | **200** ← tertangkap |
+| Dipulihkan | 400 ✅ |
+
+### Hasil angka
+
+- `uji_jembatan.py`: **26/26 LULUS** (termasuk 5 asersi regresi + 4 asersi bentuk `peran`).
+- Uji tepi reviewer: **38 kasus** — semua berperilaku benar. Dua yang
+  tampak "gagal" BUKAN bug aplikasi: (a) header non-ASCII ditolak
+  pustaka klien (httpx), server sudah benar; (b) kolom tanpa nomor
+  memang SENGAJA ditolak 400 sekarang.
+- Opsi B (tanpa simpan): sesi mesin **0 → 0** sesudah 5000 baris.
+- Kinerja: 5000 baris = **0,24 detik**.
+- Determinstik: dua panggilan identik → hasil identik.
+
+### Syarat sebelum/sesudah deploy (BUKAN bug kode)
+
+1. Env `JEMBATAN_KUNCI_LAYANAN` **belum dipasang** di produksi → pintu
+   masih 503 (aman tertutup). Nilai kunci = keputusan pemilik, tidak
+   ditulis di repo.
+2. Pintu **kualitatif** (§11.2 butir 2: koding + triangulasi/SWOT)
+   belum ada — memang fase berikutnya, bukan syarat Fase 1.
+3. `DOKUMENTASI_BAB4_RANCANGAN_FINAL` §10.2 (waktu bayar campuran)
+   masih **[USULAN]**, bukan keputusan.
+
+**VONIS: LULUS — layak masuk `master`.**
