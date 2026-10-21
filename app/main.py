@@ -546,6 +546,21 @@ BENTUK = {
         'dari faktor yang sudah ada (jangan mengarang faktor baru).\n'
         'Jangan beri pengantar, penutup, atau penjelasan tambahan.'
     ),
+    #  Kartu kutipan (Meja Kerja, 21Okt26): balasan DIBACA MESIN, bukan
+    #  mata — aplikasi mengambil dua baris itu lalu mengisi kolom kartu.
+    #  Kalau ada kata pengantar, tema jadi ikut kotor.
+    'kartu': (
+        'SUSUNAN WAJIB untuk satu kartu kutipan (patuhi persis):\n'
+        'Balas TEPAT DUA BARIS, tanpa baris kosong, tanpa pengantar, '
+        'tanpa penutup, tanpa penomoran, tanpa tanda kutip pembungkus:\n'
+        'KODE: <2 sampai 4 kata>\n'
+        'TEMA: <nama tema>\n'
+        'Kode ditulis huruf biasa (bukan huruf besar semua), menggambarkan '
+        'ISI kutipan. Tema WAJIB salah satu dari tema yang sudah dipakai '
+        'bila ada yang cocok; hanya buat tema baru kalau benar-benar tidak '
+        'ada yang pas.\n'
+        'JANGAN menulis kalimat penjelasan apa pun sesudah dua baris itu.'
+    ),
 }
 
 SYS_DASAR = ('Kamu asisten penelitian kualitatif untuk mahasiswa S1 '
