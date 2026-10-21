@@ -764,14 +764,15 @@ async function bantuKodeAI(i, btn) {
       '\n\nBalas PERSIS dalam format 2 baris ini, tanpa penjelasan lain:\n' +
       'KODE: <kode usulan>\nTEMA: <tema usulan>';
     const teks = await mintaTeksAI(p, 'kartu');
-    const mk = teks.match(/KODE\s*:\s*(.+)/i);
-    const mt = teks.match(/TEMA\s*:\s*(.+)/i);
+    const bersih = teks.replace(/```/g, "");
+    const mk = bersih.match(/^\s*\**\s*KODE\s*\**\s*:\s*\**\s*(.+?)\s*$/mi);
+    const mt = bersih.match(/^\s*\**\s*TEMA\s*\**\s*:\s*\**\s*(.+?)\s*$/mi);
     if (!mk || !mt) {
       if (status) status.textContent = 'Saran AI: ' + teks.replace(/\s+/g, ' ').slice(0, 160);
       return;
     }
-    s.kode = mk[1].trim().replace(/^["\u201c]|["\u201d]$/g, '');
-    s.tema = mt[1].trim().replace(/^["\u201c]|["\u201d]$/g, '');
+    s.kode = mk[1].trim().replace(/^[\s*“"]+|[\s*”"]+$/g, "");
+    s.tema = mt[1].trim().replace(/^[\s*“"]+|[\s*”"]+$/g, "");
     const ik = document.querySelector('[data-segkode="' + i + '"]');
     const it = document.querySelector('[data-segtema="' + i + '"]');
     if (ik) ik.value = s.kode;
