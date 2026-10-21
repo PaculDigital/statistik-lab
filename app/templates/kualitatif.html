@@ -355,17 +355,46 @@ document.querySelectorAll('#swot-nav [data-langkah]').forEach(q =>
   q.addEventListener('click', () => aturLangkah('swot', q.dataset.langkah)));
 
 /* ── Proksi AI (kunci di server; 503 jujur bila belum disambung) ── */
-async function saranAI(prompt, wadah, labelTombol) {
+async function saranAI(prompt, wadah, labelTombol, bentuk) {
   const w = el(wadah);
   w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
     '<div>AI sedang berpikir…<\/div><\/div>';
   try {
     const r = await fetch('/api/kualitatif/saran', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({prompt: prompt})
+      body: JSON.stringify({prompt: prompt, bentuk: bentuk || ''})
     });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok || !d.boleh) throw new Error(d.sebab || ('HTTP ' + r.status));
+    //  Galat dari Cloudflare/gerbang BALASANNYA HTML, bukan JSON.
+    //  Versi lama: r.json() gagal -> d = {} -> pesan jadi "HTTP 502"
+    //  mentah yang tidak menjelaskan apa pun (keluhan Bos 21Okt26).
+    //  Sekarang: periksa jenis isi dulu, lalu beri kalimat SEBAB.
+    const jenis = (r.headers.get('content-type') || '');
+    let d = {};
+    if (jenis.includes('json')) {
+      d = await r.json().catch(() => ({}));
+    } else {
+      await r.text().catch(() => '');
+    }
+    if (!r.ok || !d.boleh) {
+      let sebab = d.sebab;
+      if (!sebab) {
+        if (r.status === 502 || r.status === 503 || r.status === 504) {
+          sebab = 'Server AI tidak menjawab dalam waktu wajar (galat ' +
+            r.status + '). Ini biasanya gangguan sementara — tunggu ' +
+            'sebentar lalu coba lagi. Mode manual tetap bisa dipakai.';
+        } else if (r.status === 524) {
+          sebab = 'Permintaan melewati batas waktu server (galat 524). ' +
+            'Coba lagi; kalau berulang, pakai mode manual.';
+        } else if (r.status === 429) {
+          sebab = 'Terlalu banyak permintaan dalam waktu singkat (galat ' +
+            '429). Tunggu satu menit lalu coba lagi.';
+        } else {
+          sebab = 'Permintaan gagal (galat ' + r.status + '). Coba lagi, ' +
+            'atau pakai mode manual.';
+        }
+      }
+      throw new Error(sebab);
+    }
     const kartu = document.createElement('div');
     kartu.className = 'kartu';
     kartu.innerHTML =
@@ -452,7 +481,7 @@ el('tp-ai').addEventListener('click', () => {
     'Bedakan untuk informan ' + (jenis.join(' dan ') || 'internal dan eksternal') +
     ': untuk INTERNAL (pelaku di dalam) gali pengalaman & proses; ' +
     'untuk EKSTERNAL (pelanggan/pengamat luar) gali penilaian & persepsi.';
-  saranAI(p, 'tp-hasil');
+  saranAI(p, 'tp-hasil', null, 'panduan');
 });
 
 /* ═══════════ TEMATIK — Langkah 2: Koding ═══════════ */
@@ -675,13 +704,39 @@ function gambarSegmen() {
     btn.addEventListener('click', () => bantuKodeAI(+btn.dataset.aiSeg, btn)));
 }
 
-async function mintaTeksAI(prompt) {
+async function mintaTeksAI(prompt, bentuk) {
+  //  ⚠️ JANGAN pakai r.json() langsung. Kalau Cloudflare/gerbang yang
+  //  menjawab (502/504), balasannya HTML — r.json() gagal, d jadi {},
+  //  lalu pesannya cuma "HTTP 502" polos tanpa sebab (keluhan Bos
+  //  21Okt26). Periksa jenis isi dulu, sama seperti saranAI().
   const r = await fetch('/api/kualitatif/saran', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({prompt: prompt})
+    body: JSON.stringify({prompt: prompt, bentuk: bentuk || ''})
   });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok || !d.boleh) throw new Error(d.sebab || ('HTTP ' + r.status));
+  const jenisBalasan = (r.headers.get('content-type') || '');
+  let d = {};
+  if (jenisBalasan.includes('json')) {
+    d = await r.json().catch(() => ({}));
+  } else {
+    await r.text().catch(() => '');
+  }
+  if (!r.ok || !d.boleh) {
+    let sebab = d.sebab;
+    if (!sebab) {
+      if (r.status === 502 || r.status === 503 || r.status === 504) {
+        sebab = 'Server AI tidak menjawab dalam waktu wajar (galat ' +
+          r.status + '). Ini biasanya gangguan sementara — coba lagi ' +
+          'beberapa saat lagi.';
+      } else if (r.status === 429) {
+        sebab = 'Terlalu banyak permintaan dalam waktu singkat (galat ' +
+          '429). Tunggu satu menit lalu coba lagi.';
+      } else {
+        sebab = 'Permintaan gagal (galat ' + r.status + '). Coba lagi, ' +
+          'atau isi kode dan tema sendiri.';
+      }
+    }
+    throw new Error(sebab);
+  }
   return d.saran || '';
 }
 async function bantuKodeAI(i, btn) {
@@ -705,7 +760,7 @@ async function bantuKodeAI(i, btn) {
       '\n\nKutipan dari ' + s.informan + ':\n"' + s.teks + '"' +
       '\n\nBalas PERSIS dalam format 2 baris ini, tanpa penjelasan lain:\n' +
       'KODE: <kode usulan>\nTEMA: <tema usulan>';
-    const teks = await mintaTeksAI(p);
+    const teks = await mintaTeksAI(p, 'kartu');
     const mk = teks.match(/KODE\s*:\s*(.+)/i);
     const mt = teks.match(/TEMA\s*:\s*(.+)/i);
     if (!mk || !mt) {
@@ -842,7 +897,7 @@ el('tafsir-ai').addEventListener('click', () => {
       return 'Tema ' + t + ' (' + d.length + ' kutipan). Contoh: "' +
         d[0].teks.slice(0, 120) + '"';
     }).join('\n');
-  saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.');
+  saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.', 'tafsir');
 });
 async function unduhQDA(jenis) {
   const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
@@ -938,7 +993,7 @@ el('sw-ai-faktor').addEventListener('click', () => {
     '\nUsulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang SPESIFIK ' +
     'untuk objek di konteks (jangan yang generik). Format: "S: ...". ' +
     'Satu baris satu faktor, pendek saja.';
-  saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.');
+  saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.', 'swot_faktor');
 });
 function gambarMatriks() {
   const f = KUAL.swot.faktor;
@@ -968,7 +1023,7 @@ el('sw-ai-strategi').addEventListener('click', () => {
     'pasangan SO, WO, ST, WT (satu kalimat tiap strategi, spesifik untuk objek di konteks).\n' +
     f.map(x => x.k + ': ' + x.teks).join('\n');
   saranAI(p, 'sw-saran-strategi',
-    'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.');
+    'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.', 'swot_strategi');
 });
 function tabelSkor(judul, daftar) {
   let h = '<table class="data"><thead><tr><th>Faktor<\/th><th>Bobot<\/th>' +

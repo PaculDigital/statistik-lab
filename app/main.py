@@ -423,6 +423,172 @@ def _teks_dari_balasan(mentah: str) -> str:
     return _gabung_delta(mentah)
 
 
+def _sebab_kosong(mentah: str) -> str:
+    """KENAPA jawaban kosong? — dibaca dari balasan, bukan ditebak.
+
+    ⚠️ AKAR "Minta saran AI → HTTP 502" (Wulan, 21Okt26 — terukur):
+      Model `cb/deepseek-v4.1-flash` punya `reasoning_content`: dia
+      menulis PROSES BERPIKIR dulu, baru `content`. Kalau `max_tokens`
+      habis dipakai berpikir, balasannya:
+
+          {"finish_reason":"length","message":{"content":"","reasoning_content":"The user wants..."}}
+
+      Terbukti: max_tokens=200 → content KOSONG; 800/3000 → terisi.
+      Balasan tetap HTTP 200, jadi tanpa pemeriksaan ini user hanya
+      melihat "AI menjawab tapi isinya kosong" — tanpa tahu sebabnya.
+
+    Kembalian: kalimat SEBAB yang bisa dibaca user (bukan kode galat).
+    """
+    if not mentah or not mentah.strip():
+        return 'AI tidak mengirim apa pun.'
+    try:
+        awal = mentah.find('{')
+        if awal < 0:
+            return 'AI mengirim jawaban yang tidak bisa dibaca.'
+        obj, _ = json.JSONDecoder().raw_decode(mentah[awal:])
+    except Exception:
+        return 'AI mengirim jawaban yang tidak bisa dibaca.'
+
+    for ch in (obj.get('choices') or []):
+        alasan = str(ch.get('finish_reason') or '')
+        pesan = ch.get('message') or {}
+        ada_pikir = bool((pesan.get('reasoning_content') or '').strip())
+        if alasan == 'length':
+            if ada_pikir:
+                return ('AI kehabisan jatah token saat menyusun jawaban '
+                        '(model ini berpikir dulu sebelum menjawab), jadi '
+                        'jawabannya tidak sempat ditulis. Coba lagi — kalau '
+                        'terus begini, pakai mode manual.')
+            return ('AI kehabisan jatah token sebelum menyelesaikan '
+                    'jawaban. Coba lagi dengan permintaan lebih pendek, '
+                    'atau pakai mode manual.')
+        if alasan == 'content_filter':
+            return ('AI menolak menjawab permintaan ini (penyaring isi). '
+                    'Ubah sedikit kata kuncinya, atau pakai mode manual.')
+    return 'AI menjawab tapi isinya kosong.'
+
+
+#  BENTUK KELUARAN per jenis permintaan (permintaan Bos 21Okt26).
+#  ⚠️ KENAPA PERLU (terukur dari keluhan Bos): hasil "Panduan Wawancara"
+#  keluar sebagai Markdown datar — `# Panduan`, `## FOKUS 1:`, `---`,
+#  `**INTERNAL**`, `- *Contoh jawaban:*`. Itu terjadi karena system
+#  prompt LAMA tidak punya SATU kata pun soal format, jadi AI bebas
+#  memakai Markdown. Panduan wawancara juga DIPAKAI DI LAPANGAN, jadi
+#  rupanya harus bersih: angka + indentasi + tanda kutip.
+#
+#  Larangan Markdown GLOBAL (semua bentuk):
+LARANGAN_MD = (
+    'ATURAN WAJIB: JANGAN pakai Markdown sama sekali. Dilarang menulis '
+    'tanda #, ##, ###, **, __, ---, ``` atau bullet dengan - / *. '
+    'Jangan menyalin pertanyaan user menjadi judul. Tulis sebagai teks '
+    'biasa yang rapi. Untuk penekanan gunakan kata, bukan tanda bintang.'
+)
+
+BENTUK = {
+    #  Panduan wawancara: dibawa ke lapangan -> angka + indentasi + kutip.
+    'panduan': (
+        'SUSUNAN WAJIB untuk panduan wawancara (patuhi persis):\n'
+        'Baris pertama: "Panduan Wawancara" lalu nama penelitian, satu baris.\n'
+        'Baris kedua: satu kalimat pengantar praktis (durasi + suasana).\n'
+        'Lalu untuk TIAP fokus penelitian:\n'
+        '  "Fokus 1 — <nama fokus>" (tanpa tanda bintang, tanpa pagar)\n'
+        '  Untuk informasi tiap kelompok informan, tulis satu baris pembuka '
+        'berupa kalimat biasa, contoh: "Untuk informan internal, yang sudah '
+        'biasa riset dulu sebelum membeli:"\n'
+        '  Lalu pertanyaan bernomor 1, 2, 3 (bukan bullet). Setiap '
+        'pertanyaan ditulis sebagai kalimat yang diucapkan apa adanya, '
+        'diawali dan diakhiri tanda kutip.\n'
+        '  Di bawah pertanyaan, dua baris pendalaman yang diberi indentasi '
+        '4 spasi, ditandai "Kalau jawabannya singkat:" dan "Kalau masih '
+        'datar:". Pedalaman juga berupa kalimat yang diucapkan, dalam '
+        'tanda kutip.\n'
+        'Bahasa: bahasa sehari-hari orang ngobrol, bukan bahasa buku. '
+        'Sebut "kamu", bukan "Anda". Hindari kata "menggali", "aspek", '
+        '"persepsi", "indikator" — ganti dengan kata yang dipakai orang '
+        'sebenarnya, misalnya "cari tahu", "yang dilihat", "yang bikin yakin".'
+    ),
+    #  Koding: user menyalin kode ke kolom -> satu baris satu potongan.
+    'koding': (
+        'SUSUNAN WAJIB untuk usulan kode (patuhi persis):\n'
+        'Satu baris per potongan, bentuknya: "Potongan N: kode"\n'
+        'Kode = 2 sampai 4 kata, huruf biasa (bukan huruf besar semua), '
+        'menggambarkan ISI potongan, bukan mengulang kalimatnya.\n'
+        'JANGAN beri penjelasan, pengantar, atau penutup per potongan. '
+        'Setelah daftar kode, boleh satu paragraf pendek (maksimal 3 '
+        'kalimat) contoh cara memakai kode itu saat mengisi tabel.'
+    ),
+    #  Tafsir: contoh paragraf mengalir, bukan butir.
+    'tafsir': (
+        'SUSUNAN WAJIB untuk contoh tafsir (patuhi persis):\n'
+        'Satu tema ditulis sebagai SATU paragraf mengalir 2 sampai 3 '
+        'kalimat (bukan butir, bukan bernomor).\n'
+        'Awali dengan nama temanya dalam kalimat biasa, lalu lanjutkan '
+        'dengan maknanya. Jangan buka dengan kata "Tema:" diikuti titik dua.\n'
+        'Bahasa mengalir seperti orang menjelaskan ke teman, bukan laporan.'
+    ),
+    #  SWOT faktor: tepat 4+4+4+4, satu baris satu faktor.
+    'swot_faktor': (
+        'SUSUNAN WAJIB untuk usulan faktor SWOT (patuhi persis):\n'
+        'Empat blok berurutan dengan penanda huruf di awal baris: '
+        '"S: <faktor>" lalu "W: <faktor>" lalu "O: <faktor>" lalu '
+        '"T: <faktor>".\n'
+        'Tepat 4 baris S, 4 baris W, 4 baris O, 4 baris T. Satu faktor '
+        'satu baris, panjangnya maksimal 12 kata, SPESIFIK untuk objek di '
+        'konteks (jangan yang berlaku umum untuk semua usaha).\n'
+        'Jangan beri penjelasan apa pun di antara baris.'
+    ),
+    #  SWOT strategi: SO/WO/ST/WT masing-masing satu kalimat.
+    'swot_strategi': (
+        'SUSUNAN WAJIB untuk usulan strategi SWOT (patuhi persis):\n'
+        'Empat baris berurutan: "SO: <satu kalimat strategi>" lalu '
+        '"WO: ..." lalu "ST: ..." lalu "WT: ...".\n'
+        'Tiap strategi SATU kalimat, maksimal 20 kata, menyebut hal konkret '
+        'dari faktor yang sudah ada (jangan mengarang faktor baru).\n'
+        'Jangan beri pengantar, penutup, atau penjelasan tambahan.'
+    ),
+    #  Kartu kutipan (Meja Kerja, 21Okt26): balasan DIBACA MESIN, bukan
+    #  mata — aplikasi mengambil dua baris itu lalu mengisi kolom kartu.
+    #  Kalau ada kata pengantar, tema jadi ikut kotor.
+    'kartu': (
+        'SUSUNAN WAJIB untuk satu kartu kutipan (patuhi persis):\n'
+        'Balas TEPAT DUA BARIS, tanpa baris kosong, tanpa pengantar, '
+        'tanpa penutup, tanpa penomoran, tanpa tanda kutip pembungkus:\n'
+        'KODE: <2 sampai 4 kata>\n'
+        'TEMA: <nama tema>\n'
+        'Kode ditulis huruf biasa (bukan huruf besar semua), menggambarkan '
+        'ISI kutipan. Tema WAJIB salah satu dari tema yang sudah dipakai '
+        'bila ada yang cocok; hanya buat tema baru kalau benar-benar tidak '
+        'ada yang pas.\n'
+        'JANGAN menulis kalimat penjelasan apa pun sesudah dua baris itu.'
+    ),
+}
+
+SYS_DASAR = ('Kamu asisten penelitian kualitatif untuk mahasiswa S1 '
+             'Manajemen Indonesia. Jawab Bahasa Indonesia sederhana, '
+             'kalimat pendek, SELALU sertai contoh konkret yang mudah '
+             'diikuti. Jangan bertele-tele.')
+
+
+def _system_prompt(bentuk: str) -> str:
+    """Rakit system prompt: dasar + larangan Markdown + susunan per bentuk."""
+    bagian = [SYS_DASAR, LARANGAN_MD]
+    susunan = BENTUK.get((bentuk or '').strip().lower())
+    if susunan:
+        bagian.append(susunan)
+    else:
+        #  Tanpa bentuk: tetap larang Markdown, minta teks mengalir.
+        bagian.append('Tulis jawaban sebagai teks biasa yang mengalir. '
+                      'Kalau perlu daftar, pakai nomor 1, 2, 3, bukan bullet.')
+    return '\n\n'.join(bagian)
+
+
+#  Jatah token untuk saran kualitatif. Model reasoning (mis.
+#  cb/deepseek-v4.1-flash) memakai token untuk `reasoning_content` DULU;
+#  800 terbukti bisa habis sebelum `content` ditulis → jawaban kosong.
+#  2000 memberi ruang berpikir + menjawab (terukur 21Okt26: 2,2 dtk).
+SARAN_MAX_TOKEN = int(os.environ.get('SARAN_MAX_TOKEN', '2000'))
+
+
 @app.post('/api/kualitatif/saran')
 async def kualitatif_saran(payload: dict):
     """Proksi saran AI untuk modul kualitatif (Wulan, 19Okt26).
@@ -469,18 +635,26 @@ async def kualitatif_saran(payload: dict):
     if not prompt.strip():
         return JSONResponse({'boleh': False, 'sebab': 'Prompt kosong.'},
                             status_code=400)
+    #  Bentuk keluaran diminta LAYAR (panduan/koding/tafsir/swot_*).
+    bentuk = str((payload or {}).get('bentuk', '') or '').strip().lower()
+    sys_prompt = _system_prompt(bentuk)
 
     tubuh = _json.dumps({
-        'model': model, 'max_tokens': 800, 'temperature': 0.7,
+        'model': model, 'max_tokens': SARAN_MAX_TOKEN, 'temperature': 0.7,
+        #  MATIKAN BERPIKIR (putusan Bos 21Okt26: "reasoning = false aja").
+        #  Model reasoning (cb/deepseek-v4.1-flash) memakai token untuk
+        #  `reasoning_content` DULU; kalau habis, `content` keluar KOSONG
+        #  dengan finish_reason=length -> itulah akar "HTTP 502".
+        #  Terukur 21Okt26: tanpa param jawaban bisa kosong, dengan param
+        #  jawaban langsung terisi (~2 dtk).
+        'enable_thinking': False,
         'messages': [
-            {'role': 'system',
-             'content': 'Kamu asisten penelitian kualitatif untuk mahasiswa '
-                        'S1 Manajemen Indonesia. Jawab Bahasa Indonesia '
-                        'sederhana, kalimat pendek, SELALU sertai contoh '
-                        'konkret yang mudah diikuti. Jangan bertele-tele.'},
+            {'role': 'system', 'content': sys_prompt},
             {'role': 'user', 'content': prompt},
         ]}).encode()
-    try:
+
+    def _sekali():
+        """Satu panggilan ke 9router -> (teks, mentah). Melempar bila gagal."""
         import http.client as _http
         req = _url.Request(dasar + '/chat/completions', data=tubuh, headers={
             'Authorization': 'Bearer ' + kunci,
@@ -493,15 +667,36 @@ async def kualitatif_saran(payload: dict):
         except _http.IncompleteRead as _ir:
             # 9router menutup stream SSE lebih awal — pakai yang terbaca
             mentah = _ir.partial.decode('utf-8', 'replace')
+        return _teks_dari_balasan(mentah), mentah
 
-        teks = _teks_dari_balasan(mentah)
+    #  Percobaan 1. Kalau kosong karena `finish_reason=length` (model
+    #  kehabisan token saat BERPIKIR — terukur 21Okt26), ulangi SEKALI
+    #  dengan jatah token dua kali lipat sebelum menyerah. Percobaan
+    #  ulang hanya untuk sebab ini, supaya galat jaringan tidak disembuhkan
+    #  diam-diam (dan tidak menahan user menunggu sia-sia).
+    try:
+        teks, mentah = _sekali()
         if not teks:
+            sebab = _sebab_kosong(mentah)
+            if 'jatah token' in sebab:
+                tubuh2 = _json.dumps({
+                    'model': model, 'max_tokens': SARAN_MAX_TOKEN * 2,
+                    'temperature': 0.7,
+                    'enable_thinking': False,
+                    'messages': _json.loads(tubuh.decode())['messages'],
+                }).encode()
+                asli, tubuh = tubuh, tubuh2
+                try:
+                    teks, mentah = _sekali()
+                finally:
+                    tubuh = asli
+                if teks:
+                    return {'boleh': True, 'saran': teks, 'model': model}
             return JSONResponse(
-                {'boleh': False,
-                 'sebab': 'AI menjawab tapi isinya kosong. Coba lagi, atau '
-                          'pakai mode manual.'},
+                {'boleh': False, 'sebab': sebab + ' Pakai mode manual kalau '
+                                                  'masih gagal.'},
                 status_code=502)
-        return {'boleh': True, 'saran': teks,
+        return {'boleh': True, 'saran': teks, 'bentuk': bentuk,
                 'model': model}
     except Exception as e:
         return JSONResponse(
