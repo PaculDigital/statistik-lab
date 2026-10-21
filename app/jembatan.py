@@ -246,9 +246,7 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
         return {'layanan': 'jembatan-eduai', 'ok': True,
                 'kunci_terpasang': bool(os.environ.get(ENV_KUNCI))}
 
-    @router.post('/api/jembatan/hitung')
-    async def jembatan_hitung(payload: dict,
-                              x_kunci_layanan: str | None = Header(default=None)):
+    def _wajib_kunci(x_kunci_layanan: str | None) -> None:
         kunci_server = os.environ.get(ENV_KUNCI) or ''
         if not kunci_server:
             raise HTTPException(status_code=503, detail=(
@@ -263,6 +261,11 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
         if not cocok:
             raise HTTPException(status_code=401, detail=(
                 'Kunci antar-layanan tidak dikenal.'))
+
+    @router.post('/api/jembatan/hitung')
+    async def jembatan_hitung(payload: dict,
+                              x_kunci_layanan: str | None = Header(default=None)):
+        _wajib_kunci(x_kunci_layanan)
 
         from app.diagnosis import periksa_spss, periksa_pls, GagalBaca
 
@@ -315,5 +318,77 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
             return hias_hasil(r, mode)
         except GagalBaca as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+    @router.post('/api/jembatan/simulasi')
+    async def jembatan_simulasi(payload: dict,
+                                x_kunci_layanan: str | None = Header(default=None)):
+        """BUAT DATA untuk simulasi EduAi (Fase 3 sisa, 21 Okt 2026).
+
+        Data latihan TERKALIBRASI per jalur dari mesin BUAT DATA
+        (app.berkas_kerja.buat_data_jalur) — AI tidak mengarang angka.
+        Tanpa simpan apa pun (Opsi B): data dibuat, dikirim, selesai.
+
+        Kiriman: {model, n, nama: {x/m/z/y/m1/m2: label},
+                  params: {a/b/langsung/bx/bz/interaksi/a1/a2/b1/b2/d},
+                  konstruk: [{kode: 'X'|'M'|'M1'|'M2'|'Z'|'Y',
+                              nama_kolom: 'Keaslian_Streamer', butir: 4}]}
+        Balasan: {kolom, baris, laporan: {tercapai, galat_maks, model,
+                  diminta}} — kolom diganti nama sesuai peta EduAi dan
+        jumlah butir disesuaikan (ditambah dari skor konstruk variabel
+        itu sendiri / dipotong) supaya SAMA PERSIS template EduAi.
+        """
+        _wajib_kunci(x_kunci_layanan)
+        from app.berkas_kerja import buat_data_jalur
+        model = str(payload.get('model') or '')
+        konstruk = payload.get('konstruk') or []
+        if not konstruk:
+            raise HTTPException(400, 'Daftar konstruk kosong.')
+        try:
+            r = buat_data_jalur(model, int(payload.get('n') or 120),
+                                payload.get('params') or {},
+                                payload.get('nama') or {})
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(502, f'Mesin BUAT DATA gagal: {e}') from e
+        item = (r.get('data') or {}).get('item') or {}
+        skor = (r.get('data') or {}).get('skor_konstruk') or {}
+        import numpy as np
+        rng = np.random.default_rng(21)
+        kolom: list[str] = []
+        per_kolom: list[list[int]] = []
+        for k in konstruk:
+            kode = str(k.get('kode') or '')
+            dasar = str(k.get('nama_kolom') or kode)
+            mau = max(1, min(15, int(k.get('butir') or 3)))
+            mat = item.get(kode)
+            if mat is None:
+                raise HTTPException(
+                    400, f'Konstruk {kode} tidak dihasilkan mesin '
+                         f'untuk model {model}.')
+            mat = np.asarray(mat, dtype=float)
+            punya = mat.shape[1]
+            if mau < punya:
+                mat = mat[:, :mau]
+            elif mau > punya:
+                # Butir tambahan dari pola responden SENDIRI pada
+                # konstruk ini (rata-rata butirnya ± riuh kecil) —
+                # bukan angka karangan bebas.
+                dasar_resp = mat.mean(axis=1, keepdims=True)
+                ekstra = np.clip(np.round(
+                    dasar_resp + rng.normal(0, 0.45, (mat.shape[0], mau - punya))),
+                    1, 5)
+                mat = np.hstack([mat, ekstra])
+            for j in range(mau):
+                kolom.append(f'{dasar}_{j + 1}')
+                per_kolom.append([int(x) for x in mat[:, j]])
+        baris = [[per_kolom[j][i] for j in range(len(kolom))]
+                 for i in range(len(per_kolom[0]) if per_kolom else 0)]
+        return {'kolom': kolom, 'baris': baris,
+                'laporan': {'model': model, 'n': len(baris),
+                            'tercapai': r.get('tercapai'),
+                            'galat_maks': r.get('galat_maks'),
+                            'diminta': r.get('diminta')}}
+
 
     return router
