@@ -353,7 +353,59 @@ UJI = [
     ("PINTU — kartu ①② terbukti di HALAMAN (jalur nyata user)",
      "uji_web_pintu.py",
      "⚠️ lewat ?model= (bukan /buat-data polos — halaman SENGAJA redirect)"),
+
+    # ══ BARU 20Okt26 ══════════════════════════════════════════════════════
+    ("ATRIBUSI — brand pemilik tampil di footer SEMUA halaman",
+     "uji_atribusi_footer.py",
+     "Powered by: Jizenji T Wirastomo, SSos, MM, DBA — di <footer>, bukan <header>"),
+
+    # ⚠️ uji_seo.py TIDAK di sini — SENGAJA (putusan Bos 20Okt26, opsi A).
+    #    Sebab: uji SEO menembak KONTAINER. Kalau ditaruh di gerbang pra-deploy,
+    #    ia mengukur kontainer LAMA yang belum punya rute baru → gerbang GAGAL
+    #    PALSU dan deploy selalu dibatalkan (terukur: 53 GAGAL padahal kode
+    #    sudah benar 65/65 di server uji). SEO hanya bisa dibuktikan pada
+    #    kontainer HIDUP → dijalankan di jalankan.sh LANGKAH 5 (pasca-deploy).
+    #    Uji bergigi-nya TETAP di gerbang karena ia pakai server sendiri :8199.
+    ("SEO — uji SEO terbukti BISA GAGAL (3 suntikan)",
+     "_sketsa/bukti_uji_seo_gagal.py",
+     "favicon dihapus · meta dibuang · sitemap kosong → HARUS tertangkap"),
+
+    ("VARIAN JALUR — 9 varian benar-benar berfungsi (klik nyata)",
+     "_sketsa/bukti_varian_ui_berfungsi.py",
+     "klik 'Buatkan data' → tabel hasil + tombol unduh muncul di 9/9 varian"),
 ]
+
+
+def siapkan_tab_chrome() -> None:
+    """Pastikan Chrome :9333 punya MINIMAL 1 TAB sebelum uji browser jalan.
+
+    ⚠️ KENAPA (terukur 20Okt26): `curl :9333/json/version` → 200 (Chrome HIDUP),
+    tapi `json/list` → **0 page**. `uji_sub_regresi.py` lalu GAGAL, gerbang
+    menyimpulkan "1 GRUP GAGAL — JANGAN deploy", padahal uji itu dijalankan
+    sendirian hasilnya **45 LULUS / 0 GAGAL**.
+
+    AKAR: beberapa uji menutup tabnya sendiri di akhir. Kalau grup terakhir yang
+    jalan kebetulan menutup tab terakhir, grup berikutnya kehabisan tab.
+    ⇒ Chrome HIDUP ≠ Chrome SIAP DIPAKAI. Gerbang wajib menyiapkan sendiri.
+
+    Tidak fatal kalau gagal: uji browser akan keluar kode 77 (LEWAT), bukan 1.
+    """
+    import urllib.request
+    try:
+        with urllib.request.urlopen(
+                'http://127.0.0.1:9333/json/list', timeout=4) as f:
+            isi = f.read().decode('utf-8', 'replace')
+    except Exception:  # noqa: BLE001
+        return                                    # Chrome mati → biar 77 yang urus
+    if isi.count('"type": "page"') > 0:
+        return                                    # sudah ada tab, jangan ganggu
+    try:
+        req = urllib.request.Request(
+            'http://127.0.0.1:9333/json/new?about:blank', method='PUT')
+        urllib.request.urlopen(req, timeout=6).read()
+        print('   🔧 Chrome :9333 tidak punya tab — Wulan siapkan 1 tab dulu')
+    except Exception as e:  # noqa: BLE001
+        print(f'   ⚠️  gagal menyiapkan tab Chrome: {str(e)[:70]}')
 
 
 def main() -> int:
@@ -366,6 +418,9 @@ def main() -> int:
     # shutil.which — sama seperti gerbang_sintaks_js.py, supaya tidak
     # mengarang jalur.
     node = shutil.which('node')
+
+    # ⚠️ WAJIB SEBELUM grup browser mana pun (terukur 20Okt26 — lihat docstring).
+    siapkan_tab_chrome()
 
     print('=' * 74)
     print(' GERBANG UJI — Penelitian STATISTIK Lab.')

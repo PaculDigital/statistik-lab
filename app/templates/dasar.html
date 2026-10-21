@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ judul }} — Penelitian STATISTIK Lab.</title>
 {#
+  META DESCRIPTION + OPEN GRAPH (Wulan, 20Okt26)
+  AKAR: beranda dulu TIDAK punya meta description → cuplikan di hasil
+  pencarian Google kosong, dan tautan yang dibagikan ke WhatsApp/Telegram
+  tidak menampilkan keterangan apa pun. Sekarang tiap halaman membawa
+  deskripsi yang menjelaskan isinya.
+  ⚠️ Deskripsi diambil dari variabel `ringkas` bila ada (judul modul),
+  kalau tidak pakai kalimat baku aplikasi.
+#}
+<meta name="description" content="{{ ringkas or 'Penelitian STATISTIK Lab. — mesin simulasi data penelitian: regresi, mediasi, moderasi, sampai PLS-SEM. Rancang data, lihat hasilnya, lalu olah di SPSS atau SmartPLS.' }}">
+<meta name="theme-color" content="#2E7D6F">
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/static/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Penelitian STATISTIK Lab.">
+<meta property="og:title" content="{{ judul }} — Penelitian STATISTIK Lab.">
+<meta property="og:description" content="{{ ringkas or 'Mesin simulasi data penelitian: regresi, mediasi, moderasi, sampai PLS-SEM. Rancang data, lihat hasilnya, lalu olah di SPSS atau SmartPLS.' }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ judul }} — Penelitian STATISTIK Lab.">
+<meta name="twitter:description" content="{{ ringkas or 'Mesin simulasi data penelitian: regresi, mediasi, moderasi, sampai PLS-SEM.' }}">
+{#
   ⚠️ CAP VERSI PADA CSS (akar, 18Sep26) — JANGAN DIHAPUS.
   MASALAH YANG DITUTUP: CSS disajikan dengan `cache-control: max-age=14400`
   (4 JAM). Terukur 18Sep26: sesudah Wulan menambah 300 baris CSS baru,
@@ -78,6 +100,11 @@
         {{ ikon('sparkles', 12) }} AI {{ 'AKTIF' if ai else 'MATI' }}
       </span>
     </span>
+  </div>
+  {# Atribusi pemilik (ACC Bos 20Okt26) — footer SAJA, berlaku di semua halaman.
+     Sengaja kecil & redup supaya elegan, tidak mengganggu fokus belajar. #}
+  <div class="bungkus kaki-atribusi">
+    <span>Powered by: <strong>Jizenji T Wirastomo, SSos, MM, DBA</strong></span>
   </div>
 </footer>
 

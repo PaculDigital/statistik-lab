@@ -411,6 +411,15 @@ footer.kaki {
   font-size: 12.5px; color: var(--tinta-3);
 }
 .kaki-isi { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: center; }
+/* Atribusi pemilik (ACC Bos 20Okt26) — baris kedua footer.
+   Nama sengaja sedikit lebih tegas dari teks sekitarnya, tapi tetap redup
+   supaya tidak bersaing dengan isi halaman. */
+.kaki-atribusi {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--garis);
+  font-size: 12px; color: var(--tinta-3);
+}
+.kaki-atribusi strong { font-weight: 600; color: var(--tinta-2); }
 
 /* ── Saklar AI ────────────────────────────────────────────────────────── */
 .saklar { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
@@ -1802,7 +1811,7 @@ svg.grafik {
 <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;align-items:start">
 
   <!-- ══ PANEL SETELAN ══ -->
-  <div class="kartu">
+  <div class="kartu" id="kartu-setelan">
     <span class="eyebrow">  Setelan</span>
 
     <div class="medan">
@@ -1820,7 +1829,7 @@ svg.grafik {
       </div>
     </div>
 
-    <div class="medan">
+    <div class="medan" id="medan-x">
       <label>  Jumlah variabel bebas (X)
         <span class="petunjuk">geser untuk mengubah, 1 – 8</span></label>
 
@@ -1850,7 +1859,9 @@ svg.grafik {
         <button class="pilih pilih-kecil" data-x="2" type="button">2</button>
         <button class="pilih pilih-kecil" data-x="3" type="button">3</button>
         <button class="pilih pilih-kecil" data-x="4" type="button">4</button>
+        <button class="pilih pilih-kecil" data-x="5" type="button">5</button>
         <button class="pilih pilih-kecil" data-x="6" type="button">6</button>
+        <button class="pilih pilih-kecil" data-x="7" type="button">7</button>
         <button class="pilih pilih-kecil" data-x="8" type="button">8</button>
       </div>
       <div class="samar" id="x-nama"></div>
@@ -1962,7 +1973,7 @@ svg.grafik {
 
   <!-- ══ PANEL HASIL ══ -->
   <div>
-    <div class="kartu">
+    <div class="kartu" id="kartu-beta">
       <span class="eyebrow">  Koefisien per jalur</span>
       <p style="font-size:13.5px">
         Isi nama variabel dan besar pengaruhnya (β). Kolom paling kanan
@@ -1994,7 +2005,7 @@ svg.grafik {
        <div id="catatan-isi"></div>
     </div>
 
-    <div class="baris renggang">
+    <div class="baris renggang" id="baris-buat">
       <button class="tb tb-utama" id="tombol-buat">
           Buatkan data
       </button>
@@ -2098,6 +2109,47 @@ svg.grafik {
     </div>
 
     <div id="mn-hasil" class="sembunyi"></div>
+  </div>
+
+  {# ═════════════════════════════════════════════════════════════════════
+     PANEL JALUR — MEDIASI & MODERASI (Wulan, 19Okt26 — temuan audit 16Okt26)
+
+     Muncul HANYA untuk ?model=mediasi | ?model=moderasi.
+     Pola SAMA seperti panel MANOVA: form regresi disembunyikan, panel ini
+     muncul. Bedanya dengan regresi: yang disetel adalah KOEFISIEN JALUR
+     (a/b/c' atau X/Z/interaksi), dan hasilnya adalah tabel jalur +
+     pengaruh tak langsung / interaksi + simpulan — BUKAN tabel regresi.
+     ═════════════════════════════════════════════════════════════════════ #}
+  <div id="panel-jalur" class="sembunyi">
+    <div class="kepala-judul">
+      <span class="eyebrow" id="jalur-eyebrow">  Model Jalur</span>
+      <h2 style="margin:6px 0 4px" id="jalur-judul">Model jalur</h2>
+      <p class="samar" style="font-size:13.5px;margin:0" id="jalur-ket"></p>
+    </div>
+
+    <div class="kartu">
+      <span class="eyebrow">  Nama variabel</span>
+      <p class="samar" style="font-size:13px;margin:6px 0 10px">
+        Isi sesuai penelitianmu — nama ini yang muncul di hasil & berkas unduhan.</p>
+      <div id="jalur-nama"></div>
+    </div>
+
+    <div class="kartu">
+      <span class="eyebrow">  Besar tiap jalur (β)</span>
+      <p class="samar" style="font-size:13px;margin:6px 0 10px">
+        Geser untuk menentukan seberapa kuat tiap jalur. Negatif = melemahkan /
+        berlawanan arah.</p>
+      <div id="jalur-slider"></div>
+      <p class="samar" id="jalur-info" style="margin:10px 0 0;font-size:13px"></p>
+    </div>
+
+    <div class="baris renggang">
+      <button class="tb tb-utama" id="jalur-tombol">
+          Buatkan data
+      </button>
+    </div>
+
+    <div id="jalur-hasil" class="sembunyi"></div>
   </div>
 
 </div>

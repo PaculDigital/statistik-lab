@@ -105,7 +105,7 @@ MODUL = [
      'ringkas': 'Bingung mau pakai SPSS atau SmartPLS? Jawab beberapa pertanyaan, dapat rekomendasi.'},
     {'slug': 'pengaturan', 'nama': 'PENGATURAN', 'ikon': 'settings',
      'warna': '#5F6B70', 'siap': True,
-     'ringkas': 'Atur AI, tampilan, dan unduhan.'},
+     'ringkas': 'Atur saklar AI, tampilan, dan pilihan unduhan data penelitianmu.'},
     {'slug': 'kualitatif', 'nama': 'KUALITATIF', 'ikon': 'file-text',
      'warna': '#7A5AA8', 'siap': True,
      'ringkas': 'Penelitian kata & cerita — panduan wawancara, koding, '
@@ -123,8 +123,13 @@ def _konteks(request: Request, aktif: str, judul: str) -> dict:
     except OSError:
         cap = 0
     _VERSI_ASET = str(int(cap))
+    # META DESCRIPTION (Wulan, 20Okt26): ambil 'ringkas' modul yang sedang
+    # dibuka, supaya deskripsi halaman benar-benar menjelaskan isinya —
+    # bukan kalimat baku yang sama di semua halaman. Halaman yang tidak
+    # punya modul (beranda, /kuantitatif) → None → template pakai baku.
+    ringkas = next((m.get('ringkas') for m in MODUL if m['slug'] == aktif), None)
     return {'request': request, 'aktif': aktif, 'judul': judul, 'modul': MODUL,
-            'ai': ai_aktif(), 'versi_aset': _VERSI_ASET}
+            'ai': ai_aktif(), 'versi_aset': _VERSI_ASET, 'ringkas': ringkas}
 
 
 @app.get('/', response_class=HTMLResponse)
@@ -247,6 +252,66 @@ async def segera(request: Request, slug: str):
     k = _konteks(request, slug, m['nama'] if m else 'Modul')
     k['m'] = m
     return templates.TemplateResponse(request, 'segera.html', k)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BERKAS UNTUK MESIN PENCARI (Wulan, 20Okt26)
+#
+# AKAR: /favicon.ico & /sitemap.xml dulu 404, dan beranda tak punya meta
+# description — cuplikan di Google jadi kosong. Bukan kerusakan, tapi
+# kelengkapan yang nyata kurang.
+#
+# ⚠️ /robots.txt dulu 200 TANPA rute di kode (dilayani lapisan luar).
+#    Sekarang dilayani app supaya ISI-nya ikut terkendali dan menunjuk
+#    sitemap. Kalau nanti ada proxy yang menimpanya, uji SEO akan protes.
+# ═══════════════════════════════════════════════════════════════════════════
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon_ico():
+    """Favicon. Chrome/Firefox modern menerima SVG; ini menyajikan SVG
+    dengan jalur .ico supaya peramban lama & pemindai tetap dapat 200."""
+    from fastapi.responses import FileResponse
+    return FileResponse(STATIC / 'favicon.svg',
+                        media_type='image/svg+xml',
+                        headers={'Cache-Control': 'public, max-age=604800'})
+
+
+@app.get('/sitemap.xml', include_in_schema=False)
+async def sitemap_xml(request: Request):
+    """Sitemap DIHITUNG dari MODUL — modul baru otomatis ikut, tak bisa basi."""
+    from fastapi.responses import Response
+    dasar = str(request.base_url).rstrip('/')
+    # hanya halaman yang benar-benar ADA (siap=True); /segera/* tidak didaftar
+    jalur = ['/'] + [f'/{m["slug"]}' for m in MODUL if m.get('siap')]
+    jalur += ['/kuantitatif', '/kualitatif', '/diagnosis']
+    # buang duplikat sambil menjaga urutan
+    terlihat, unik = set(), []
+    for j in jalur:
+        if j not in terlihat:
+            terlihat.add(j)
+            unik.append(j)
+    baris = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for j in unik:
+        baris.append(f'  <url><loc>{dasar}{j}</loc>'
+                     f'<changefreq>weekly</changefreq>'
+                     f'<priority>{"1.0" if j == "/" else "0.8"}</priority></url>')
+    baris.append('</urlset>')
+    return Response('\n'.join(baris), media_type='application/xml')
+
+
+@app.get('/robots.txt', include_in_schema=False)
+async def robots_txt(request: Request):
+    """Robots menunjuk sitemap — dulu tidak ada di kode sama sekali."""
+    from fastapi.responses import PlainTextResponse
+    dasar = str(request.base_url).rstrip('/')
+    isi = ('User-agent: *\n'
+           'Allow: /\n'
+           'Disallow: /api/\n'
+           '\n'
+           f'Sitemap: {dasar}/sitemap.xml\n')
+    return PlainTextResponse(isi)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
