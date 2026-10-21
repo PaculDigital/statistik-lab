@@ -894,6 +894,67 @@ def _gabung_peran(df, payload: dict):
     return tabel, baru
 
 
+def _hias_hasil(r: dict, mode: str) -> dict:
+    """Tempelkan nasihat perbaikan + penanda mode ke hasil mesin.
+
+    Dipakai BERSAMA oleh rute lama /api/diagnosis/periksa dan pintu
+    jembatan /api/jembatan/hitung — satu sumber, supaya hasil kedua
+    pintu untuk data yang sama tidak mungkin berbeda.
+    """
+    from app import nasihat
+
+    # Tempelkan nasihat "cara membetulkan" untuk tiap masalah yang muncul.
+    # WAJIB dari server: kalau ditaruh di JS, teksnya harus dijaga di dua
+    # tempat (pelajaran EduAi 15Sep26 — batas/teks yang ditulis dua kali
+    # membuat yang satu tak pernah tersentuh).
+    kode_masalah = []
+    if mode == 'pls':
+        # ⚠️ KUNCI yang BENAR (dibaca dari mesin 19Sep26, bukan tebakan):
+        #    per konstruk → 'lulus_muat' (bukan lulus_cl) · 'ave' · 'cr'
+        #    tidak ada 'vif_inner_maks' → dihitung dari daftar 'vif_inner'
+        #    'fornell' BELUM ADA di mesin → tidak bisa dinilai (jujur).
+        for h in r.get('konstruk', []):
+            if h.get('lulus_muat') is False:  kode_masalah.append('outer_loading')
+            if h.get('lulus_ave') is False:   kode_masalah.append('ave')
+            if h.get('lulus_cr') is False:    kode_masalah.append('cr')
+        vif_i = [float(v['vif']) for v in (r.get('vif_inner') or [])
+                 if isinstance(v.get('vif'), (int, float))]
+        r['vif_inner_maks'] = max(vif_i) if vif_i else None
+        if r['vif_inner_maks'] and r['vif_inner_maks'] > 5:
+            kode_masalah.append('vif_inner')
+        # Fornell-Larcker + HTMT — DIHITUNG 20Sep26 (dulu sengaja dikosongkan).
+        # Mesin sudah mengirim `fornell` & `htmt` dari app/diagnosis.py.
+        f_list = r.get('fornell') or []
+        r['fornell'] = f_list
+        r['fornell_ada_masalah'] = any(x.get('lulus') is False for x in f_list)
+        if r['fornell_ada_masalah']:
+            kode_masalah.append('fornell')
+
+        h_list = r.get('htmt') or []
+        r['htmt'] = h_list
+        r['htmt_ada_masalah'] = any(
+            x.get('lulus_ketat') is False for x in h_list)
+        if r['htmt_ada_masalah']:
+            kode_masalah.append('htmt')
+
+        # Jujur: hanya yang BENAR-BENAR belum dihitung yang ditulis di sini.
+        r['catatan_belum'] = []
+    else:
+        if r.get('normalitas', {}).get('lulus') is False:  kode_masalah.append('normalitas')
+        if r.get('hetero', {}).get('lulus') is False:      kode_masalah.append('hetero')
+        if r.get('vif_maks') and r['vif_maks'] > 10:       kode_masalah.append('vif')
+        if r.get('linearitas', {}).get('lulus') is False:  kode_masalah.append('linearitas')
+        if r.get('outlier', {}).get('n_y', 0) >= 3:        kode_masalah.append('outlier')
+        if r.get('dw') is not None and not (1.5 <= r['dw'] <= 2.5):
+            kode_masalah.append('dw')
+    r['masalah'] = [{'kode': k, 'nasihat': nasihat.ambil(k, mode)}
+                    for k in dict.fromkeys(kode_masalah)]
+    r['nasihat_semua'] = {k: nasihat.ambil(k, mode)
+                          for k in nasihat.daftar_kode(mode)}
+    r['mode'] = mode
+    return r
+
+
 @app.post('/api/diagnosis/periksa')
 async def api_diagnosis_periksa(payload: dict):
     """Hitung syarat dari data yang sudah diunggah.
@@ -949,55 +1010,8 @@ async def api_diagnosis_periksa(payload: dict):
     except GagalBaca as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Tempelkan nasihat "cara membetulkan" untuk tiap masalah yang muncul.
-    # WAJIB dari server: kalau ditaruh di JS, teksnya harus dijaga di dua
-    # tempat (pelajaran EduAi 15Sep26 — batas/teks yang ditulis dua kali
-    # membuat yang satu tak pernah tersentuh).
-    kode_masalah = []
-    if mode == 'pls':
-        # ⚠️ KUNCI yang BENAR (dibaca dari mesin 19Sep26, bukan tebakan):
-        #    per konstruk → 'lulus_muat' (bukan lulus_cl) · 'ave' · 'cr'
-        #    tidak ada 'vif_inner_maks' → dihitung dari daftar 'vif_inner'
-        #    'fornell' BELUM ADA di mesin → tidak bisa dinilai (jujur).
-        for h in r.get('konstruk', []):
-            if h.get('lulus_muat') is False:  kode_masalah.append('outer_loading')
-            if h.get('lulus_ave') is False:   kode_masalah.append('ave')
-            if h.get('lulus_cr') is False:    kode_masalah.append('cr')
-        vif_i = [float(v['vif']) for v in (r.get('vif_inner') or [])
-                 if isinstance(v.get('vif'), (int, float))]
-        r['vif_inner_maks'] = max(vif_i) if vif_i else None
-        if r['vif_inner_maks'] and r['vif_inner_maks'] > 5:
-            kode_masalah.append('vif_inner')
-        # Fornell-Larcker + HTMT — DIHITUNG 20Sep26 (dulu sengaja dikosongkan).
-        # Mesin sudah mengirim `fornell` & `htmt` dari app/diagnosis.py.
-        f_list = r.get('fornell') or []
-        r['fornell'] = f_list
-        r['fornell_ada_masalah'] = any(x.get('lulus') is False for x in f_list)
-        if r['fornell_ada_masalah']:
-            kode_masalah.append('fornell')
+    r = _hias_hasil(r, mode)
 
-        h_list = r.get('htmt') or []
-        r['htmt'] = h_list
-        r['htmt_ada_masalah'] = any(
-            x.get('lulus_ketat') is False for x in h_list)
-        if r['htmt_ada_masalah']:
-            kode_masalah.append('htmt')
-
-        # Jujur: hanya yang BENAR-BENAR belum dihitung yang ditulis di sini.
-        r['catatan_belum'] = []
-    else:
-        if r.get('normalitas', {}).get('lulus') is False:  kode_masalah.append('normalitas')
-        if r.get('hetero', {}).get('lulus') is False:      kode_masalah.append('hetero')
-        if r.get('vif_maks') and r['vif_maks'] > 10:       kode_masalah.append('vif')
-        if r.get('linearitas', {}).get('lulus') is False:  kode_masalah.append('linearitas')
-        if r.get('outlier', {}).get('n_y', 0) >= 3:        kode_masalah.append('outlier')
-        if r.get('dw') is not None and not (1.5 <= r['dw'] <= 2.5):
-            kode_masalah.append('dw')
-    r['masalah'] = [{'kode': k, 'nasihat': nasihat.ambil(k, mode)}
-                    for k in dict.fromkeys(kode_masalah)]
-    r['nasihat_semua'] = {k: nasihat.ambil(k, mode)
-                          for k in nasihat.daftar_kode(mode)}
-    r['mode'] = mode
     return JSONResponse(r)
 
 
@@ -1037,6 +1051,11 @@ async def api_unduh(bentuk: str = 'csv', untuk: str = 'spss',
     return Response(isi, media_type='text/csv; charset=utf-8',
                     headers={'Content-Disposition':
                              f'attachment; filename="data_{tanda}.csv"'})
+
+
+# ── JEMBATAN EduAi (pintu tanpa sesi, Opsi B) — app/jembatan.py ──
+from app.jembatan import buat_router as _buat_router_jembatan
+app.include_router(_buat_router_jembatan(_gabung_peran, _hias_hasil))
 
 
 @app.get('/health')
