@@ -47,3 +47,23 @@ di repo eduai-publishing (§11 Opsi B).
 - Belum deploy, belum push (menunggu perintah Bos). Deploy = keputusan Bos.
 - Fase berikutnya (repo EduAi): fondasi hasil berversi + modul
   `app/bab4.py` + `app/jembatan_statistik.py`.
+
+## Perbaikan dari review agen Bos (21 Okt 2026, sore)
+
+Review luar menjalankan 28 uji tambahan → 4 bug, semuanya DIPERBAIKI
+(commit b8e7f46) + branch disusulkan ke master (merge 8c1e9cc):
+
+1. **Branch tertinggal master** (footer brand, SEO favicon/sitemap/robots,
+   gerbang Chrome, STATUS.md) → origin/master di-merge masuk, TANPA konflik;
+   sesudah merge /favicon.ico, /sitemap.xml, /robots.txt semua 200 dan
+   uji jembatan tetap lulus semua.
+2. **Kunci non-ASCII → 500** → kunci kini dibandingkan sebagai bytes UTF-8;
+   kunci aneh apa pun ditolak 401.
+3. **Kolom merangkap dua peran diterima** → pagar `_cek_tumpang_tindih`:
+   perpotongan X/M/Z/Y (SPSS) dan butir di dua konstruk (PLS) ditolak 400.
+4. **Nama kolom tanpa nomor salah kelompok** → pengelompokan awalan KETAT:
+   kolom tak berpola ditolak 400 dengan pesan yang menyebut polanya.
++ Uji rotasi kunci env (kunci lama mati, kunci baru jalan) membuktikan
+  kunci dibaca dari env, bukan tertanam di kode.
+Catatan tersisa (bukan bug): timeout panggilan adalah urusan klien
+EduAi di Fase 2 — terukur 5.000 baris ≈ 0,23 detik, belum mendesak.
