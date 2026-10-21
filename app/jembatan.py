@@ -137,15 +137,73 @@ def periksa_pra_survei(df: pd.DataFrame,
             'variabel': variabel, 'semua_lolos': semua_lolos}
 
 
-def _cek_tumpang_tindih(payload: dict) -> None:
-    """Tolak kolom yang memegang dua peran sekaligus (400, pesan jelas).
+def _grup_butir(kolom: str) -> str:
+    """Nama variabel induk dari nama butir: 'Keaslian_2' → 'Keaslian',
+    'KP2' → 'KP'. Tanpa pola nomor → kolom itu sendiri."""
+    m = re.match(r'^(.*?)[_\s]?\d+$', str(kolom))
+    return m.group(1) if m and m.group(1) else str(kolom)
 
-    SPSS: perpotongan kolom_x / kolom_m / kolom_z / kolom_y.
-    PLS: satu butir tidak boleh masuk dua konstruk.
-    Peran (dict kolom→peran) secara bentuk tidak bisa tumpang tindih.
-    """
+
+def _cek_belah_variabel(pemilik: dict[str, str], konteks: str) -> None:
+    """Satu variabel induk tidak boleh terbelah ke dua pemilik berbeda.
+
+    Ini bolong BUG 3 yang sebenarnya (temuan review kedua, 21 Okt):
+    butir-butir SATU variabel (mis. Keaslian_1, Keaslian_2, Keaslian_3)
+    bisa ditandai sebagian X dan sebagian Y — sesudah skor digabung,
+    variabel yang sama berdiri di dua sisi persamaan dan mesin
+    menghitungnya diam-diam. pemilik: {butir: nama pemiliknya}."""
+    from app.diagnosis import GagalBaca
+    grup: dict[str, str] = {}
+    for butir, punya in pemilik.items():
+        g = _grup_butir(butir)
+        if g in grup and grup[g] != punya:
+            raise GagalBaca(
+                f'Variabel "{g}" terbelah di {konteks}: sebagian butirnya '
+                f'masuk "{grup[g]}", sebagian masuk "{punya}". Satu '
+                f'variabel hanya boleh berdiri di satu sisi.')
+        grup[g] = punya
+
+
+def _cek_tumpang_tindih(payload: dict, efektif: bool = False) -> None:
+    """Pagar peran — menolak penandaan yang membuat data tidak sah.
+
+    Tiga lapis (temuan review 21 Okt: pagar versi pertama BUTA untuk
+    bentuk `peran` karena hanya membaca kolom_x/kolom_y):
+      A. Bentuk tunggal — `peran` dan bentuk eksplisit (kolom_x dst /
+         konstruk) tidak boleh dicampur dalam satu kiriman; perintah
+         yang ambigu ditolak, bukan ditebak.
+      B. Belah variabel — pada kiriman `peran`, keluarga peran (huruf
+         depan: X/M/Z/Y) satu variabel induk harus satu.
+      C. Tumpang tindih persis — satu kolom/butir memegang dua peran
+         (SPSS eksplisit) atau masuk dua konstruk (PLS eksplisit,
+         termasuk belah variabel antar konstruk).
+    Pagar ini dipanggil pada payload MENTAH dan — di penangan — sekali
+    lagi pada payload EFEKTIF hasil gabung_peran, yaitu persis yang
+    akan dihitung mesin."""
     from app.diagnosis import GagalBaca
     mode = str(payload.get('mode', 'spss'))
+    peran = payload.get('peran') or {}
+    eksplisit = any(payload.get(k) for k in
+                    ('kolom_x', 'kolom_y', 'kolom_m', 'kolom_z', 'konstruk'))
+
+    # A — bentuk tunggal (tidak berlaku untuk panggilan efektif:
+    # hasil gabung_peran memang selalu memuat sisa 'peran' + kolom hasil)
+    if efektif:
+        peran = {}
+    if peran and eksplisit:
+        raise GagalBaca(
+            'Kirim SATU bentuk penandaan saja: "peran" ATAU kolom '
+            'eksplisit (kolom_x/kolom_y/konstruk) — jangan dicampur, '
+            'perintahnya jadi ambigu.')
+
+    # B — peran: keluarga satu variabel induk harus satu
+    if isinstance(peran, dict) and peran:
+        pemilik = {str(k): str(v).strip().upper()[:1]
+                   for k, v in peran.items() if v not in (None, '', '-')}
+        _cek_belah_variabel(pemilik, 'penandaan peran')
+        return
+
+    # C — eksplisit
     if mode == 'pls':
         pemilik: dict[str, str] = {}
         for nama, cols in (payload.get('konstruk') or {}).items():
@@ -156,6 +214,7 @@ def _cek_tumpang_tindih(payload: dict) -> None:
                         f'("{pemilik[c]}" dan "{nama}"). Satu butir hanya '
                         f'boleh milik satu konstruk.')
                 pemilik[c] = nama
+        _cek_belah_variabel(pemilik, 'konstruk')
         return
     grup = {
         'X': [str(c) for c in (payload.get('kolom_x') or [])],
@@ -163,15 +222,15 @@ def _cek_tumpang_tindih(payload: dict) -> None:
         'Z (penguat)': [str(c) for c in (payload.get('kolom_z') or [])],
         'Y': [str(payload['kolom_y'])] if payload.get('kolom_y') else [],
     }
-    pemilik: dict[str, str] = {}
-    for peran, cols in grup.items():
+    pemilik2: dict[str, str] = {}
+    for nama_peran, cols in grup.items():
         for c in cols:
-            if c in pemilik:
+            if c in pemilik2:
                 raise GagalBaca(
                     f'Kolom "{c}" memegang dua peran sekaligus '
-                    f'({pemilik[c]} dan {peran}). Satu kolom hanya boleh '
-                    f'satu peran.')
-            pemilik[c] = peran
+                    f'({pemilik2[c]} dan {nama_peran}). Satu kolom hanya '
+                    f'boleh satu peran.')
+            pemilik2[c] = nama_peran
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -237,6 +296,9 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
 
             # ── Tahap utama: jalur yang sama persis dengan rute lama ──
             df2, payload2 = gabung_peran(df, dict(payload))
+            # Pagar diulang pada bentuk EFEKTIF — persis yang dihitung
+            # mesin — supaya bentuk kiriman apa pun tidak bisa lolos.
+            _cek_tumpang_tindih(payload2, efektif=True)
             mode = str(payload2.get('mode', 'spss'))
             missing = str(payload2.get('missing', 'buang'))
             buang_kosong = 'rata' if missing == 'rata' else 'baris'

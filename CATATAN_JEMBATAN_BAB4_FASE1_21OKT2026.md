@@ -67,3 +67,24 @@ Review luar menjalankan 28 uji tambahan → 4 bug, semuanya DIPERBAIKI
   kunci dibaca dari env, bukan tertanam di kode.
 Catatan tersisa (bukan bug): timeout panggilan adalah urusan klien
 EduAi di Fase 2 — terukur 5.000 baris ≈ 0,23 detik, belum mendesak.
+
+## Review kedua agen Bos (21 Okt, 15:22) — BUG 3 diperdalam
+
+Vonis agen: BUG 3 BELUM tuntas. Benar — pagar versi pertama hanya
+membaca bentuk eksplisit (kolom_x/kolom_y), buta untuk bentuk `peran`
+yang justru dipakai. Dibuktikan agen dengan uji mutasi, dan Wulan
+membuktikan ulang sesudah perbaikan: pagar dimatikan → kiriman
+variabel-terbelah kembali **200 dan dihitung** (r2 keluar); pagar hidup
+→ ditolak 400.
+
+Perbaikan (pagar 3 lapis di `_cek_tumpang_tindih`):
+- A. Bentuk tunggal: `peran` dan kolom eksplisit tidak boleh dicampur.
+- B. Belah variabel: butir satu variabel induk (pola Nama_Nomor) tidak
+  boleh terbelah ke keluarga peran X/M/Z/Y berbeda, maupun antar
+  konstruk PLS.
+- C. Tumpang tindih persis seperti sebelumnya, KINI juga dipanggil
+  sekali lagi pada payload EFEKTIF hasil `gabung_peran` — persis yang
+  dihitung mesin.
+Uji bagian 6 di `uji_jembatan.py` bersifat bergigi (gagal bila pagar
+dicabut), dan klien uji memakai raise_server_exceptions=False supaya
+kegagalan terbaca sebagai asersi, bukan crash.

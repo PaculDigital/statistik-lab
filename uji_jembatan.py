@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-c = TestClient(app)
+c = TestClient(app, raise_server_exceptions=False)
 KUNCI = {'X-Kunci-Layanan': 'kunci-uji-rahasia'}
 gagal = []
 
@@ -187,6 +187,43 @@ cek('rotasi env: kunci lama ditolak, kunci baru diterima',
     r_rot_lama.status_code == 401 and r_rot_baru.status_code == 200,
     f'{r_rot_lama.status_code}/{r_rot_baru.status_code}')
 os.environ['JEMBATAN_KUNCI_LAYANAN'] = 'kunci-uji-rahasia'
+
+print('── 6. BUG 3 bentuk peran (review kedua — uji harus bergigi) ──')
+# (klien di atas memakai raise_server_exceptions=False: kalau pagar
+# dicabut, kiriman jahat bisa membuat mesin 500 — uji harus mencatatnya
+# sebagai GAGAL yang terbaca, bukan crash di tengah jalan.)
+# Variabel Keaslian terbelah: 2 butir jadi X1, 1 butir jadi Y1.
+# Tanpa pagar belah-variabel, kiriman ini lolos 200 — jadi uji ini
+# GAGAL kalau pagarnya dicabut (bergigi, bukan hiasan).
+peran_belah = dict(peran); peran_belah['Keaslian_3'] = 'Y1'
+r_belah = c.post('/api/jembatan/hitung', headers=KUNCI,
+                 json={'mode': 'spss', 'tahap': 'utama', 'baris': baris,
+                       'peran': peran_belah})
+cek('BUG3b peran: variabel terbelah X/Y → 400',
+    r_belah.status_code == 400 and 'terbelah' in r_belah.text,
+    f"{r_belah.status_code} {r_belah.text[:160]}")
+# Campur dua bentuk penandaan sekaligus → ambigu, tolak
+r_campur = c.post('/api/jembatan/hitung', headers=KUNCI,
+                  json={'mode': 'spss', 'tahap': 'utama', 'baris': baris,
+                        'peran': peran, 'kolom_y': 'Impulsif_1'})
+cek('BUG3b campur peran + kolom eksplisit → 400',
+    r_campur.status_code == 400, f"{r_campur.status_code} {r_campur.text[:120]}")
+# Konstruk PLS: variabel yang sama terbelah dua konstruk
+r_belah_pls = c.post('/api/jembatan/hitung', headers=KUNCI,
+                     json={'mode': 'pls', 'tahap': 'utama', 'baris': baris,
+                           'konstruk': {'A': ['Keaslian_1', 'Keaslian_2'],
+                                        'B': ['Keaslian_3', 'Interaksi_1',
+                                              'Interaksi_2']},
+                           'kolom_y_konstruk': 'B'})
+cek('BUG3b konstruk: variabel terbelah → 400',
+    r_belah_pls.status_code == 400 and 'terbelah' in r_belah_pls.text,
+    f"{r_belah_pls.status_code} {r_belah_pls.text[:160]}")
+# Dan bentuk peran yang SAH harus tetap 200 (pagar tidak boleh buta arah)
+r_sah = c.post('/api/jembatan/hitung', headers=KUNCI,
+               json={'mode': 'spss', 'tahap': 'utama', 'baris': baris,
+                     'peran': peran})
+cek('bentuk peran sah tetap 200', r_sah.status_code == 200,
+    f"{r_sah.status_code} {r_sah.text[:120]}")
 
 print()
 if gagal:
