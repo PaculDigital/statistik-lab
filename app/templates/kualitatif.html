@@ -40,7 +40,7 @@
       Punya transkrip wawancara atau catatan lapangan? Diubah jadi
       <strong>kode</strong>, lalu <strong>tema</strong>, lalu temuan.
       Contoh: <em>"saya beli karena review TikTok"</em> → kode
-      <em>pengaruh review</em>.
+      <em>percaya pada review</em>.
     </p>
     <span style="position:absolute;left:22px;bottom:16px;font-weight:700;color:var(--teal)">Mulai →</span>
   </button>
@@ -184,7 +184,10 @@
       <div id="tri-kesimpulan"></div>
       <div class="baris renggang">
         <button class="tb tb-sekunder" id="tri-hitung">{{ ikon('refresh-cw', 15) }} Hitung ulang</button>
+        <button class="tb tb-sekunder" id="tri-ai">{{ ikon('sparkles', 15) }} Minta AI bantu membaca hasil</button>
+        <span class="samar" style="font-size:12px">AI menjelaskan tema terlemahmu &amp; cara memperkuatnya — status kuat/lemahnya tetap dari datamu.</span>
       </div>
+      <div id="tri-saran"></div>
       <div id="tri-hasil"></div>
     </div>
   </div>
@@ -242,8 +245,8 @@
         Contoh: <em>"Harga lebih murah dari pesaing"</em> →
         <strong>Strength</strong>. Minimal 2 per kelompok biar matriksnya hidup.
       </p>
-      <div class="baris" style="display:grid;grid-template-columns:1fr 200px 140px;gap:10px">
-        <div class="medan"><label>Faktor</label>
+      <div class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="medan" style="grid-column:1/-1"><label>Faktor</label>
           <input type="text" id="sw-faktor" style="width:100%" placeholder="cth: Harga lebih murah dari pesaing"></div>
         <div class="medan"><label>Kelompok</label>
           <select id="sw-kelompok" style="width:100%">
@@ -298,8 +301,16 @@
       <h3 style="margin:8px 0 4px">Seberapa kuat posisimu? (dihitung otomatis)</h3>
       <p class="samar" style="font-size:13px">
         <strong>Bobot</strong> = seberapa penting faktor ini (total semua = 1,00).
-        <strong>Rating</strong> = 1 (buruk) sampai 4 (sangat baik).
+        <strong>Rating</strong> = seberapa kuat faktor itu. Untuk Kekuatan/Peluang:
+        4 = sangat besar. Untuk Kelemahan/Ancaman: 1 = sangat parah,
+        4 = hampir tidak terasa.
         <strong>Skor</strong> = bobot × rating — dihitung otomatis.
+      </p>
+      <p class="samar" style="font-size:12.5px">
+        Posisi kuadran di sini dihitung dari <strong>total skor IFAS &amp; EFAS</strong>
+        dibanding titik tengah 2,50 (cara Fred David). Kalau dosenmu memakai cara
+        Rangkuti (selisih S−W dan O−T), hasil posisinya bisa berbeda — samakan
+        dulu dengan dosenmu cara mana yang dipakai di skripsimu.
       </p>
       <h4>IFAS (faktor dalam: S + W)</h4>
       <div id="sw-ifas"></div>
@@ -429,6 +440,16 @@ function konteksPenelitian() {
   return k;
 }
 
+/* Konteks KHUSUS SWOT: hanya objek/usaha. Form Tematik tidak ikut —
+   pemakai SWOT murni tidak boleh terkontaminasi contoh Tematik
+   (audit 22Okt26). */
+function konteksUsaha() {
+  const usaha = (el('sw-konteks') || {}).value || '';
+  let k = 'KONTEKS PENELITIAN (jadikan acuan utama, jangan mengarang di luar ini):\n';
+  if (usaha.trim()) k += '- Objek/usaha: ' + usaha.trim() + '\n';
+  return k;
+}
+
 /* ═══════════ TEMATIK — Langkah 1: Panduan ═══════════ */
 function panduanManual() {
   const judul = el('tp-judul').value.trim() || 'Penelitianmu';
@@ -519,9 +540,9 @@ const LATIHAN = [
 function gambarLatihan() {
   el('latihan-segmen').innerHTML = LATIHAN.map((s, i) =>
     '<div style="margin:10px 0;padding:10px;border:1px solid var(--garis);border-radius:8px">' +
-    '<div style="font-size:14px;margin-bottom:6px"><strong>Potongan ' + (i + 1) + ':<\/strong> ' +
+    '<div style="font-size:14px;margin-bottom:6px"><strong>Kutipan ' + (i + 1) + ':<\/strong> ' +
     aman(s.teks) + '<\/div>' +
-    '<div class="medan" style="margin:0"><label>Kode versimu <span class="petunjuk">nama pendek, cth: pengaruh review<\/span><\/label>' +
+    '<div class="medan" style="margin:0"><label>Kode versimu <span class="petunjuk">nama pendek, cth: percaya pada review<\/span><\/label>' +
     '<input type="text" class="latihan-kode" data-i="' + i + '" style="width:100%" placeholder="ketik kodemu di sini"><\/div>' +
     '<div class="latihan-kunci sembunyi" data-i="' + i + '" style="margin-top:8px"><\/div>' +
     '<\/div>').join('');
@@ -551,7 +572,7 @@ function cekLatihan() {
     ikonKecil('award', 16) + '<div>Kamu cocok <strong>' + cocok + ' dari ' +
     LATIHAN.length + '<\/strong> kutipan. ' +
     (cocok >= 6 ? 'Kepekaan kodingmu sudah bagus!' :
-     cocok >= 3 ? 'Lumayan — coba perhatikan lagi <em>fokus<\/em> tiap potongan.' :
+     cocok >= 3 ? 'Lumayan — coba perhatikan lagi <em>fokus<\/em> tiap kutipan.' :
      'Tidak apa-apa, ini baru latihan. Baca lagi penjelasan tiap kunci, lalu coba lagi.') +
     '<\/div><\/div>';
 }
@@ -971,6 +992,33 @@ function hitungTriangulasi() {
   w.innerHTML = h;
 }
 el('tri-hitung').addEventListener('click', gambarTriangulasi);
+el('tri-ai').addEventListener('click', () => {
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  if (!seg.length) {
+    el('tri-saran').innerHTML = '<div class="catatan renggang"><div>' +
+      'Belum ada tema yang bisa dibaca. Selesaikan Langkah 2 (Koding) ' +
+      'dulu.<\/div><\/div>';
+    return;
+  }
+  const ringkas = [...new Set(seg.map(x => x.tema))].map(t => {
+    const d = seg.filter(x => x.tema === t);
+    const infs = [...new Set(d.map(x => x.informan))];
+    const teks = [...new Set(d.map(x => x.teknik))];
+    const jens = [...new Set(d.map(x => x.jenis || 'internal'))];
+    const kuat = infs.length >= 3 || (infs.length >= 2 && teks.length >= 2);
+    return 'Tema "' + t + '": ' + (kuat ? 'KUAT' : 'PERLU DIPERKUAT') +
+      ' — didukung informan ' + infs.join(', ') + '; teknik ' +
+      teks.join(', ') + '; sisi ' + jens.join(', ') + '.';
+  }).join('\n');
+  const p = konteksPenelitian() +
+    '\nBerikut ringkasan hasil triangulasi penelitianku:\n' + ringkas +
+    '\n\nBantu aku membaca hasil ini: tema mana yang paling lemah ' +
+    'buktinya dan kenapa, lalu beri saran konkret cara memperkuatnya ' +
+    '(informan, teknik, atau sisi apa yang perlu kucari). Jangan ' +
+    'mengubah status kuat/lemah di atas — itu dari dataku.';
+  saranAI(p, 'tri-saran',
+    'AI hanya membantu membaca — keputusan tetap punyamu.', 'triangulasi');
+});
 
 /* ═══════════ TEMATIK — Langkah 4: Tafsir & unduh ═══════════ */
 function gambarTafsir() {
@@ -1003,11 +1051,17 @@ function gambarTafsir() {
 el('tafsir-ai').addEventListener('click', () => {
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const temas = [...new Set(seg.map(s => s.tema))].slice(0, 4);
-  if (!temas.length) return;
+  if (!temas.length) {
+    el('tafsir-saran').innerHTML = '<div class="catatan renggang"><div>' +
+      'Belum ada tema. Selesaikan Langkah 2 (Koding) dulu — contoh ' +
+      'tafsir disusun dari tema-temamu.<\/div><\/div>';
+    return;
+  }
   const p = konteksPenelitian() +
-    '\nBerikan CONTOH tafsir 2-3 kalimat untuk tiap tema berikut, ' +
-    'KAITKAN dengan rumusan masalah di konteks. ' +
-    'Format: "Tema X: ...".\n' +
+    '\nBerikan CONTOH tafsir untuk tiap tema berikut, KAITKAN dengan ' +
+    'rumusan masalah di konteks. Tulis tiap tema sebagai SATU paragraf ' +
+    'mengalir 2-3 kalimat; awali dengan nama temanya dalam kalimat ' +
+    'biasa (jangan membuka dengan "Tema:").\n' +
     temas.map(t => {
       const d = seg.filter(s => s.tema === t);
       return 'Tema ' + t + ' (' + d.length + ' kutipan). Contoh: "' +
@@ -1104,13 +1158,71 @@ el('sw-tambah').addEventListener('click', () => {
   el('sw-faktor').value = '';
   gambarFaktor(); gambarMatriks(); gambarIFAS(); simpan();
 });
-el('sw-ai-faktor').addEventListener('click', () => {
-  const p = konteksPenelitian() +
-    '\nUsulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang SPESIFIK ' +
-    'untuk objek di konteks (jangan yang generik). Format: "S: ...". ' +
-    'Satu baris satu faktor, pendek saja.';
-  saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.', 'swot_faktor');
+el('sw-ai-faktor').addEventListener('click', async () => {
+  const w = el('sw-saran');
+  if (!((el('sw-konteks') || {}).value || '').trim()) {
+    w.innerHTML = '<div class="catatan renggang"><div>Isi dulu ' +
+      '<strong>Deskripsikan usaha/objek penelitian<\/strong> di atas — ' +
+      'supaya saran AI-nya spesifik untuk usahamu, bukan umum.<\/div><\/div>';
+    return;
+  }
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang berpikir…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(konteksUsaha() +
+      '\nUsulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang ' +
+      'SPESIFIK untuk objek di konteks (jangan yang generik). Format: ' +
+      '"S: ...". Satu baris satu faktor, pendek saja.', 'swot_faktor');
+    gambarSaranFaktor(teks, w);
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum bisa ' +
+      'membantu: ' + aman(e.message || 'coba lagi.') + '<\/div><\/div>';
+  }
 });
+function gambarSaranFaktor(teks, w) {
+  const items = [];
+  teks.split('\n').forEach(b => {
+    const m = b.match(/^\s*\**\s*([SWOT])\s*[:.)-]\s*(.+?)\s*$/);
+    if (m) items.push({k: m[1],
+      teks: m[2].replace(/^["\u201c]+|["\u201d]+$/g, '')});
+  });
+  if (!items.length) {
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Saran AI<\/span>' +
+      '<div style="white-space:pre-wrap;font-size:14px;margin:8px 0">' +
+      aman(teks) + '<\/div><p class="samar" style="font-size:12px;margin:0">' +
+      'Ketik ulang faktor yang cocok lewat form di atas.<\/p><\/div>';
+    return;
+  }
+  w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+    ikonKecil('sparkles', 13) + ' Saran AI — klik Pakai untuk yang cocok<\/span>' +
+    items.map((it, i) =>
+      '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;' +
+      'border-top:1px solid var(--garis)"><span class="pita">' + it.k +
+      '<\/span><span style="flex:1;font-size:13.5px">' + aman(it.teks) +
+      '<\/span><button type="button" class="tb tb-sekunder" ' +
+      'data-pakai-faktor="' + i + '">Pakai<\/button><\/div>').join('') +
+    '<div class="baris renggang" style="margin-top:8px">' +
+    '<button type="button" class="tb tb-sekunder" data-pakai-semua-faktor>' +
+    'Pakai semua<\/button><\/div><\/div>';
+  const pakai = (i, btn) => {
+    const it = items[i];
+    if (!KUAL.swot.faktor.some(x => x.k === it.k && x.teks === it.teks)) {
+      KUAL.swot.faktor.push({teks: it.teks, k: it.k, bobot: 0, rating: 0});
+      gambarFaktor(); gambarMatriks(); gambarIFAS(); simpan();
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Terpakai ✓'; }
+  };
+  w.querySelectorAll('[data-pakai-faktor]').forEach(btn =>
+    btn.addEventListener('click', () => pakai(+btn.dataset.pakaiFaktor, btn)));
+  const semua = w.querySelector('[data-pakai-semua-faktor]');
+  if (semua) semua.addEventListener('click', () => {
+    items.forEach((it, i) => pakai(i, null));
+    w.querySelectorAll('[data-pakai-faktor]').forEach(btn => {
+      btn.disabled = true; btn.textContent = 'Terpakai ✓';
+    });
+  });
+}
 function gambarMatriks() {
   const f = KUAL.swot.faktor;
   const ambil = k => f.filter(x => x.k === k).map(x => x.teks);
@@ -1131,16 +1243,68 @@ function gambarMatriks() {
   el('sw-' + k).addEventListener('input', e => {
     KUAL.swot.strategi[k] = e.target.value; simpan();
   }));
-el('sw-ai-strategi').addEventListener('click', () => {
+el('sw-ai-strategi').addEventListener('click', async () => {
+  const w = el('sw-saran-strategi');
   const f = KUAL.swot.faktor;
-  if (!f.length) return;
-  const p = konteksPenelitian() +
-    '\nBerdasarkan faktor SWOT berikut, usulkan SATU strategi untuk tiap ' +
-    'pasangan SO, WO, ST, WT (satu kalimat tiap strategi, spesifik untuk objek di konteks).\n' +
-    f.map(x => x.k + ': ' + x.teks).join('\n');
-  saranAI(p, 'sw-saran-strategi',
-    'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.', 'swot_strategi');
+  if (!f.length) {
+    w.innerHTML = '<div class="catatan renggang"><div>Belum ada faktor. ' +
+      'Isi dulu faktornya di Langkah 1 — strategi disusun dari faktor ' +
+      'yang kamu punya.<\/div><\/div>';
+    return;
+  }
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang berpikir…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(konteksUsaha() +
+      '\nBerdasarkan faktor SWOT berikut, usulkan SATU strategi untuk ' +
+      'tiap pasangan SO, WO, ST, WT (satu kalimat tiap strategi, ' +
+      'spesifik untuk objek di konteks).\n' +
+      f.map(x => x.k + ': ' + x.teks).join('\n'), 'swot_strategi');
+    const ketemu = {};
+    teks.split('\n').forEach(b => {
+      const m = b.match(/^\s*\**\s*(SO|WO|ST|WT)\s*[:.)-]\s*(.+?)\s*$/i);
+      if (m) ketemu[m[1].toLowerCase()] =
+        m[2].replace(/^["\u201c]+|["\u201d]+$/g, '');
+    });
+    if (!Object.keys(ketemu).length) {
+      w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+        ikonKecil('sparkles', 13) + ' Saran AI<\/span>' +
+        '<div style="white-space:pre-wrap;font-size:14px;margin:8px 0">' +
+        aman(teks) + '<\/div><p class="samar" style="font-size:12px;margin:0">' +
+        'Ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.<\/p><\/div>';
+      return;
+    }
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Saran AI — klik Pakai untuk yang cocok<\/span>' +
+      Object.keys(ketemu).map(k =>
+        '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;' +
+        'border-top:1px solid var(--garis)"><span class="pita">' +
+        k.toUpperCase() + '<\/span><span style="flex:1;font-size:13.5px">' +
+        aman(ketemu[k]) + '<\/span><button type="button" ' +
+        'class="tb tb-sekunder" data-pakai-strategi="' + k +
+        '">Pakai<\/button><\/div>').join('') + '<\/div>';
+    w.querySelectorAll('[data-pakai-strategi]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.pakaiStrategi;
+        KUAL.swot.strategi[k] = ketemu[k];
+        const ta = el('sw-' + k);
+        if (ta) ta.value = ketemu[k];
+        simpan();
+        btn.disabled = true; btn.textContent = 'Terpakai ✓';
+      }));
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum bisa ' +
+      'membantu: ' + aman(e.message || 'coba lagi.') + '<\/div><\/div>';
+  }
 });
+function barisTotal(judul, daftar) {
+  const totBobot = daftar.reduce((a, o) => a + (o.x.bobot || 0), 0);
+  const totSkor = daftar.reduce((a, o) => a + (o.x.bobot || 0) * (o.x.rating || 0), 0);
+  return 'Total bobot: <strong>' + totBobot.toFixed(2) + '<\/strong>' +
+    (Math.abs(totBobot - 1) > 0.01 && daftar.length
+      ? ' <span class="pita">harusnya 1,00 — sesuaikan lagi<\/span>' : '') +
+    ' · Total skor ' + judul + ': <strong>' + totSkor.toFixed(2) + '<\/strong>';
+}
 function tabelSkor(judul, daftar) {
   let h = '<table class="data"><thead><tr><th>Faktor<\/th><th>Bobot<\/th>' +
     '<th>Rating (1–4)<\/th><th>Skor<\/th><\/tr><\/thead><tbody>';
@@ -1149,62 +1313,86 @@ function tabelSkor(judul, daftar) {
     const skor = (o.x.bobot || 0) * (o.x.rating || 0);
     h += '<tr><td>' + aman(o.x.teks) + ' <span class="samar">(' + o.x.k +
       ')<\/span><\/td>' +
-      '<td><input type="number" min="0" max="1" step="0.05" value="' +
+      '<td><input type="number" min="0" max="1" step="0.05" inputmode="decimal" value="' +
       (o.x.bobot || '') + '" data-bobot="' + idx +
-      '" style="width:70px" placeholder="0,10"><\/td>' +
-      '<td><input type="number" min="1" max="4" step="1" value="' +
+      '" style="width:70px" placeholder="0.10"><\/td>' +
+      '<td><input type="number" min="1" max="4" step="1" inputmode="numeric" value="' +
       (o.x.rating || '') + '" data-rating="' + idx +
       '" style="width:60px" placeholder="3"><\/td>' +
-      '<td class="angka"><strong>' + skor.toFixed(2) + '<\/strong><\/td><\/tr>';
+      '<td class="angka" data-skor="' + idx + '"><strong>' +
+      skor.toFixed(2) + '<\/strong><\/td><\/tr>';
   });
-  const totBobot = daftar.reduce((a, o) => a + (o.x.bobot || 0), 0);
-  const totSkor = daftar.reduce((a, o) => a + (o.x.bobot || 0) * (o.x.rating || 0), 0);
-  h += '<\/tbody><\/table><p class="samar" style="font-size:13px">Total bobot: <strong>' +
-    totBobot.toFixed(2) + '<\/strong>' +
-    (Math.abs(totBobot - 1) > 0.01 && daftar.length
-      ? ' <span class="pita">harusnya 1,00 — sesuaikan lagi<\/span>' : '') +
-    ' · Total skor ' + judul + ': <strong>' + totSkor.toFixed(2) + '<\/strong><\/p>';
-  return {html: h, total: totSkor};
+  h += '<\/tbody><\/table><p class="samar" style="font-size:13px" data-total="' +
+    judul + '">' + barisTotal(judul, daftar) + '<\/p>';
+  return h;
+}
+function htmlKuadran() {
+  const f = KUAL.swot.faktor;
+  const dalam = f.filter(x => x.k === 'S' || x.k === 'W');
+  const luar = f.filter(x => x.k === 'O' || x.k === 'T');
+  if (!dalam.length || !luar.length) return '';
+  const tot = d => d.reduce((a, x) => a + (x.bobot || 0) * (x.rating || 0), 0);
+  const bob = d => d.reduce((a, x) => a + (x.bobot || 0), 0);
+  const a = tot(dalam), b = tot(luar), ba = bob(dalam), bb = bob(luar);
+  /* Gerbang kejujuran (audit 22Okt26): kuadran dari bobot yang belum
+     pas itu menyesatkan — jangan divonis sebelum total bobot = 1,00. */
+  if (Math.abs(ba - 1) > 0.01 || Math.abs(bb - 1) > 0.01) {
+    const kurang = [];
+    if (Math.abs(ba - 1) > 0.01) kurang.push('total bobot IFAS baru ' + ba.toFixed(2));
+    if (Math.abs(bb - 1) > 0.01) kurang.push('total bobot EFAS baru ' + bb.toFixed(2));
+    return '<div class="catatan renggang">' + ikonKecil('info', 16) +
+      '<div><strong>Kuadran belum bisa ditentukan<\/strong> — ' +
+      kurang.join(' dan ') + ' (harus tepat 1,00). Lengkapi bobotnya ' +
+      'dulu supaya posisi kuadrannya bisa dipercaya.<\/div><\/div>';
+  }
+  const x = a - 2.5, y = b - 2.5;
+  const k = x >= 0 && y >= 0 ? 'I (agresif — kembangkan)' :
+            x < 0 && y >= 0 ? 'II (diversifikasi)' :
+            x >= 0 && y < 0 ? 'III (putar haluan)' : 'IV (bertahan)';
+  return '<div class="catatan renggang">' + ikonKecil('target', 16) +
+    '<div>Skor IFAS <strong>' + a.toFixed(2) + '<\/strong>, EFAS <strong>' +
+    b.toFixed(2) + '<\/strong> → posisi di <strong>kuadran ' + k +
+    '<\/strong>. (Titik tengahnya 2,50.)<\/div><\/div>';
+}
+/* Segarkan HANYA angka (sel skor, baris total, kuadran) — JANGAN gambar
+   ulang tabel saat mahasiswa mengetik: render ulang per ketukan
+   membunuh fokus input di HP (audit 22Okt26, bobot 0.25 tersimpan 0). */
+function segarSkor() {
+  document.querySelectorAll('[data-skor]').forEach(td => {
+    const x = KUAL.swot.faktor[+td.dataset.skor];
+    if (x) td.innerHTML = '<strong>' +
+      ((x.bobot || 0) * (x.rating || 0)).toFixed(2) + '<\/strong>';
+  });
+  const f = KUAL.swot.faktor;
+  const dalam = f.filter(x => x.k === 'S' || x.k === 'W').map(x => ({x: x}));
+  const luar = f.filter(x => x.k === 'O' || x.k === 'T').map(x => ({x: x}));
+  const pa = document.querySelector('[data-total="IFAS"]');
+  const pb = document.querySelector('[data-total="EFAS"]');
+  if (pa) pa.innerHTML = barisTotal('IFAS', dalam);
+  if (pb) pb.innerHTML = barisTotal('EFAS', luar);
+  el('sw-kuadran').innerHTML = htmlKuadran();
 }
 function gambarIFAS() {
   const f = KUAL.swot.faktor;
   const dalam = f.map(x => ({x: x})).filter(o => o.x.k === 'S' || o.x.k === 'W');
   const luar = f.map(x => ({x: x})).filter(o => o.x.k === 'O' || o.x.k === 'T');
-  const a = tabelSkor('IFAS', dalam), b = tabelSkor('EFAS', luar);
-  el('sw-ifas').innerHTML = a.html;
-  el('sw-efas').innerHTML = b.html;
-  let kuadran = '';
-  if (dalam.length && luar.length) {
-    const x = a.total - 2.5, y = b.total - 2.5;
-    const k = x >= 0 && y >= 0 ? 'I (agresif — kembangkan)' :
-              x < 0 && y >= 0 ? 'II (diversifikasi)' :
-              x >= 0 && y < 0 ? 'III (putar haluan)' : 'IV (bertahan)';
-    kuadran = '<div class="catatan renggang">' + ikonKecil('target', 16) +
-      '<div>Skor IFAS <strong>' + a.total.toFixed(2) + '<\/strong>, EFAS <strong>' +
-      b.total.toFixed(2) + '<\/strong> → posisi di <strong>kuadran ' + k +
-      '<\/strong>. (Titik tengahnya 2,50.)<\/div><\/div>';
-  }
-  el('sw-kuadran').innerHTML = kuadran;
-  el('sw-ifas').querySelectorAll('[data-bobot]').forEach(inp =>
+  el('sw-ifas').innerHTML = tabelSkor('IFAS', dalam);
+  el('sw-efas').innerHTML = tabelSkor('EFAS', luar);
+  el('sw-kuadran').innerHTML = htmlKuadran();
+  document.querySelectorAll('[data-bobot]').forEach(inp => {
     inp.addEventListener('input', () => {
       KUAL.swot.faktor[+inp.dataset.bobot].bobot = parseFloat(inp.value) || 0;
-      gambarIFAS(); simpan();
-    }));
-  el('sw-ifas').querySelectorAll('[data-rating]').forEach(inp =>
+      segarSkor(); simpan();
+    });
+    inp.addEventListener('change', () => gambarIFAS());
+  });
+  document.querySelectorAll('[data-rating]').forEach(inp => {
     inp.addEventListener('input', () => {
       KUAL.swot.faktor[+inp.dataset.rating].rating = parseInt(inp.value) || 0;
-      gambarIFAS(); simpan();
-    }));
-  el('sw-efas').querySelectorAll('[data-bobot]').forEach(inp =>
-    inp.addEventListener('input', () => {
-      KUAL.swot.faktor[+inp.dataset.bobot].bobot = parseFloat(inp.value) || 0;
-      gambarIFAS(); simpan();
-    }));
-  el('sw-efas').querySelectorAll('[data-rating]').forEach(inp =>
-    inp.addEventListener('input', () => {
-      KUAL.swot.faktor[+inp.dataset.rating].rating = parseInt(inp.value) || 0;
-      gambarIFAS(); simpan();
-    }));
+      segarSkor(); simpan();
+    });
+    inp.addEventListener('change', () => gambarIFAS());
+  });
 }
 el('sw-unduh').addEventListener('click', () => {
   const f = KUAL.swot.faktor, st = KUAL.swot.strategi;

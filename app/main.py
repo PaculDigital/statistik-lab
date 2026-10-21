@@ -526,6 +526,17 @@ BENTUK = {
         'dengan maknanya. Jangan buka dengan kata "Tema:" diikuti titik dua.\n'
         'Bahasa mengalir seperti orang menjelaskan ke teman, bukan laporan.'
     ),
+    #  Triangulasi: bantu mahasiswa MEMBACA hasil hitungan otomatis —
+    #  bukan vonis baru; status kuat/lemah tetap dari data.
+    'triangulasi': (
+        'SUSUNAN WAJIB untuk bantuan membaca hasil triangulasi (patuhi persis):\n'
+        'Tulis 1-2 paragraf mengalir, bahasa sederhana. Sebut tema yang '
+        'paling lemah buktinya dan kenapa (dari ringkasan yang diberikan), '
+        'lalu beri saran konkret cara memperkuatnya: informan, teknik, '
+        'atau sisi (internal/eksternal) apa yang perlu dicari.\n'
+        'JANGAN mengubah status kuat/perlu diperkuat yang sudah diberikan '
+        'data — tugasmu menjelaskan artinya, bukan menilai ulang.'
+    ),
     #  SWOT faktor: tepat 4+4+4+4, satu baris satu faktor.
     'swot_faktor': (
         'SUSUNAN WAJIB untuk usulan faktor SWOT (patuhi persis):\n'
