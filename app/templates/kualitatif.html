@@ -100,11 +100,11 @@
   <div class="langkah-tematik sembunyi" data-langkah="2">
     <div class="kartu">
       <span class="eyebrow">{{ ikon('split', 13) }} Langkah 2 — Koding</span>
-      <h3 style="margin:8px 0 4px">Beri kode pada tiap potongan cerita</h3>
+      <h3 style="margin:8px 0 4px">Beri kode pada tiap kutipan cerita</h3>
       <p class="samar" style="font-size:13px">
-        <strong>Koding</strong> = memberi nama pendek pada potongan teks yang penting.
+        <strong>Koding</strong> = memberi nama pendek pada kutipan teks yang penting.
         Contoh: <em>"saya beli karena lihat review TikTok"</em> → kode
-        <strong>pengaruh review</strong>. Tidak ada kode yang "salah" — yang penting konsisten.
+        <strong>percaya pada review</strong>. Tidak ada kode yang "salah" — yang penting konsisten.
       </p>
       <div class="baris" style="display:flex;gap:8px">
         <button class="tb tb-utama" data-tabkoding="latihan">Tab Latihan</button>
@@ -130,10 +130,15 @@
 
     <div id="koding-kerja" class="sembunyi">
       <div class="kartu">
-        <span class="eyebrow">{{ ikon('table', 13) }} Meja kerja — datamu sendiri</span>
-        <div class="baris" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
-          <div class="medan"><label>Nama informan / sumber</label>
-            <input type="text" id="kj-informan" placeholder="cth: Informan 1" style="width:100%"></div>
+        <span class="eyebrow">{{ ikon('users', 13) }} Meja kerja — Langkah A: siapa informanmu?</span>
+        <p class="samar" style="font-size:13px;margin:8px 0">
+          Tulis nama orang yang kamu wawancarai (atau sumber datamu), lalu klik
+          <strong>Tambah</strong>. Setelah namanya muncul, <strong>klik nama itu</strong>
+          untuk menempel transkrip miliknya di langkah B.
+        </p>
+        <div class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="medan" style="grid-column:1/-1"><label>Nama informan / sumber</label>
+            <input type="text" id="kj-informan" placeholder="cth: Rani, mahasiswa" style="width:100%"></div>
           <div class="medan"><label>Teknik</label>
             <select id="kj-teknik" style="width:100%">
               <option value="wawancara">Wawancara</option>
@@ -145,23 +150,20 @@
               <option value="internal">Internal</option>
               <option value="eksternal">Eksternal</option>
             </select></div>
-          <div class="medan"><label>&nbsp;</label>
-            <button class="tb tb-sekunder" id="kj-tambah-informan" style="width:100%">Tambah</button></div>
+          <div class="medan" style="grid-column:1/-1">
+            <button class="tb tb-sekunder" id="kj-tambah-informan" style="width:100%">Tambah informan</button></div>
         </div>
-        <div id="kj-daftar-informan" class="samar" style="font-size:13px"></div>
+        <div id="kj-daftar-informan" style="margin-top:10px"></div>
       </div>
       <div class="kartu">
-        <div class="medan"><label>Tempel transkrip / catatan <span class="petunjuk">satu paragraf = satu potongan</span></label>
-          <textarea id="kj-teks" rows="5" style="width:100%" placeholder="Tempel hasil wawancaramu di sini. Pisahkan tiap potongan penting dengan baris kosong."></textarea></div>
+        <span class="eyebrow">{{ ikon('clipboard-list', 13) }} Meja kerja — Langkah B: tempel transkrip &amp; beri kode</span>
+        <div id="kj-milik" style="margin:8px 0"></div>
+        <div class="medan"><label>Tempel transkrip / catatan <span class="petunjuk">satu paragraf = satu kutipan</span></label>
+          <textarea id="kj-teks" rows="5" style="width:100%" placeholder="Tempel hasil wawancaramu di sini. Pisahkan tiap paragraf dengan baris kosong — tiap paragraf otomatis jadi satu kutipan."></textarea></div>
         <div class="baris renggang">
-          <button class="tb tb-utama" id="kj-pecah">{{ ikon('split', 15) }} Pecah jadi potongan</button>
+          <button class="tb tb-utama" id="kj-pecah">{{ ikon('check', 15) }} Simpan transkrip</button>
         </div>
         <div id="kj-segmen"></div>
-        <div class="baris renggang" style="margin-top:10px">
-          <button class="tb tb-sekunder" id="kj-ai">{{ ikon('sparkles', 15) }} Minta saran AI untuk potongan ini</button>
-          <span class="samar" style="font-size:12px">AI hanya mengusulkan — kamu yang memutuskan.</span>
-        </div>
-        <div id="kj-saran"></div>
       </div>
     </div>
   </div>
@@ -515,7 +517,7 @@ function cekLatihan() {
   });
   el('latihan-hasil').innerHTML = '<div class="catatan renggang">' +
     ikonKecil('award', 16) + '<div>Kamu cocok <strong>' + cocok + ' dari ' +
-    LATIHAN.length + '<\/strong> potongan. ' +
+    LATIHAN.length + '<\/strong> kutipan. ' +
     (cocok >= 6 ? 'Kepekaan kodingmu sudah bagus!' :
      cocok >= 3 ? 'Lumayan — coba perhatikan lagi <em>fokus<\/em> tiap potongan.' :
      'Tidak apa-apa, ini baru latihan. Baca lagi penjelasan tiap kunci, lalu coba lagi.') +
@@ -534,38 +536,80 @@ document.querySelectorAll('[data-tabkoding]').forEach(q =>
       r.classList.toggle('tb-utama', r === q));
   }));
 
-/* Meja kerja: informan + segmen + kode + tema */
+/* Meja kerja: informan dipilih -> transkrip menempel ke informan itu ->
+   kutipan berkelompok per informan -> AI per kartu (Wulan, 21Okt26) */
+function informanTerpilih() {
+  const daftar = KUAL.tematik.informan;
+  if (!daftar.length) return null;
+  const aktif = daftar.find(f => f.nama === KUAL.tematik.informanAktif);
+  return aktif || daftar[daftar.length - 1];
+}
 function gambarInforman() {
   const d = el('kj-daftar-informan');
   if (!KUAL.tematik.informan.length) {
-    d.innerHTML = 'Belum ada informan. Tambahkan dulu di atas.';
+    d.innerHTML = '<p class="samar" style="font-size:13px;margin:0">' +
+      'Belum ada informan. Isi nama di atas lalu klik Tambah informan.<\/p>';
+    gambarMilik();
     return;
   }
-  d.innerHTML = 'Informan: ' + KUAL.tematik.informan.map((f, i) =>
-    '<span class="pita">' + aman(f.nama) + ' <span class="samar">(' +
-    aman(f.teknik) + ' · ' + aman(f.jenis || 'internal') + ')<\/span><\/span>').join(' ');
+  const terpilih = informanTerpilih();
+  d.innerHTML = '<p class="samar" style="font-size:12.5px;margin:0 0 6px">' +
+    'Klik nama untuk memilih — transkrip yang kamu tempel masuk ke nama yang dipilih:<\/p>' +
+    KUAL.tematik.informan.map(f => {
+      const n = KUAL.tematik.segmen.filter(s => s.informan === f.nama).length;
+      const aktif = terpilih && f.nama === terpilih.nama;
+      return '<button type="button" class="tb ' + (aktif ? 'tb-utama' : 'tb-sekunder') +
+        '" data-pilih-informan="' + aman(f.nama) + '" style="margin:0 6px 6px 0">' +
+        aman(f.nama) + ' <span style="font-weight:400;font-size:12px">(' +
+        aman(f.teknik) + ' · ' + aman(f.jenis || 'internal') + ' · ' + n +
+        ' kutipan)<\/span><\/button>';
+    }).join('');
+  d.querySelectorAll('[data-pilih-informan]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      KUAL.tematik.informanAktif = btn.dataset.pilihInforman;
+      simpan(); gambarInforman(); gambarSegmen();
+    }));
+  gambarMilik();
+}
+function gambarMilik() {
+  const w = el('kj-milik');
+  if (!w) return;
+  const f = informanTerpilih();
+  if (!f) {
+    w.innerHTML = '<div class="catatan renggang">Tambahkan informan dulu di ' +
+      'Langkah A — transkrip yang kamu tempel akan tercatat sebagai milik informan itu.<\/div>';
+    return;
+  }
+  w.innerHTML = '<div class="catatan renggang"><div>Transkrip milik: <strong>' +
+    aman(f.nama) + '<\/strong> <span class="samar">(' + aman(f.teknik) + ' · ' +
+    aman(f.jenis || 'internal') + ')<\/span> — mau tempel transkrip orang lain? ' +
+    'Klik namanya di Langkah A.<\/div><\/div>';
 }
 el('kj-tambah-informan').addEventListener('click', () => {
   const nama = el('kj-informan').value.trim();
   if (!nama) return;
   KUAL.tematik.informan.push({nama: nama, teknik: el('kj-teknik').value,
     jenis: el('kj-jenis').value});
+  KUAL.tematik.informanAktif = nama;
   el('kj-informan').value = '';
-  gambarInforman(); simpan();
+  gambarInforman(); gambarSegmen(); simpan();
 });
 
 function pecahSegmen() {
   const teks = el('kj-teks').value.trim();
   if (!teks) return;
-  const aktif = KUAL.tematik.informan.length
-    ? KUAL.tematik.informan[KUAL.tematik.informan.length - 1]
-    : {nama: 'Informan 1', teknik: 'wawancara', jenis: 'internal'};
-  const pot = teks.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
-  pot.forEach(p => KUAL.tematik.segmen.push(
-    {teks: p, kode: '', tema: '', informan: aktif.nama, teknik: aktif.teknik,
+  let aktif = informanTerpilih();
+  if (!aktif) {
+    aktif = {nama: 'Informan 1', teknik: 'wawancara', jenis: 'internal'};
+    KUAL.tematik.informan.push(aktif);
+    KUAL.tematik.informanAktif = aktif.nama;
+  }
+  const pot = teks.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+  pot.forEach(x => KUAL.tematik.segmen.push(
+    {teks: x, kode: '', tema: '', informan: aktif.nama, teknik: aktif.teknik,
      jenis: aktif.jenis || 'internal'}));
   el('kj-teks').value = '';
-  gambarSegmen(); simpan();
+  gambarInforman(); gambarSegmen(); simpan();
 }
 el('kj-pecah').addEventListener('click', pecahSegmen);
 
@@ -577,26 +621,46 @@ function daftarTema() {
 function gambarSegmen() {
   const w = el('kj-segmen');
   if (!KUAL.tematik.segmen.length) {
-    w.innerHTML = '<p class="samar">Belum ada potongan. Tempel transkrip di atas lalu tekan tombolnya.<\/p>';
+    w.innerHTML = '<p class="samar">Belum ada kutipan. Tempel transkrip di atas ' +
+      'lalu tekan Simpan transkrip.<\/p>';
     return;
   }
   const temas = daftarTema();
-  w.innerHTML = KUAL.tematik.segmen.map((s, i) =>
+  const urutanNama = KUAL.tematik.informan.map(f => f.nama);
+  KUAL.tematik.segmen.forEach(s => {
+    if (!urutanNama.includes(s.informan)) urutanNama.push(s.informan);
+  });
+  const kartu = (s, i, nomor) =>
     '<div style="margin:10px 0;padding:10px;border:1px solid var(--garis);border-radius:8px">' +
     '<div style="font-size:13.5px;margin-bottom:6px"><span class="samar">' +
-    aman(s.informan) + ' · ' + aman(s.teknik) + ' · ' + aman(s.jenis || 'internal') +
-    ' · #' + (i + 1) + '<\/span><br>' +
-    aman(s.teks) + '<\/div>' +
+    'Kutipan ' + nomor + '<\/span><br>' + aman(s.teks) + '<\/div>' +
     '<div class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
     '<div class="medan" style="margin:0"><label>Kode<\/label>' +
     '<input type="text" data-segkode="' + i + '" style="width:100%" value="' +
-    aman(s.kode) + '" placeholder="cth: pengaruh review"><\/div>' +
+    aman(s.kode) + '" placeholder="cth: percaya pada review"><\/div>' +
     '<div class="medan" style="margin:0"><label>Tema <span class="petunjuk">ketik baru / pilih yang ada<\/span><\/label>' +
     '<input type="text" list="daftar-tema" data-segtema="' + i + '" style="width:100%" value="' +
-    aman(s.tema) + '" placeholder="cth: Pertimbangan pembelian"><\/div>' +
-    '<\/div><\/div>').join('') +
-    '<datalist id="daftar-tema">' +
+    aman(s.tema) + '" placeholder="cth: Kepercayaan pada pengulas"><\/div>' +
+    '<\/div>' +
+    '<div class="baris renggang" style="margin-top:8px">' +
+    '<button type="button" class="tb tb-sekunder" data-ai-seg="' + i + '">' +
+    ikonKecil('sparkles', 14) + ' Bantu beri kode pakai AI<\/button>' +
+    '<span class="samar" style="font-size:12px" data-ai-status="' + i + '"><\/span>' +
+    '<\/div><\/div>';
+  let html = '';
+  urutanNama.forEach(nama => {
+    const grup = KUAL.tematik.segmen
+      .map((s, i) => ({s, i})).filter(x => x.s.informan === nama);
+    if (!grup.length) return;
+    const f0 = grup[0].s;
+    html += '<h4 style="margin:16px 0 4px">Kutipan dari ' + aman(nama) +
+      ' <span class="samar" style="font-weight:400;font-size:12.5px">(' +
+      aman(f0.teknik) + ' · ' + aman(f0.jenis || 'internal') + ')<\/span><\/h4>';
+    grup.forEach((x, k) => { html += kartu(x.s, x.i, k + 1); });
+  });
+  html += '<datalist id="daftar-tema">' +
     temas.map(t => '<option value="' + aman(t) + '">').join('') + '<\/datalist>';
+  w.innerHTML = html;
   w.querySelectorAll('[data-segkode]').forEach(inp =>
     inp.addEventListener('input', () => {
       KUAL.tematik.segmen[+inp.dataset.segkode].kode = inp.value.trim();
@@ -607,23 +671,62 @@ function gambarSegmen() {
       KUAL.tematik.segmen[+inp.dataset.segtema].tema = inp.value.trim();
       simpan();
     }));
+  w.querySelectorAll('[data-ai-seg]').forEach(btn =>
+    btn.addEventListener('click', () => bantuKodeAI(+btn.dataset.aiSeg, btn)));
 }
-el('kj-ai').addEventListener('click', () => {
-  const terkode = KUAL.tematik.segmen.filter(s => !s.kode).slice(0, 5);
-  if (!terkode.length) {
-    el('kj-saran').innerHTML = '<div class="catatan renggang">Semua potongan sudah berkode. ' +
-      'Kosongkan satu kode dulu kalau mau minta saran AI.<\/div>';
-    return;
+
+async function mintaTeksAI(prompt) {
+  const r = await fetch('/api/kualitatif/saran', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({prompt: prompt})
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.boleh) throw new Error(d.sebab || ('HTTP ' + r.status));
+  return d.saran || '';
+}
+async function bantuKodeAI(i, btn) {
+  const s = KUAL.tematik.segmen[i];
+  const status = document.querySelector('[data-ai-status="' + i + '"]');
+  const labelAsli = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'AI sedang berpikir…';
+  if (status) status.textContent = '';
+  try {
+    const temas = daftarTema();
+    const p = konteksPenelitian() +
+      '\nKamu membantu mahasiswa memberi KODE dan TEMA pada SATU kutipan ' +
+      'hasil wawancara. Kode = nama pendek 2-4 kata. Tema = kelompok yang ' +
+      'lebih besar dari kode.' +
+      (temas.length
+        ? '\nTema yang SUDAH dipakai di penelitian ini: ' + temas.join(', ') +
+          '. Pakai salah satu tema itu bila cocok, jangan membuat tema baru ' +
+          'yang mirip.'
+        : '') +
+      '\n\nKutipan dari ' + s.informan + ':\n"' + s.teks + '"' +
+      '\n\nBalas PERSIS dalam format 2 baris ini, tanpa penjelasan lain:\n' +
+      'KODE: <kode usulan>\nTEMA: <tema usulan>';
+    const teks = await mintaTeksAI(p);
+    const mk = teks.match(/KODE\s*:\s*(.+)/i);
+    const mt = teks.match(/TEMA\s*:\s*(.+)/i);
+    if (!mk || !mt) {
+      if (status) status.textContent = 'Saran AI: ' + teks.replace(/\s+/g, ' ').slice(0, 160);
+      return;
+    }
+    s.kode = mk[1].trim().replace(/^["\u201c]|["\u201d]$/g, '');
+    s.tema = mt[1].trim().replace(/^["\u201c]|["\u201d]$/g, '');
+    const ik = document.querySelector('[data-segkode="' + i + '"]');
+    const it = document.querySelector('[data-segtema="' + i + '"]');
+    if (ik) ik.value = s.kode;
+    if (it) it.value = s.tema;
+    simpan();
+    if (status) status.textContent = 'Sudah diisi AI — periksa lagi, ubah kalau kurang pas.';
+  } catch (e) {
+    if (status) status.textContent = 'AI belum bisa membantu: ' + (e.message || 'coba lagi.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = labelAsli;
   }
-  const p = konteksPenelitian() +
-    '\nBerikan USULAN KODE (nama pendek, 2-4 kata) untuk tiap potongan berikut, ' +
-    'SESUAI fokus penelitian di konteks. ' +
-    'Format: "Potongan N: kode". Jangan menjelaskan panjang-panjang.\n' +
-    terkode.map((s, i) => 'Potongan ' + (i + 1) + ' (' + s.informan + '): ' +
-      s.teks).join('\n');
-  saranAI(p, 'kj-saran',
-    'ketik manual kode yang cocok ke kolom Kode tiap potongan.');
-});
+}
 gambarInforman();
 gambarSegmen();
 
@@ -632,7 +735,7 @@ function hitungTriangulasi() {
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const w = el('tri-hasil');
   if (!seg.length) {
-    w.innerHTML = '<div class="catatan merah renggang">Belum ada potongan yang ' +
+    w.innerHTML = '<div class="catatan merah renggang">Belum ada kutipan yang ' +
       'berkode <em>dan<\/em> bertema. Selesaikan langkah 2 dulu.<\/div>';
     return;
   }
