@@ -423,6 +423,54 @@ def _teks_dari_balasan(mentah: str) -> str:
     return _gabung_delta(mentah)
 
 
+def _panggil_ai_server(prompt: str, max_tokens: int = 1500) -> str:
+    """Panggil AI server-side untuk kebutuhan internal (jembatan).
+
+    Pola sama dengan /api/kualitatif/saran (saklar AI dihormati, kunci
+    dari env, ekor SSE dibersihkan). Beda: untuk pemanggil internal —
+    kegagalan dilempar sebagai RuntimeError berisi sebab Bahasa
+    Indonesia, bukan JSONResponse.
+    """
+    import json as _json
+    import urllib.request as _url
+    if not ai_aktif():
+        raise RuntimeError('AI sedang dimatikan di aplikasi Statistik Lab.')
+    kunci = os.environ.get('ROUTER9_API_KEY', '').strip()
+    if not kunci:
+        raise RuntimeError('AI belum disambung di server Statistik Lab '
+                           '(kunci API belum diisi).')
+    dasar = os.environ.get('ROUTER9_BASE',
+                           'https://9router.bikinaja.id/v1').rstrip('/')
+    model = os.environ.get('ROUTER9_MODEL', 'EduAi')
+    tubuh = _json.dumps({
+        'model': model, 'max_tokens': max_tokens, 'temperature': 0.4,
+        'messages': [
+            {'role': 'system',
+             'content': 'Kamu asisten penelitian kualitatif untuk '
+                        'mahasiswa S1 Manajemen Indonesia. Jawab Bahasa '
+                        'Indonesia sederhana. Ikuti format yang diminta '
+                        'dengan persis.'},
+            {'role': 'user', 'content': str(prompt or '')[:12000]},
+        ]}).encode()
+    try:
+        import http.client as _http
+        req = _url.Request(dasar + '/chat/completions', data=tubuh, headers={
+            'Authorization': 'Bearer ' + kunci,
+            'Content-Type': 'application/json',
+            'User-Agent': 'statistik-lab/1.0'})
+        try:
+            mentah = _url.urlopen(req, timeout=90).read().decode(
+                'utf-8', 'replace')
+        except _http.IncompleteRead as _ir:
+            mentah = _ir.partial.decode('utf-8', 'replace')
+        teks = _teks_dari_balasan(mentah)
+    except Exception as e:
+        raise RuntimeError(f'AI tidak menjawab ({e}).')
+    if not teks:
+        raise RuntimeError('AI menjawab tapi isinya kosong.')
+    return teks
+
+
 @app.post('/api/kualitatif/saran')
 async def kualitatif_saran(payload: dict):
     """Proksi saran AI untuk modul kualitatif (Wulan, 19Okt26).
@@ -1055,7 +1103,7 @@ async def api_unduh(bentuk: str = 'csv', untuk: str = 'spss',
 
 # ── JEMBATAN EduAi (pintu tanpa sesi, Opsi B) — app/jembatan.py ──
 from app.jembatan import buat_router as _buat_router_jembatan
-app.include_router(_buat_router_jembatan(_gabung_peran, _hias_hasil))
+app.include_router(_buat_router_jembatan(_gabung_peran, _hias_hasil, _panggil_ai_server))
 
 
 @app.get('/health')

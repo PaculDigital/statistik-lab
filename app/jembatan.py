@@ -238,7 +238,184 @@ def _cek_tumpang_tindih(payload: dict, efektif: bool = False) -> None:
 # rute lama di main.py (penggabung peran + penghias hasil): SATU sumber,
 # hasil pintu baru dijamin sama dengan alur lama untuk data yang sama.
 # ══════════════════════════════════════════════════════════════════════════
-def buat_router(gabung_peran, hias_hasil) -> APIRouter:
+# ══════════════════════════════════════════════════════════════════════════
+# KUALITATIF (Fase 4) — dua panggilan tanpa sesi (keputusan Bos 21 Okt):
+#   (1) koding  : catatan informan → AI mengusulkan kode+tema per potongan;
+#                 manusia yang mengesahkan di EduAi (tafsir peneliti —
+#                 sengaja TIDAK otomatis penuh).
+#   (2) matriks : koding yang SUDAH disahkan → hitungan deterministik.
+# Hitungan di bawah adalah PINDAHAN PERSIS logika browser kualitatif.html
+# (hitungTriangulasi & gambarIFAS/tabelSkor) — rumus tidak diubah, hanya
+# pindah tempat dari peramban ke server. Halaman /kualitatif untuk
+# pemakai langsung TIDAK disentuh. Tidak ada data disimpan di sini.
+# ══════════════════════════════════════════════════════════════════════════
+def hitung_triangulasi(segmen: list[dict]) -> dict:
+    """Matriks triangulasi dari segmen berkode+bertema.
+
+    Segmen: {teks, informan, teknik, jenis, kode, tema}. Aturan 'kuat'
+    sama seperti versi peramban: tema muncul dari >=3 informan, ATAU dari
+    >=2 informan DAN >=2 teknik berbeda. 'Tertriangulasi' (jenis): tema
+    didukung >=2 jenis informan (internal + eksternal).
+    """
+    seg = [s for s in (segmen or [])
+           if isinstance(s, dict) and str(s.get('kode') or '').strip()
+           and str(s.get('tema') or '').strip()]
+    temas: list[str] = []
+    for s in seg:
+        if s['tema'] not in temas:
+            temas.append(s['tema'])
+    informans: list[str] = []
+    tekniks: list[str] = []
+    jeniss: list[str] = []
+    for s in seg:
+        for nilai, wadah in ((s.get('informan'), informans),
+                             (s.get('teknik'), tekniks),
+                             (s.get('jenis') or 'internal', jeniss)):
+            v = str(nilai or '').strip()
+            if v and v not in wadah:
+                wadah.append(v)
+
+    def _hitung(tema: str, kunci: str, nilai: str) -> int:
+        return sum(1 for s in seg
+                   if s['tema'] == tema
+                   and str(s.get(kunci) or ('internal' if kunci == 'jenis'
+                                             else '')).strip() == nilai)
+
+    baris_tema = []
+    for tema in temas:
+        per_inf = {f: _hitung(tema, 'informan', f) for f in informans}
+        per_tek = {k: _hitung(tema, 'teknik', k) for k in tekniks}
+        per_jen = {j: _hitung(tema, 'jenis', j) for j in jeniss}
+        n_inf = sum(1 for n in per_inf.values() if n > 0)
+        n_tek = sum(1 for n in per_tek.values() if n > 0)
+        n_jen = sum(1 for n in per_jen.values() if n > 0)
+        kuat = n_inf >= 3 or (n_inf >= 2 and n_tek >= 2)
+        contoh = next(s for s in seg if s['tema'] == tema)
+        baris_tema.append({
+            'tema': tema,
+            'per_informan': per_inf, 'per_teknik': per_tek,
+            'per_jenis': per_jen,
+            'total_kutipan': sum(per_inf.values()),
+            'jumlah_informan': n_inf, 'jumlah_teknik': n_tek,
+            'kuat': kuat, 'tertriangulasi': n_jen >= 2,
+            'contoh_kutipan': {'teks': str(contoh.get('teks') or ''),
+                               'informan': str(contoh.get('informan') or ''),
+                               'teknik': str(contoh.get('teknik') or '')},
+        })
+    return {'tema': baris_tema,
+            'informan': informans, 'teknik': tekniks, 'jenis': jeniss,
+            'jumlah_segmen': len(seg)}
+
+
+_LABEL_KUADRAN = {'I': 'I (agresif — kembangkan)',
+                  'II': 'II (diversifikasi)',
+                  'III': 'III (putar haluan)',
+                  'IV': 'IV (bertahan)'}
+
+
+def hitung_swot(faktor: list[dict]) -> dict:
+    """IFAS/EFAS + kuadran dari faktor SWOT berbobot (port tabelSkor).
+
+    Faktor: {kelompok: 'S'|'W'|'O'|'T', teks, bobot, rating}.
+    Skor faktor = bobot x rating. IFAS = kelompok S+W, EFAS = O+T.
+    Kuadran dari (IFAS-2,5) dan (EFAS-2,5) — titik tengah 2,50 persis
+    seperti versi peramban.
+    """
+    def _angka(x) -> float:
+        try:
+            v = float(x)
+        except (TypeError, ValueError):
+            return 0.0
+        return v if v == v else 0.0   # NaN -> 0
+
+    kelompok: dict[str, list[dict]] = {'S': [], 'W': [], 'O': [], 'T': []}
+    for f in (faktor or []):
+        if not isinstance(f, dict):
+            continue
+        k = str(f.get('kelompok') or f.get('k') or '').strip().upper()
+        if k not in kelompok:
+            continue
+        b, r = _angka(f.get('bobot')), _angka(f.get('rating'))
+        kelompok[k].append({'teks': str(f.get('teks') or ''), 'bobot': b,
+                            'rating': r, 'skor': round(b * r, 4)})
+
+    def _grup(kode2: tuple[str, str]) -> dict:
+        isi = kelompok[kode2[0]] + kelompok[kode2[1]]
+        tb = round(sum(x['bobot'] for x in isi), 4)
+        return {'faktor': isi, 'total_bobot': tb,
+                'total_skor': round(sum(x['skor'] for x in isi), 4),
+                'bobot_pas_satu': abs(tb - 1.0) <= 0.01}
+
+    ifas, efas = _grup(('S', 'W')), _grup(('O', 'T'))
+    kuadran = None
+    if ifas['faktor'] and efas['faktor']:
+        x = round(ifas['total_skor'] - 2.5, 4)
+        y = round(efas['total_skor'] - 2.5, 4)
+        kode = ('I' if x >= 0 and y >= 0 else
+                'II' if x < 0 and y >= 0 else
+                'III' if x >= 0 else 'IV')
+        kuadran = {'kode': kode, 'label': _LABEL_KUADRAN[kode], 'x': x, 'y': y}
+    return {'kelompok': kelompok, 'ifas': ifas, 'efas': efas,
+            'kuadran': kuadran}
+
+
+def susun_prompt_koding(fokus: str, catatan: list[dict]) -> str:
+    """Prompt koding berkelompok: AI mengusulkan kode+tema per potongan."""
+    baris = []
+    for i, c in enumerate(catatan):
+        baris.append(f"[{i}] ({c.get('informan') or 'informan'}) "
+                     f"{c.get('teks') or ''}")
+    return (
+        'Kamu membantu koding awal analisis tematik penelitian kualitatif '
+        'mahasiswa S1 Manajemen Indonesia.\n'
+        f'Fokus penelitian: {fokus or "(tidak ditulis)"}\n\n'
+        'Catatan informan (satu potongan per nomor):\n'
+        + '\n'.join(baris) +
+        '\n\nUntuk SETIAP potongan, usulkan satu kode singkat (2-4 kata) '
+        'dan satu tema (kelompok besar; tema yang sama ditulis persis sama '
+        'untuk potongan sejenis). Jawab HANYA dengan JSON array seperti '
+        'ini, tanpa teks lain: '
+        '[{"indeks": 0, "kode": "...", "tema": "..."}]')
+
+
+def urai_usulan_koding(teks_ai: str, catatan: list[dict]) -> list[dict]:
+    """Urai JSON usulan AI; susun sejajar catatan. Gagal urai -> []."""
+    import json as _json
+    mentah = (teks_ai or '').strip()
+    daftar = None
+    awal = mentah.find('[')
+    if awal >= 0:
+        try:
+            obj, _ = _json.JSONDecoder().raw_decode(mentah[awal:])
+            if isinstance(obj, list):
+                daftar = obj
+        except Exception:
+            daftar = None
+    per_indeks: dict[int, dict] = {}
+    if daftar:
+        for pos, item in enumerate(daftar):
+            if not isinstance(item, dict):
+                continue
+            idx = item.get('indeks')
+            if not isinstance(idx, int) or not (0 <= idx < len(catatan)):
+                idx = pos
+            per_indeks[idx] = item
+    hasil = []
+    for i, c in enumerate(catatan):
+        u = per_indeks.get(i, {})
+        hasil.append({
+            'indeks': i,
+            'informan': str(c.get('informan') or ''),
+            'teknik': str(c.get('teknik') or ''),
+            'jenis': str(c.get('jenis') or 'internal'),
+            'teks': str(c.get('teks') or ''),
+            'kode_usulan': str(u.get('kode') or ''),
+            'tema_usulan': str(u.get('tema') or ''),
+        })
+    return hasil
+
+
+def buat_router(gabung_peran, hias_hasil, panggil_ai=None) -> APIRouter:
     router = APIRouter()
 
     @router.get('/api/jembatan/status')
@@ -390,5 +567,80 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
                             'galat_maks': r.get('galat_maks'),
                             'diminta': r.get('diminta')}}
 
+
+    @router.post('/api/jembatan/kualitatif/koding')
+    async def jembatan_koding(payload: dict,
+                              x_kunci_layanan: str | None = Header(default=None)):
+        """Panggilan 1 kualitatif: catatan informan -> usulan kode+tema.
+
+        AI hanya MENGUSULKAN; pengesahan di EduAi oleh peneliti.
+        Tanpa simpan: catatan tidak ditulis ke mana pun di server ini.
+        """
+        _wajib_kunci(x_kunci_layanan)
+        if panggil_ai is None:
+            raise HTTPException(status_code=503, detail=(
+                'Pintu AI belum tersambung di server Statistik Lab.'))
+        catatan = payload.get('catatan')
+        if not isinstance(catatan, list) or not catatan:
+            raise HTTPException(status_code=400, detail=(
+                'Catatan kosong — kirim "catatan": daftar potongan '
+                '{informan, teks}.'))
+        if len(catatan) > 200:
+            raise HTTPException(status_code=400, detail=(
+                'Terlalu banyak potongan sekali kirim (maks 200). '
+                'Bagi menjadi beberapa kiriman.'))
+        bersih = []
+        for c in catatan:
+            if not isinstance(c, dict) or not str(c.get('teks') or '').strip():
+                raise HTTPException(status_code=400, detail=(
+                    'Setiap potongan catatan wajib punya "teks".'))
+            bersih.append(c)
+        fokus = str(payload.get('fokus') or '')
+        try:
+            teks_ai = panggil_ai(susun_prompt_koding(fokus, bersih))
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        usulan = urai_usulan_koding(teks_ai, bersih)
+        if not any(u['kode_usulan'] for u in usulan):
+            raise HTTPException(status_code=502, detail=(
+                'AI menjawab tetapi usulannya tidak bisa dibaca. '
+                'Coba kirim lagi.'))
+        return {'usulan': usulan, 'jumlah': len(usulan)}
+
+    @router.post('/api/jembatan/kualitatif/matriks')
+    async def jembatan_matriks(payload: dict,
+                               x_kunci_layanan: str | None = Header(default=None)):
+        """Panggilan 2 kualitatif: koding tersahkan -> matriks hitungan.
+
+        Deterministik, tanpa AI, tanpa simpan. jenis: 'tematik'
+        (triangulasi) atau 'swot' (IFAS/EFAS + kuadran).
+        """
+        _wajib_kunci(x_kunci_layanan)
+        jenis = str(payload.get('jenis') or '')
+        if jenis == 'tematik':
+            segmen = payload.get('segmen')
+            if not isinstance(segmen, list) or not segmen:
+                raise HTTPException(status_code=400, detail=(
+                    'Segmen kosong — kirim "segmen": daftar segmen yang '
+                    'sudah disahkan kodenya.'))
+            hasil = hitung_triangulasi(segmen)
+            if not hasil['tema']:
+                raise HTTPException(status_code=400, detail=(
+                    'Tidak ada segmen berkode+bertema yang bisa dihitung. '
+                    'Sahkan koding dulu.'))
+            return {'jenis': 'tematik', 'triangulasi': hasil}
+        if jenis == 'swot':
+            faktor = payload.get('faktor')
+            if not isinstance(faktor, list) or not faktor:
+                raise HTTPException(status_code=400, detail=(
+                    'Faktor kosong — kirim "faktor": daftar faktor SWOT '
+                    'berbobot+rating.'))
+            hasil = hitung_swot(faktor)
+            if not any(hasil['kelompok'][k] for k in 'SWOT'):
+                raise HTTPException(status_code=400, detail=(
+                    'Tidak ada faktor berkelompok S/W/O/T yang sah.'))
+            return {'jenis': 'swot', 'swot': hasil}
+        raise HTTPException(status_code=400, detail=(
+            'Jenis tidak dikenal — pakai "tematik" atau "swot".'))
 
     return router
