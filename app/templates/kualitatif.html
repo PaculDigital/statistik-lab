@@ -353,14 +353,14 @@ document.querySelectorAll('#swot-nav [data-langkah]').forEach(q =>
   q.addEventListener('click', () => aturLangkah('swot', q.dataset.langkah)));
 
 /* ── Proksi AI (kunci di server; 503 jujur bila belum disambung) ── */
-async function saranAI(prompt, wadah, labelTombol) {
+async function saranAI(prompt, wadah, labelTombol, bentuk) {
   const w = el(wadah);
   w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
     '<div>AI sedang berpikir…<\/div><\/div>';
   try {
     const r = await fetch('/api/kualitatif/saran', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({prompt: prompt})
+      body: JSON.stringify({prompt: prompt, bentuk: bentuk || ''})
     });
     //  Galat dari Cloudflare/gerbang BALASANNYA HTML, bukan JSON.
     //  Versi lama: r.json() gagal -> d = {} -> pesan jadi "HTTP 502"
@@ -479,7 +479,7 @@ el('tp-ai').addEventListener('click', () => {
     'Bedakan untuk informan ' + (jenis.join(' dan ') || 'internal dan eksternal') +
     ': untuk INTERNAL (pelaku di dalam) gali pengalaman & proses; ' +
     'untuk EKSTERNAL (pelanggan/pengamat luar) gali penilaian & persepsi.';
-  saranAI(p, 'tp-hasil');
+  saranAI(p, 'tp-hasil', null, 'panduan');
 });
 
 /* ═══════════ TEMATIK — Langkah 2: Koding ═══════════ */
@@ -651,7 +651,7 @@ el('kj-ai').addEventListener('click', () => {
     terkode.map((s, i) => 'Potongan ' + (i + 1) + ' (' + s.informan + '): ' +
       s.teks).join('\n');
   saranAI(p, 'kj-saran',
-    'ketik manual kode yang cocok ke kolom Kode tiap potongan.');
+    'ketik manual kode yang cocok ke kolom Kode tiap potongan.', 'koding');
 });
 gambarInforman();
 gambarSegmen();
@@ -768,7 +768,7 @@ el('tafsir-ai').addEventListener('click', () => {
       return 'Tema ' + t + ' (' + d.length + ' kutipan). Contoh: "' +
         d[0].teks.slice(0, 120) + '"';
     }).join('\n');
-  saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.');
+  saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.', 'tafsir');
 });
 async function unduhQDA(jenis) {
   const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
@@ -864,7 +864,7 @@ el('sw-ai-faktor').addEventListener('click', () => {
     '\nUsulkan 4 Strength, 4 Weakness, 4 Opportunity, 4 Threat yang SPESIFIK ' +
     'untuk objek di konteks (jangan yang generik). Format: "S: ...". ' +
     'Satu baris satu faktor, pendek saja.';
-  saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.');
+  saranAI(p, 'sw-saran', 'ketik ulang faktor yang cocok lewat form di atas.', 'swot_faktor');
 });
 function gambarMatriks() {
   const f = KUAL.swot.faktor;
@@ -894,7 +894,7 @@ el('sw-ai-strategi').addEventListener('click', () => {
     'pasangan SO, WO, ST, WT (satu kalimat tiap strategi, spesifik untuk objek di konteks).\n' +
     f.map(x => x.k + ': ' + x.teks).join('\n');
   saranAI(p, 'sw-saran-strategi',
-    'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.');
+    'ketik ulang strategi yang cocok ke kolom SO/WO/ST/WT.', 'swot_strategi');
 });
 function tabelSkor(judul, daftar) {
   let h = '<table class="data"><thead><tr><th>Faktor<\/th><th>Bobot<\/th>' +
