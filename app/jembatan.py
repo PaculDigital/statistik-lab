@@ -56,12 +56,28 @@ def _r_kritis(n: int, taraf: float = 0.05) -> float | None:
 
 def _kelompok_dari_awalan(kolom: list[str]) -> dict[str, list[str]]:
     """Kelompokkan butir dari pola nama: 'Kualitas_Produk_1' → 'Kualitas_Produk',
-    'KP1' → 'KP'. Pola yang sama dipakai template instrumen EduAi."""
+    'KP1' → 'KP'. Pola yang sama dipakai template instrumen EduAi.
+
+    KETAT (temuan review 21 Okt): kolom TANPA nomor butir di ujung
+    ('Kualitas', 'Harga') BUKAN butir — jangan digabung/dijadikan
+    variabel sendiri diam-diam. Kumpulkan dan laporkan lewat GagalBaca
+    supaya pengirim membetulkan nama kolom atau mengirim konstruk
+    eksplisit."""
+    from app.diagnosis import GagalBaca
     keluar: dict[str, list[str]] = {}
+    tak_berpola: list[str] = []
     for c in kolom:
         m = re.match(r'^(.*?)[_\s]?\d+$', str(c))
-        nama = m.group(1) if m else str(c)
-        keluar.setdefault(nama, []).append(c)
+        if m and m.group(1):
+            keluar.setdefault(m.group(1), []).append(c)
+        else:
+            tak_berpola.append(str(c))
+    if tak_berpola:
+        raise GagalBaca(
+            'Kolom ini tidak mengikuti pola nama butir (Nama_Variabel_Nomor): '
+            + ', '.join(tak_berpola)
+            + '. Betulkan nama kolomnya, atau kirim pengelompokan "konstruk" '
+              'secara eksplisit.')
     return keluar
 
 
@@ -121,6 +137,43 @@ def periksa_pra_survei(df: pd.DataFrame,
             'variabel': variabel, 'semua_lolos': semua_lolos}
 
 
+def _cek_tumpang_tindih(payload: dict) -> None:
+    """Tolak kolom yang memegang dua peran sekaligus (400, pesan jelas).
+
+    SPSS: perpotongan kolom_x / kolom_m / kolom_z / kolom_y.
+    PLS: satu butir tidak boleh masuk dua konstruk.
+    Peran (dict kolom→peran) secara bentuk tidak bisa tumpang tindih.
+    """
+    from app.diagnosis import GagalBaca
+    mode = str(payload.get('mode', 'spss'))
+    if mode == 'pls':
+        pemilik: dict[str, str] = {}
+        for nama, cols in (payload.get('konstruk') or {}).items():
+            for c in cols or []:
+                if c in pemilik:
+                    raise GagalBaca(
+                        f'Butir "{c}" masuk dua konstruk sekaligus '
+                        f'("{pemilik[c]}" dan "{nama}"). Satu butir hanya '
+                        f'boleh milik satu konstruk.')
+                pemilik[c] = nama
+        return
+    grup = {
+        'X': [str(c) for c in (payload.get('kolom_x') or [])],
+        'M (perantara)': [str(c) for c in (payload.get('kolom_m') or [])],
+        'Z (penguat)': [str(c) for c in (payload.get('kolom_z') or [])],
+        'Y': [str(payload['kolom_y'])] if payload.get('kolom_y') else [],
+    }
+    pemilik: dict[str, str] = {}
+    for peran, cols in grup.items():
+        for c in cols:
+            if c in pemilik:
+                raise GagalBaca(
+                    f'Kolom "{c}" memegang dua peran sekaligus '
+                    f'({pemilik[c]} dan {peran}). Satu kolom hanya boleh '
+                    f'satu peran.')
+            pemilik[c] = peran
+
+
 # ══════════════════════════════════════════════════════════════════════════
 # RUTE — dibuat lewat pabrik supaya memakai penolong yang sama dengan
 # rute lama di main.py (penggabung peran + penghias hasil): SATU sumber,
@@ -142,8 +195,13 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
             raise HTTPException(status_code=503, detail=(
                 'Kunci antar-layanan belum dipasang di server Statistik '
                 'Lab. Pemilik server perlu memasangnya dulu.'))
-        if not x_kunci_layanan or not secrets.compare_digest(
-                x_kunci_layanan, kunci_server):
+        # BUG (temuan review 21 Okt): compare_digest pada str non-ASCII
+        # melempar TypeError → 500. Encode ke bytes dulu supaya kunci
+        # aneh apa pun ditolak rapi dengan 401.
+        cocok = bool(x_kunci_layanan) and secrets.compare_digest(
+            str(x_kunci_layanan).encode('utf-8'),
+            kunci_server.encode('utf-8'))
+        if not cocok:
             raise HTTPException(status_code=401, detail=(
                 'Kunci antar-layanan tidak dikenal.'))
 
@@ -171,6 +229,11 @@ def buat_router(gabung_peran, hias_hasil) -> APIRouter:
                             kelompok.setdefault(str(peran), []).append(kolom)
                     konstruk = kelompok or None
                 return periksa_pra_survei(df, konstruk)
+
+            # ── Pagar peran (temuan review 21 Okt): satu kolom tidak
+            # boleh memegang dua peran sekaligus (mis. jadi X dan Y) —
+            # data seperti itu tidak sah tapi tadinya tetap dihitung.
+            _cek_tumpang_tindih(payload)
 
             # ── Tahap utama: jalur yang sama persis dengan rute lama ──
             df2, payload2 = gabung_peran(df, dict(payload))

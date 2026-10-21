@@ -137,6 +137,57 @@ cek('alpha keluar untuk semua variabel',
 r_pra2 = c.post('/api/jembatan/hitung', json={'tahap': 'pra-survei', 'baris': []})
 cek('pra-survei tanpa kunci → 401', r_pra2.status_code == 401)
 
+print('── 5. Regresi 4 bug (temuan review agen Bos, 21 Okt) ──')
+# BUG 2 — kunci non-ASCII tidak boleh 500, harus 401.
+# httpx menolak mengirim header non-ASCII dari sisi klien uji, jadi
+# penangan dipanggil langsung (jalur kode yang sama persis).
+import asyncio
+from fastapi import HTTPException as _HE
+from app.jembatan import buat_router as _br
+_rt = _br(lambda d, p: (d, p), lambda r, m: r)
+_ep = [r.endpoint for r in _rt.routes if r.path == '/api/jembatan/hitung'][0]
+try:
+    asyncio.run(_ep({'baris': baris}, x_kunci_layanan='kunci-✓-salah-é'))
+    _kode = 200
+except _HE as e:
+    _kode = e.status_code
+except TypeError:
+    _kode = 500
+cek('BUG2 kunci non-ASCII → 401 (bukan 500)', _kode == 401, str(_kode))
+# BUG 3 — kolom jadi X dan Y sekaligus harus ditolak 400
+r_tumpang = c.post('/api/jembatan/hitung', headers=KUNCI,
+                   json={'mode': 'spss', 'tahap': 'utama', 'baris': baris,
+                         'kolom_x': ['Keaslian_1'], 'kolom_y': 'Keaslian_1'})
+cek('BUG3 kolom X=Y → 400', r_tumpang.status_code == 400,
+    f"{r_tumpang.status_code} {r_tumpang.text[:120]}")
+r_tumpang2 = c.post('/api/jembatan/hitung', headers=KUNCI,
+                    json={'mode': 'pls', 'tahap': 'utama', 'baris': baris,
+                          'konstruk': {'A': ['Keaslian_1', 'Keaslian_2'],
+                                       'B': ['Keaslian_1', 'Interaksi_1']},
+                          'kolom_y_konstruk': 'B'})
+cek('BUG3 butir di 2 konstruk → 400', r_tumpang2.status_code == 400,
+    f"{r_tumpang2.status_code} {r_tumpang2.text[:120]}")
+# BUG 4 — nama kolom tanpa nomor butir harus ditolak dengan pesan jelas
+pra_buruk = pd.DataFrame({'Kualitas': [3, 4, 5, 4] * 5,
+                          'Harga': [4, 3, 4, 5] * 5})
+r_buruk = c.post('/api/jembatan/hitung', headers=KUNCI,
+                 json={'tahap': 'pra-survei',
+                       'baris': pra_buruk.to_dict(orient='records')})
+cek('BUG4 kolom tanpa nomor → 400 + sebut polanya',
+    r_buruk.status_code == 400 and 'pola nama butir' in r_buruk.text,
+    f"{r_buruk.status_code} {r_buruk.text[:160]}")
+# Catatan review — kunci dibaca dari env, bukan tertanam: rotasi harus berlaku
+os.environ['JEMBATAN_KUNCI_LAYANAN'] = 'kunci-baru-hasil-rotasi'
+r_rot_lama = c.post('/api/jembatan/hitung', headers=KUNCI, json={'baris': baris})
+r_rot_baru = c.post('/api/jembatan/hitung',
+                    headers={'X-Kunci-Layanan': 'kunci-baru-hasil-rotasi'},
+                    json={'tahap': 'pra-survei',
+                          'baris': pra.to_dict(orient='records')})
+cek('rotasi env: kunci lama ditolak, kunci baru diterima',
+    r_rot_lama.status_code == 401 and r_rot_baru.status_code == 200,
+    f'{r_rot_lama.status_code}/{r_rot_baru.status_code}')
+os.environ['JEMBATAN_KUNCI_LAYANAN'] = 'kunci-uji-rahasia'
+
 print()
 if gagal:
     print(f'❌ {len(gagal)} GAGAL: {gagal}'); sys.exit(1)
