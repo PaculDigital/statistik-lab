@@ -362,8 +362,37 @@ async function saranAI(prompt, wadah, labelTombol) {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({prompt: prompt})
     });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok || !d.boleh) throw new Error(d.sebab || ('HTTP ' + r.status));
+    //  Galat dari Cloudflare/gerbang BALASANNYA HTML, bukan JSON.
+    //  Versi lama: r.json() gagal -> d = {} -> pesan jadi "HTTP 502"
+    //  mentah yang tidak menjelaskan apa pun (keluhan Bos 21Okt26).
+    //  Sekarang: periksa jenis isi dulu, lalu beri kalimat SEBAB.
+    const jenis = (r.headers.get('content-type') || '');
+    let d = {};
+    if (jenis.includes('json')) {
+      d = await r.json().catch(() => ({}));
+    } else {
+      await r.text().catch(() => '');
+    }
+    if (!r.ok || !d.boleh) {
+      let sebab = d.sebab;
+      if (!sebab) {
+        if (r.status === 502 || r.status === 503 || r.status === 504) {
+          sebab = 'Server AI tidak menjawab dalam waktu wajar (galat ' +
+            r.status + '). Ini biasanya gangguan sementara — tunggu ' +
+            'sebentar lalu coba lagi. Mode manual tetap bisa dipakai.';
+        } else if (r.status === 524) {
+          sebab = 'Permintaan melewati batas waktu server (galat 524). ' +
+            'Coba lagi; kalau berulang, pakai mode manual.';
+        } else if (r.status === 429) {
+          sebab = 'Terlalu banyak permintaan dalam waktu singkat (galat ' +
+            '429). Tunggu satu menit lalu coba lagi.';
+        } else {
+          sebab = 'Permintaan gagal (galat ' + r.status + '). Coba lagi, ' +
+            'atau pakai mode manual.';
+        }
+      }
+      throw new Error(sebab);
+    }
     const kartu = document.createElement('div');
     kartu.className = 'kartu';
     kartu.innerHTML =

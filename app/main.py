@@ -423,6 +423,58 @@ def _teks_dari_balasan(mentah: str) -> str:
     return _gabung_delta(mentah)
 
 
+def _sebab_kosong(mentah: str) -> str:
+    """KENAPA jawaban kosong? — dibaca dari balasan, bukan ditebak.
+
+    ⚠️ AKAR "Minta saran AI → HTTP 502" (Wulan, 21Okt26 — terukur):
+      Model `cb/deepseek-v4.1-flash` punya `reasoning_content`: dia
+      menulis PROSES BERPIKIR dulu, baru `content`. Kalau `max_tokens`
+      habis dipakai berpikir, balasannya:
+
+          {"finish_reason":"length","message":{"content":"","reasoning_content":"The user wants..."}}
+
+      Terbukti: max_tokens=200 → content KOSONG; 800/3000 → terisi.
+      Balasan tetap HTTP 200, jadi tanpa pemeriksaan ini user hanya
+      melihat "AI menjawab tapi isinya kosong" — tanpa tahu sebabnya.
+
+    Kembalian: kalimat SEBAB yang bisa dibaca user (bukan kode galat).
+    """
+    if not mentah or not mentah.strip():
+        return 'AI tidak mengirim apa pun.'
+    try:
+        awal = mentah.find('{')
+        if awal < 0:
+            return 'AI mengirim jawaban yang tidak bisa dibaca.'
+        obj, _ = json.JSONDecoder().raw_decode(mentah[awal:])
+    except Exception:
+        return 'AI mengirim jawaban yang tidak bisa dibaca.'
+
+    for ch in (obj.get('choices') or []):
+        alasan = str(ch.get('finish_reason') or '')
+        pesan = ch.get('message') or {}
+        ada_pikir = bool((pesan.get('reasoning_content') or '').strip())
+        if alasan == 'length':
+            if ada_pikir:
+                return ('AI kehabisan jatah token saat menyusun jawaban '
+                        '(model ini berpikir dulu sebelum menjawab), jadi '
+                        'jawabannya tidak sempat ditulis. Coba lagi — kalau '
+                        'terus begini, pakai mode manual.')
+            return ('AI kehabisan jatah token sebelum menyelesaikan '
+                    'jawaban. Coba lagi dengan permintaan lebih pendek, '
+                    'atau pakai mode manual.')
+        if alasan == 'content_filter':
+            return ('AI menolak menjawab permintaan ini (penyaring isi). '
+                    'Ubah sedikit kata kuncinya, atau pakai mode manual.')
+    return 'AI menjawab tapi isinya kosong.'
+
+
+#  Jatah token untuk saran kualitatif. Model reasoning (mis.
+#  cb/deepseek-v4.1-flash) memakai token untuk `reasoning_content` DULU;
+#  800 terbukti bisa habis sebelum `content` ditulis → jawaban kosong.
+#  2000 memberi ruang berpikir + menjawab (terukur 21Okt26: 2,2 dtk).
+SARAN_MAX_TOKEN = int(os.environ.get('SARAN_MAX_TOKEN', '2000'))
+
+
 @app.post('/api/kualitatif/saran')
 async def kualitatif_saran(payload: dict):
     """Proksi saran AI untuk modul kualitatif (Wulan, 19Okt26).
@@ -471,7 +523,7 @@ async def kualitatif_saran(payload: dict):
                             status_code=400)
 
     tubuh = _json.dumps({
-        'model': model, 'max_tokens': 800, 'temperature': 0.7,
+        'model': model, 'max_tokens': SARAN_MAX_TOKEN, 'temperature': 0.7,
         'messages': [
             {'role': 'system',
              'content': 'Kamu asisten penelitian kualitatif untuk mahasiswa '
@@ -480,7 +532,9 @@ async def kualitatif_saran(payload: dict):
                         'konkret yang mudah diikuti. Jangan bertele-tele.'},
             {'role': 'user', 'content': prompt},
         ]}).encode()
-    try:
+
+    def _sekali():
+        """Satu panggilan ke 9router -> (teks, mentah). Melempar bila gagal."""
         import http.client as _http
         req = _url.Request(dasar + '/chat/completions', data=tubuh, headers={
             'Authorization': 'Bearer ' + kunci,
@@ -493,13 +547,33 @@ async def kualitatif_saran(payload: dict):
         except _http.IncompleteRead as _ir:
             # 9router menutup stream SSE lebih awal — pakai yang terbaca
             mentah = _ir.partial.decode('utf-8', 'replace')
+        return _teks_dari_balasan(mentah), mentah
 
-        teks = _teks_dari_balasan(mentah)
+    #  Percobaan 1. Kalau kosong karena `finish_reason=length` (model
+    #  kehabisan token saat BERPIKIR — terukur 21Okt26), ulangi SEKALI
+    #  dengan jatah token dua kali lipat sebelum menyerah. Percobaan
+    #  ulang hanya untuk sebab ini, supaya galat jaringan tidak disembuhkan
+    #  diam-diam (dan tidak menahan user menunggu sia-sia).
+    try:
+        teks, mentah = _sekali()
         if not teks:
+            sebab = _sebab_kosong(mentah)
+            if 'jatah token' in sebab:
+                tubuh2 = _json.dumps({
+                    'model': model, 'max_tokens': SARAN_MAX_TOKEN * 2,
+                    'temperature': 0.7,
+                    'messages': _json.loads(tubuh.decode())['messages'],
+                }).encode()
+                asli, tubuh = tubuh, tubuh2
+                try:
+                    teks, mentah = _sekali()
+                finally:
+                    tubuh = asli
+                if teks:
+                    return {'boleh': True, 'saran': teks, 'model': model}
             return JSONResponse(
-                {'boleh': False,
-                 'sebab': 'AI menjawab tapi isinya kosong. Coba lagi, atau '
-                          'pakai mode manual.'},
+                {'boleh': False, 'sebab': sebab + ' Pakai mode manual kalau '
+                                                  'masih gagal.'},
                 status_code=502)
         return {'boleh': True, 'saran': teks,
                 'model': model}
