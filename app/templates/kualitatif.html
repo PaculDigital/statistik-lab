@@ -180,8 +180,10 @@
         Tema yang muncul di ≥2 teknik atau ≥3 informan ditandai
         <span class="pita pita-hijau">kuat</span>.
       </p>
+      <div id="tri-data"></div>
+      <div id="tri-kesimpulan"></div>
       <div class="baris renggang">
-        <button class="tb tb-utama" id="tri-hitung">{{ ikon('refresh-cw', 15) }} Hitung triangulasi</button>
+        <button class="tb tb-sekunder" id="tri-hitung">{{ ikon('refresh-cw', 15) }} Hitung ulang</button>
       </div>
       <div id="tri-hasil"></div>
     </div>
@@ -348,6 +350,7 @@ function aturLangkah(jenis, n) {
   if (pos) pos.textContent = n;
   document.querySelectorAll((jenis === 'tematik' ? '#tematik-nav' : '#swot-nav') + ' [data-langkah]')
     .forEach(q => q.classList.toggle('tb-utama', q.dataset.langkah === String(n)));
+  if (jenis === 'tematik' && String(n) === '3') gambarTriangulasi();
 }
 document.querySelectorAll('#tematik-nav [data-langkah]').forEach(q =>
   q.addEventListener('click', () => aturLangkah('tematik', q.dataset.langkah)));
@@ -786,21 +789,133 @@ gambarInforman();
 gambarSegmen();
 
 /* ═══════════ TEMATIK — Langkah 3: Triangulasi ═══════════ */
+
+/* Langkah 3 dirender sekaligus: datamu -> kesimpulan -> detail angka.
+   Mahasiswa harus TAHU data apa yang ditriangulasi (Boss, 21Okt26). */
+function gambarTriangulasi() {
+  gambarDataTriangulasi();
+  gambarKesimpulanTriangulasi();
+  hitungTriangulasi();
+}
+function gambarDataTriangulasi() {
+  const w = el('tri-data');
+  const semua = KUAL.tematik.segmen;
+  const lengkap = semua.filter(x => x.kode && x.tema);
+  const kurang = semua.length - lengkap.length;
+  let h = '<div class="kartu"><span class="eyebrow">' +
+    ikonKecil('clipboard-list', 13) + ' Datamu yang akan ditriangulasi<\/span>';
+  if (!semua.length) {
+    h += '<p class="samar" style="font-size:13px;margin:8px 0 0">Belum ada ' +
+      'kutipan sama sekali. Kembali ke Langkah 2: tambahkan informan, tempel ' +
+      'transkripnya, beri kode dan tema.<\/p><\/div>';
+    w.innerHTML = h;
+    return;
+  }
+  const infs = KUAL.tematik.informan;
+  const nInt = infs.filter(f => (f.jenis || 'internal') === 'internal').length;
+  h += '<p style="font-size:13.5px;margin:8px 0">' + semua.length +
+    ' kutipan dari ' + infs.length + ' informan (' + nInt + ' internal, ' +
+    (infs.length - nInt) + ' eksternal). Yang siap ditriangulasi: <strong>' +
+    lengkap.length + ' kutipan<\/strong> (sudah berkode dan bertema).<\/p>';
+  if (kurang > 0) {
+    h += '<div class="catatan merah renggang"><div><strong>' + kurang +
+      ' kutipan belum lengkap<\/strong> (belum ada kode atau tema) — kutipan itu ' +
+      '<strong>belum ikut dihitung<\/strong>. ' +
+      '<button type="button" class="tb tb-sekunder" data-lompat="2">' +
+      'Lengkapi di Langkah 2<\/button><\/div><\/div>';
+  }
+  /* per informan */
+  const namaSemua = infs.map(f => f.nama);
+  lengkap.concat(semua).forEach(x => {
+    if (!namaSemua.includes(x.informan)) namaSemua.push(x.informan);
+  });
+  h += namaSemua.map(nama => {
+    const f = infs.find(x => x.nama === nama) || {};
+    const ks = semua.filter(x => x.informan === nama);
+    const kl = ks.filter(x => x.kode && x.tema).length;
+    return '<div style="padding:6px 0;border-top:1px solid var(--garis)">' +
+      '<strong>' + aman(nama) + '<\/strong> <span class="samar" style="font-size:12.5px">' +
+      aman(f.teknik || ks[0].teknik || 'wawancara') + ' · ' +
+      aman(f.jenis || ks[0].jenis || 'internal') + ' · ' + ks.length +
+      ' kutipan (' + kl + ' siap)<\/span><\/div>';
+  }).join('');
+  /* cek kesiapan dari kutipan yang LENGKAP saja (yang benar-benar dihitung) */
+  const infSiap = new Set(lengkap.map(x => x.informan));
+  const tekSiap = new Set(lengkap.map(x => x.teknik));
+  const jenSiap = new Set(lengkap.map(x => x.jenis || 'internal'));
+  const cek = (ok, teks, saran) =>
+    '<div style="padding:5px 0;font-size:13.5px">' +
+    (ok ? '<span class="pita pita-hijau">siap<\/span> ' : '<span class="pita">belum<\/span> ') +
+    teks + (ok ? '' : ' <span class="samar">' + saran + '<\/span>') + '<\/div>';
+  h += '<h4 style="margin:12px 0 4px">Cek kesiapan triangulasi<\/h4>' +
+    cek(infSiap.size >= 2,
+      'Triangulasi sumber: ' + infSiap.size + ' informan mendukung',
+      '— perlu minimal 2 informan supaya temuan bisa dibandingkan.') +
+    cek(tekSiap.size >= 2,
+      'Triangulasi teknik: ' + tekSiap.size + ' teknik (' +
+        [...tekSiap].join(', ') + ')',
+      '— baru satu teknik; tambah observasi atau dokumentasi supaya bisa dicek silang.') +
+    cek(jenSiap.size >= 2,
+      'Dua sisi informan: ' + [...jenSiap].join(' + '),
+      '— baru dari sisi ' + [...jenSiap].join('') +
+        ' saja; cari informan dari sisi lainnya.');
+  h += '<\/div>';
+  w.innerHTML = h;
+  w.querySelectorAll('[data-lompat]').forEach(b =>
+    b.addEventListener('click', () => aturLangkah('tematik', b.dataset.lompat)));
+}
+function gambarKesimpulanTriangulasi() {
+  const w = el('tri-kesimpulan');
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  if (!seg.length) { w.innerHTML = ''; return; }
+  const temas = [...new Set(seg.map(x => x.tema))];
+  let h = '<div class="kartu"><span class="eyebrow">' +
+    ikonKecil('shield-check', 13) + ' Kesimpulan per tema<\/span>';
+  temas.forEach(t => {
+    const d = seg.filter(x => x.tema === t);
+    const infs = [...new Set(d.map(x => x.informan))];
+    const teks = [...new Set(d.map(x => x.teknik))];
+    const jens = [...new Set(d.map(x => x.jenis || 'internal'))];
+    const kuat = infs.length >= 3 || (infs.length >= 2 && teks.length >= 2);
+    h += '<div style="padding:10px 0;border-top:1px solid var(--garis)">' +
+      '<strong>' + aman(t) + '<\/strong> ' +
+      (kuat ? '<span class="pita pita-hijau">kuat<\/span>'
+            : '<span class="pita">perlu diperkuat<\/span>') +
+      '<div class="samar" style="font-size:13px;margin-top:4px">';
+    if (kuat) {
+      h += 'Didukung ' + infs.length + ' informan (' + infs.map(aman).join(', ') +
+        ') dan ' + teks.length + ' teknik (' + teks.map(aman).join(', ') + ')' +
+        (jens.length >= 2 ? ', dari dua sisi (internal + eksternal)' : '') +
+        '. Temuan ini kokoh — siap ditulis di Langkah 4.';
+    } else {
+      const kurang = [];
+      if (infs.length < 2) kurang.push('baru didukung ' + infs.length +
+        ' informan (' + infs.map(aman).join(', ') + ')');
+      if (teks.length < 2) kurang.push('baru lewat ' + teks.map(aman).join(', ') +
+        ' saja');
+      if (jens.length < 2) kurang.push('baru dari sisi ' + jens[0] + ' saja');
+      h += 'Kelemahannya: ' + kurang.join('; ') + '. Perkuat dengan kutipan ' +
+        'dari informan, teknik, atau sisi lain — atau terima apa adanya dan ' +
+        'tulis alasannya di Langkah 4.';
+    }
+    h += '<\/div><\/div>';
+  });
+  h += '<\/div>';
+  w.innerHTML = h;
+}
+
 function hitungTriangulasi() {
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const w = el('tri-hasil');
-  if (!seg.length) {
-    w.innerHTML = '<div class="catatan merah renggang">Belum ada kutipan yang ' +
-      'berkode <em>dan<\/em> bertema. Selesaikan langkah 2 dulu.<\/div>';
-    return;
-  }
+  if (!seg.length) { w.innerHTML = ''; return; }
   const temas = [...new Set(seg.map(s => s.tema))];
   const infs = [...new Set(seg.map(s => s.informan))];
   const teks = [...new Set(seg.map(s => s.teknik))];
   function sel(tema, kunci, nilai) {
     return seg.filter(s => s.tema === tema && s[kunci] === nilai).length;
   }
-  let h = '<div class="kartu"><span class="eyebrow">Matriks tema × sumber<\/span>' +
+  let h = '<h4 style="margin:18px 0 6px">Detail angka — matriks<\/h4>' +
+    '<div class="kartu"><span class="eyebrow">Matriks tema × sumber<\/span>' +
     '<table class="data" style="margin-top:8px"><thead><tr><th>Tema<\/th>' +
     infs.map(f => '<th>' + aman(f) + '<\/th>').join('') +
     '<th>Total kutipan<\/th><th>Kekuatan<\/th><\/tr><\/thead><tbody>';
@@ -854,7 +969,7 @@ function hitungTriangulasi() {
   }
   w.innerHTML = h;
 }
-el('tri-hitung').addEventListener('click', hitungTriangulasi);
+el('tri-hitung').addEventListener('click', gambarTriangulasi);
 
 /* ═══════════ TEMATIK — Langkah 4: Tafsir & unduh ═══════════ */
 function gambarTafsir() {
