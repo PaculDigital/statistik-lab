@@ -107,12 +107,13 @@
         <strong>percaya pada review</strong>. Tidak ada kode yang "salah" — yang penting konsisten.
       </p>
       <div class="baris" style="display:flex;gap:8px">
-        <button class="tb tb-utama" data-tabkoding="latihan">Tab Latihan</button>
-        <button class="tb tb-sekunder" data-tabkoding="kerja">Tab Meja Kerja</button>
+        <button class="tb tb-utama" data-tabkoding="trainer" style="flex:1">Trainer</button>
+        <button class="tb tb-sekunder" data-tabkoding="bebas" style="flex:1">Latihan Bebas</button>
+        <button class="tb tb-sekunder" data-tabkoding="kerja" style="flex:1">Meja Kerja</button>
       </div>
     </div>
 
-    <div id="koding-latihan">
+    <div id="koding-trainer">
       <style>
         .lk-masuk { animation: lkMasuk .35s ease both; }
         @keyframes lkMasuk { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -165,8 +166,11 @@
         </p>
         <div id="lk-akar"></div>
       </div>
+    </div>
+
+    <div id="koding-bebas" class="sembunyi">
       <div class="kartu">
-        <span class="eyebrow">{{ ikon('graduation-cap', 13) }} Latihan — transkrip contoh</span>
+        <span class="eyebrow">{{ ikon('graduation-cap', 13) }} Latihan Bebas — transkrip contoh</span>
         <p class="samar" style="font-size:13px">
           Ini transkrip <strong>contoh</strong> (fiktif). Isi kode menurut versimu,
           lalu tekan <strong>Cek dengan kunci</strong> untuk membandingkan dengan
@@ -1026,14 +1030,18 @@ function lkSelesai() {
 }
 lkBeranda();
 
-/* Tab latihan vs meja kerja */
+/* Tiga sub-tab koding: Trainer | Latihan Bebas | Meja Kerja (Bos 22Okt26) */
+const PETA_TAB_KODING = {trainer: 'koding-trainer', bebas: 'koding-bebas',
+                         kerja: 'koding-kerja'};
 document.querySelectorAll('[data-tabkoding]').forEach(q =>
   q.addEventListener('click', () => {
     const tab = q.dataset.tabkoding;
-    el('koding-latihan').classList.toggle('sembunyi', tab !== 'latihan');
-    el('koding-kerja').classList.toggle('sembunyi', tab !== 'kerja');
-    document.querySelectorAll('[data-tabkoding]').forEach(r =>
-      r.classList.toggle('tb-utama', r === q));
+    Object.entries(PETA_TAB_KODING).forEach(([nama, id]) =>
+      el(id).classList.toggle('sembunyi', nama !== tab));
+    document.querySelectorAll('[data-tabkoding]').forEach(r => {
+      r.classList.toggle('tb-utama', r === q);
+      r.classList.toggle('tb-sekunder', r !== q);
+    });
   }));
 
 /* Meja kerja: informan dipilih -> transkrip menempel ke informan itu ->
