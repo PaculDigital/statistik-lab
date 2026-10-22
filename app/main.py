@@ -521,11 +521,21 @@ BENTUK = {
     #  Tafsir: contoh paragraf mengalir, bukan butir.
     'tafsir': (
         'SUSUNAN WAJIB untuk contoh tafsir (patuhi persis):\n'
-        'Satu tema ditulis sebagai SATU paragraf mengalir 2 sampai 3 '
-        'kalimat (bukan butir, bukan bernomor).\n'
-        'Awali dengan nama temanya dalam kalimat biasa, lalu lanjutkan '
-        'dengan maknanya. Jangan buka dengan kata "Tema:" diikuti titik dua.\n'
-        'Bahasa mengalir seperti orang menjelaskan ke teman, bukan laporan.'
+        'Untuk TIAP tema tulis dua bagian: baris pertama "TEMA: <nama '
+        'tema PERSIS seperti di pesan mahasiswa>", sesudahnya SATU '
+        'paragraf mengalir 3 sampai 4 kalimat berisi tafsir tema itu.\n'
+        'Antar tema beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau daftar butir.\n'
+        'Tafsir HANYA boleh memakai isi kutipan dan kode yang dikirim '
+        'mahasiswa — dilarang menambah fakta, nama, angka, atau '
+        'kejadian baru. Angka (jumlah kutipan/informan) yang disebut '
+        'harus sama persis dengan data yang dikirim.\n'
+        'Tema berstatus PERLU DIPERKUAT ditafsir hati-hati: nyatakan '
+        'buktinya masih terbatas dan dari siapa saja sumbernya; tema '
+        'KUAT boleh dinyatakan dengan yakin.\n'
+        'Tiap paragraf mengaitkan tema itu dengan rumusan masalah di '
+        'konteks. Bahasa mengalir seperti orang menjelaskan ke teman, '
+        'bukan laporan kaku.'
     ),
     #  Triangulasi: bantu mahasiswa MEMBACA hasil hitungan otomatis —
     #  bukan vonis baru; status kuat/lemah tetap dari data.

@@ -2098,27 +2098,120 @@ function gambarTafsir() {
       simpan();
     }));
 }
-el('tafsir-ai').addEventListener('click', () => {
-  const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
-  const temas = [...new Set(seg.map(s => s.tema))].slice(0, 4);
+el('tafsir-ai').addEventListener('click', async () => {
+  /* TAFSIR AI DATA PENUH (perintah Bos 22Okt26): mahasiswa yang belum
+     bisa menulis tafsir butuh CONTOH PENUH yang benar & konsisten dari
+     DATANYA SENDIRI — bukan ringkasan 1 kutipan seperti dulu. Yang
+     dikirim per tema: status triangulasi (aturan sama dengan Langkah
+     3), semua kode, dan sampai 8 kutipan pendukung + nama informan &
+     tekniknya. Keputusan memakai/merevisi tetap di mahasiswa lewat
+     tombol Pakai per tema (masuk kolom tafsir sebagai draf). */
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  const temas = [...new Set(seg.map(x => x.tema))];
+  const w = el('tafsir-saran');
   if (!temas.length) {
-    el('tafsir-saran').innerHTML = '<div class="catatan renggang"><div>' +
+    w.innerHTML = '<div class="catatan renggang"><div>' +
       'Belum ada tema. Selesaikan Langkah 2 (Koding) dulu — contoh ' +
       'tafsir disusun dari tema-temamu.<\/div><\/div>';
     return;
   }
+  const blokData = temas.map(t => {
+    const d = seg.filter(x => x.tema === t);
+    const infs = [...new Set(d.map(x => x.informan))];
+    const tek = [...new Set(d.map(x => x.teknik))];
+    const kuat = infs.length >= 3 || (infs.length >= 2 && tek.length >= 2);
+    const kodes = [...new Set(d.map(x => x.kode))];
+    const kuts = d.slice(0, 8).map(x => '- "' +
+      x.teks.replace(/\s+/g, ' ').slice(0, 280) + '" (' + x.informan +
+      ', ' + x.teknik + ')').join('\n');
+    const sisa = d.length > 8 ? '\n(dan ' + (d.length - 8) +
+      ' kutipan lain dengan pola serupa)' : '';
+    return 'TEMA: ' + t + '\n' +
+      'Status bukti: ' + (kuat ? 'KUAT' : 'PERLU DIPERKUAT') + ' — ' +
+      d.length + ' kutipan dari ' + infs.length + ' informan (' +
+      infs.join(', ') + '), teknik: ' + tek.join(', ') + '.\n' +
+      'Kode di tema ini: ' + kodes.join('; ') + '\n' +
+      'Kutipan pendukung:\n' + kuts + sisa;
+  }).join('\n\n');
   const p = konteksPenelitian() +
-    '\nBerikan CONTOH tafsir untuk tiap tema berikut, KAITKAN dengan ' +
-    'rumusan masalah di konteks. Tulis tiap tema sebagai SATU paragraf ' +
-    'mengalir 2-3 kalimat; awali dengan nama temanya dalam kalimat ' +
-    'biasa (jangan membuka dengan "Tema:").\n' +
-    temas.map(t => {
-      const d = seg.filter(s => s.tema === t);
-      return 'Tema ' + t + ' (' + d.length + ' kutipan). Contoh: "' +
-        d[0].teks.slice(0, 120) + '"';
-    }).join('\n');
-  saranAI(p, 'tafsir-saran', 'ketik ulang dengan bahasamu di kolom tafsir.', 'tafsir');
+    '\nBerikut data hasil kodingku yang SUDAH FINAL. Tulis CONTOH ' +
+    'TAFSIR untuk TIAP tema dari data ini.\n\n' + blokData +
+    '\n\nATURAN TAFSIR:\n' +
+    '1. Nama tema tulis PERSIS seperti di atas.\n' +
+    '2. Angka yang kamu sebut (jumlah kutipan/informan) harus sama ' +
+    'dengan data di atas.\n' +
+    '3. DILARANG menyebut fakta, nama, atau kejadian di luar kutipan ' +
+    'di atas.\n' +
+    '4. Tema berstatus PERLU DIPERKUAT wajib ditafsir hati-hati: ' +
+    'sebutkan buktinya masih terbatas dan dari siapa saja; jangan ' +
+    'diklaim sebagai kesimpulan yang kuat.\n' +
+    '5. Tiap tafsir kaitkan dengan rumusan masalah di konteks: apa ' +
+    'arti tema ini untuk menjawabnya.';
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang menyusun contoh tafsir dari datamu…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(p, 'tafsir');
+    gambarSaranTafsir(teks, temas, w);
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum ' +
+      'bisa membantu: ' + aman(e.message || 'coba lagi.') +
+      '<\/div><\/div>';
+  }
 });
+function gambarSaranTafsir(teks, temas, w) {
+  /* Urai balasan per blok "TEMA: <nama>" (susunan wajib bentuk tafsir).
+     Blok yang cocok dengan tema di codebook dirender sebagai kartu +
+     tombol Pakai; balasan yang tidak berblok tampil mentah (jalan
+     mundur anggun, sama seperti perilaku lama). */
+  const blok = {};
+  let kini = null;
+  teks.replace(/```/g, '').split('\n').forEach(b => {
+    const m = b.match(/^\s*\**\s*TEMA\s*:\s*(.+?)\s*\**\s*$/i);
+    if (m) { kini = m[1].replace(/["“”]/g, '').trim(); blok[kini] = ''; return; }
+    if (kini) blok[kini] = (blok[kini] + ' ' + b.trim()).trim();
+  });
+  const cocok = temas.filter(t =>
+    Object.keys(blok).some(k => k.toLowerCase() === t.toLowerCase() && blok[k]));
+  if (!cocok.length) {
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Contoh tafsir dari AI<\/span>' +
+      '<div style="white-space:pre-wrap;font-size:14px;margin-top:6px">' +
+      aman(teks) + '<\/div><p class="samar" style="font-size:12px">' +
+      'Contoh ini tidak terpisah per tema — ketik ulang yang kamu ' +
+      'pakai dengan bahasamu di kolom tafsir.<\/p><\/div>';
+    return;
+  }
+  w.innerHTML = cocok.map(t => {
+    const kunci = Object.keys(blok).find(k => k.toLowerCase() === t.toLowerCase());
+    return '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Contoh tafsir — ' + aman(t) + '<\/span>' +
+      '<p style="font-size:14px;margin:8px 0">' + aman(blok[kunci]) + '<\/p>' +
+      '<button class="tb tb-sekunder" data-pakai-tafsir="' + aman(t) + '">' +
+      'Pakai contoh ini untuk tema ini<\/button> ' +
+      '<span class="samar" data-status-pakai="' + aman(t) +
+      '" style="font-size:12px">masuk ke kolom tafsir sebagai draf — ' +
+      'ubah dengan bahasamu.<\/span><\/div>';
+  }).join('') +
+    (temas.length > cocok.length
+      ? '<p class="samar" style="font-size:12.5px">AI belum memberi ' +
+        'contoh untuk tema: ' +
+        aman(temas.filter(t => !cocok.includes(t)).join(', ')) +
+        ' — tulis manual atau minta lagi.<\/p>' : '');
+  w.querySelectorAll('[data-pakai-tafsir]').forEach(b =>
+    b.addEventListener('click', () => {
+      const t = b.dataset.pakaiTafsir;
+      const kunci = Object.keys(blok).find(k => k.toLowerCase() === t.toLowerCase());
+      const ada = (KUAL.tematik.tafsir[t] || '').trim();
+      if (ada && !confirm('Kolom tafsir tema "' + t + '" sudah ada ' +
+          'isinya. Timpa dengan contoh AI?')) return;
+      KUAL.tematik.tafsir[t] = blok[kunci];
+      simpan(); gambarTafsir();
+      const st = w.querySelector('[data-status-pakai="' +
+        t.replace(/"/g, '') + '"]');
+      if (st) st.textContent = 'Sudah dipakai ✓ — lihat kolom tafsir ' +
+        'tema ini di atas, lalu ubah dengan bahasamu.';
+    }));
+}
 async function unduhQDA(jenis) {
   const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
   if (!terkode.length) {
