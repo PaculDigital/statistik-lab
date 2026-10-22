@@ -154,6 +154,8 @@
             <button class="tb tb-sekunder" id="kj-tambah-informan" style="width:100%">Tambah informan</button></div>
         </div>
         <div id="kj-daftar-informan" style="margin-top:10px"></div>
+        <div id="kj-edit-info"></div>
+        <div id="kj-konfirmasi"></div>
       </div>
       <div class="kartu">
         <span class="eyebrow">{{ ikon('clipboard-list', 13) }} Meja kerja — Langkah B: tempel transkrip &amp; beri kode</span>
@@ -597,8 +599,21 @@ function informanTerpilih() {
   const aktif = daftar.find(f => f.nama === KUAL.tematik.informanAktif);
   return aktif || daftar[daftar.length - 1];
 }
+let sedangEdit = null;   /* nama informan yang sedang diubah, atau null */
 function gambarInforman() {
   const d = el('kj-daftar-informan');
+  const info = el('kj-edit-info');
+  if (info) {
+    info.innerHTML = sedangEdit
+      ? '<div class="catatan renggang" style="margin-top:8px"><div>' +
+        'Sedang mengubah: <strong>' + aman(sedangEdit) + '<\/strong> — ' +
+        'perbaiki di form atas lalu tekan Simpan perubahan. ' +
+        '<button type="button" class="tb tb-sekunder" id="kj-batal-edit">' +
+        'Batal<\/button><\/div><\/div>'
+      : '';
+    const be = el('kj-batal-edit');
+    if (be) be.addEventListener('click', batalEdit);
+  }
   if (!KUAL.tematik.informan.length) {
     d.innerHTML = '<p class="samar" style="font-size:13px;margin:0">' +
       'Belum ada informan. Isi nama di atas lalu klik Tambah informan.<\/p>';
@@ -607,22 +622,77 @@ function gambarInforman() {
   }
   const terpilih = informanTerpilih();
   d.innerHTML = '<p class="samar" style="font-size:12.5px;margin:0 0 6px">' +
-    'Klik nama untuk memilih — transkrip yang kamu tempel masuk ke nama yang dipilih:<\/p>' +
+    'Klik nama untuk memilih — transkrip yang kamu tempel masuk ke nama ' +
+    'yang dipilih:<\/p>' +
     KUAL.tematik.informan.map(f => {
-      const n = KUAL.tematik.segmen.filter(s => s.informan === f.nama).length;
+      const n = KUAL.tematik.segmen.filter(x => x.informan === f.nama).length;
       const aktif = terpilih && f.nama === terpilih.nama;
-      return '<button type="button" class="tb ' + (aktif ? 'tb-utama' : 'tb-sekunder') +
-        '" data-pilih-informan="' + aman(f.nama) + '" style="margin:0 6px 6px 0">' +
+      return '<span style="display:inline-flex;gap:4px;align-items:center;' +
+        'margin:0 8px 8px 0">' +
+        '<button type="button" class="tb ' + (aktif ? 'tb-utama' : 'tb-sekunder') +
+        '" data-pilih-informan="' + aman(f.nama) + '">' +
         aman(f.nama) + ' <span style="font-weight:400;font-size:12px">(' +
         aman(f.teknik) + ' · ' + aman(f.jenis || 'internal') + ' · ' + n +
-        ' kutipan)<\/span><\/button>';
+        ' kutipan)<\/span><\/button>' +
+        '<button type="button" class="tb tb-sekunder" ' +
+        'data-ubah-informan="' + aman(f.nama) + '" title="Ubah nama/teknik/jenis" ' +
+        'style="padding:6px 10px;font-size:12.5px">Ubah<\/button>' +
+        '<button type="button" class="tb tb-sekunder" ' +
+        'data-hapus-informan="' + aman(f.nama) + '" title="Hapus informan" ' +
+        'style="padding:6px 8px">' + ikonKecil('trash-2', 14) + '<\/button><\/span>';
     }).join('');
   d.querySelectorAll('[data-pilih-informan]').forEach(btn =>
     btn.addEventListener('click', () => {
       KUAL.tematik.informanAktif = btn.dataset.pilihInforman;
       simpan(); gambarInforman(); gambarSegmen();
     }));
+  d.querySelectorAll('[data-ubah-informan]').forEach(btn =>
+    btn.addEventListener('click', () => mulaiEdit(btn.dataset.ubahInforman)));
+  d.querySelectorAll('[data-hapus-informan]').forEach(btn =>
+    btn.addEventListener('click', () => tanyaHapus(btn.dataset.hapusInforman)));
   gambarMilik();
+}
+function mulaiEdit(nama) {
+  const f = KUAL.tematik.informan.find(x => x.nama === nama);
+  if (!f) return;
+  sedangEdit = nama;
+  el('kj-informan').value = f.nama;
+  el('kj-teknik').value = f.teknik;
+  el('kj-jenis').value = f.jenis || 'internal';
+  el('kj-tambah-informan').textContent = 'Simpan perubahan';
+  el('kj-konfirmasi').innerHTML = '';
+  gambarInforman();
+  el('kj-informan').scrollIntoView({block: 'center'});
+  el('kj-informan').focus();
+}
+function batalEdit() {
+  sedangEdit = null;
+  el('kj-informan').value = '';
+  el('kj-tambah-informan').textContent = 'Tambah informan';
+  gambarInforman();
+}
+function tanyaHapus(nama) {
+  const n = KUAL.tematik.segmen.filter(x => x.informan === nama).length;
+  const w = el('kj-konfirmasi');
+  w.innerHTML = '<div class="catatan merah renggang" style="margin-top:8px">' +
+    '<div>Hapus <strong>' + aman(nama) + '<\/strong>?' +
+    (n ? ' <strong>' + n + ' kutipan<\/strong> miliknya ikut terhapus dan ' +
+      'tidak bisa dikembalikan.' : ' Informan ini belum punya kutipan.') +
+    ' <button type="button" class="tb tb-sekunder" id="kj-ya-hapus">' +
+    'Ya, hapus<\/button> <button type="button" class="tb tb-sekunder" ' +
+    'id="kj-batal-hapus">Batal<\/button><\/div><\/div>';
+  el('kj-ya-hapus').addEventListener('click', () => {
+    KUAL.tematik.informan = KUAL.tematik.informan.filter(x => x.nama !== nama);
+    KUAL.tematik.segmen = KUAL.tematik.segmen.filter(x => x.informan !== nama);
+    if (KUAL.tematik.informanAktif === nama) {
+      const sisa = KUAL.tematik.informan;
+      KUAL.tematik.informanAktif = sisa.length ? sisa[sisa.length - 1].nama : '';
+    }
+    if (sedangEdit === nama) batalEdit();
+    w.innerHTML = '';
+    gambarInforman(); gambarSegmen(); simpan();
+  });
+  el('kj-batal-hapus').addEventListener('click', () => { w.innerHTML = ''; });
 }
 function gambarMilik() {
   const w = el('kj-milik');
@@ -641,6 +711,32 @@ function gambarMilik() {
 el('kj-tambah-informan').addEventListener('click', () => {
   const nama = el('kj-informan').value.trim();
   if (!nama) return;
+  if (sedangEdit) {
+    /* Ubah informan: perubahan nama/teknik/jenis MERAMBAT ke semua
+       kutipan miliknya, supaya triangulasi & ekspor tidak pecah. */
+    if (KUAL.tematik.informan.some(x => x.nama === nama && x.nama !== sedangEdit)) {
+      el('kj-edit-info').innerHTML = '<div class="catatan merah renggang" ' +
+        'style="margin-top:8px"><div>Nama "' + aman(nama) + '" sudah ' +
+        'dipakai informan lain — pakai nama lain.<\/div><\/div>';
+      return;
+    }
+    const f = KUAL.tematik.informan.find(x => x.nama === sedangEdit);
+    const lamaNama = sedangEdit;
+    f.nama = nama;
+    f.teknik = el('kj-teknik').value;
+    f.jenis = el('kj-jenis').value;
+    KUAL.tematik.segmen.forEach(x => {
+      if (x.informan === lamaNama) {
+        x.informan = nama; x.teknik = f.teknik; x.jenis = f.jenis;
+      }
+    });
+    if (KUAL.tematik.informanAktif === lamaNama) {
+      KUAL.tematik.informanAktif = nama;
+    }
+    batalEdit();
+    gambarSegmen(); simpan();
+    return;
+  }
   KUAL.tematik.informan.push({nama: nama, teknik: el('kj-teknik').value,
     jenis: el('kj-jenis').value});
   KUAL.tematik.informanAktif = nama;
