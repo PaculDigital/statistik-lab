@@ -165,6 +165,7 @@
         <div class="baris renggang">
           <button class="tb tb-utama" id="kj-pecah">{{ ikon('check', 15) }} Simpan transkrip</button>
         </div>
+        <div id="kj-foto"></div>
         <div id="kj-segmen"></div>
       </div>
     </div>
@@ -268,6 +269,7 @@
       </div>
       <div id="sw-saran"></div>
       <div id="sw-daftar"></div>
+      <div id="sw-foto"></div>
     </div>
   </div>
 
@@ -335,12 +337,16 @@ function el(id) { return document.getElementById(id); }
 
 /* ── Status tersimpan (localStorage; belum ada login) ── */
 const KUNCI_SIMPAN = 'kualitatif_v1';
-let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}},
-            swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}}};
+let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: []},
+            swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}, foto: []}};
 try {
   const s = localStorage.getItem(KUNCI_SIMPAN);
   if (s) KUAL = Object.assign(KUAL, JSON.parse(s));
 } catch (e) {}
+/* Data lama (sebelum fitur foto 22Okt26) belum punya kolom foto — lengkapi
+   supaya galeri tidak error di HP mahasiswa yang datanya tersimpan lama. */
+if (!Array.isArray(KUAL.tematik.foto)) KUAL.tematik.foto = [];
+if (!Array.isArray(KUAL.swot.foto)) KUAL.swot.foto = [];
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
 }
@@ -684,6 +690,10 @@ function tanyaHapus(nama) {
   el('kj-ya-hapus').addEventListener('click', () => {
     KUAL.tematik.informan = KUAL.tematik.informan.filter(x => x.nama !== nama);
     KUAL.tematik.segmen = KUAL.tematik.segmen.filter(x => x.informan !== nama);
+    KUAL.tematik.foto.filter(x => x.informan === nama).forEach(x => {
+      fetch('/api/kualitatif/foto/' + x.id, {method: 'DELETE'}).catch(() => {});
+    });
+    KUAL.tematik.foto = KUAL.tematik.foto.filter(x => x.informan !== nama);
     if (KUAL.tematik.informanAktif === nama) {
       const sisa = KUAL.tematik.informan;
       KUAL.tematik.informanAktif = sisa.length ? sisa[sisa.length - 1].nama : '';
@@ -694,6 +704,219 @@ function tanyaHapus(nama) {
   });
   el('kj-batal-hapus').addEventListener('click', () => { w.innerHTML = ''; });
 }
+/* ── Foto bukti: berkasnya di SERVER (maks 2MB, terhapus 3 hari) ──
+   Browser hanya menyimpan id + keterangan di localStorage — berkas foto
+   TIDAK ikut disimpan di sini (batas localStorage ±5MB; 2 foto saja bisa
+   menghabiskan jatah data koding). AI membaca foto lewat bentuk 'foto'
+   (model vision 9router). */
+const FOTO_UMUR_MS = 3 * 24 * 3600 * 1000;
+function catatanMerah(teks) {
+  return '<div class="catatan merah renggang" style="margin-top:8px"><div>' +
+    aman(teks) + '<\/div><\/div>';
+}
+function fotoKedaluwarsa(f) {
+  return !f.dibuat || (Date.now() - f.dibuat > FOTO_UMUR_MS) || f.rusak;
+}
+function daftarFoto(konteks) {
+  return konteks === 'kerja' ? KUAL.tematik.foto : KUAL.swot.foto;
+}
+async function kirimFoto(inputEl, statusEl) {
+  const berkas = inputEl.files && inputEl.files[0];
+  if (!berkas) {
+    statusEl.innerHTML = catatanMerah('Pilih berkas foto dulu.');
+    return null;
+  }
+  if (berkas.size > 2000000) {
+    statusEl.innerHTML = catatanMerah('Foto itu ' +
+      (berkas.size / 1000000).toFixed(1) + 'MB — lebih dari batas 2MB. ' +
+      'Kecilkan dulu (screenshot ulang / turunkan kualitas kamera).');
+    return null;
+  }
+  statusEl.innerHTML = '<p class="samar" style="font-size:12.5px">Mengunggah…<\/p>';
+  const fd = new FormData();
+  fd.append('berkas', berkas);
+  try {
+    const r = await fetch('/api/kualitatif/unggah-foto', {method: 'POST', body: fd});
+    const d = await r.json().catch(() => null);
+    if (!d || !d.boleh) {
+      statusEl.innerHTML = catatanMerah((d && d.sebab) || 'Unggah gagal — coba lagi.');
+      return null;
+    }
+    statusEl.innerHTML = '';
+    return d;
+  } catch (e) {
+    statusEl.innerHTML = catatanMerah('Tidak terhubung ke server — periksa internetmu lalu coba lagi.');
+    return null;
+  }
+}
+function htmlGaleriFoto(konteks, daftar) {
+  if (!daftar.length) return '';
+  return '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
+    daftar.map(f => {
+      if (fotoKedaluwarsa(f)) {
+        return '<div style="width:150px"><div class="samar" style="width:150px;' +
+          'height:110px;border-radius:8px;border:1px dashed var(--garis,#bbb);' +
+          'display:flex;align-items:center;justify-content:center;' +
+          'text-align:center;font-size:12px;padding:6px">Foto sudah terhapus ' +
+          '(lewat 3 hari)<\/div>' +
+          '<div class="baris" style="margin-top:4px"><button type="button" ' +
+          'class="tb tb-sekunder" data-foto-hapus="' + aman(f.id) + '" ' +
+          'style="padding:5px 8px">' + ikonKecil('trash-2', 13) +
+          ' Buang entri<\/button><\/div><\/div>';
+      }
+      return '<div style="width:150px">' +
+        '<img src="' + aman(f.url) + '" data-foto-img="' + aman(f.id) + '" ' +
+        'style="width:150px;height:110px;object-fit:cover;border-radius:8px;' +
+        'border:1px solid var(--garis,#ddd)" alt="Foto bukti">' +
+        '<input type="text" data-foto-ket="' + aman(f.id) + '" value="' +
+        aman(f.keterangan || '') + '" placeholder="Keterangan foto" ' +
+        'style="width:100%;font-size:12px;margin-top:4px">' +
+        '<div class="baris" style="gap:4px;margin-top:4px">' +
+        '<button type="button" class="tb tb-sekunder" data-foto-baca="' +
+        aman(f.id) + '" style="font-size:12px;padding:5px 8px">' +
+        ikonKecil('sparkles', 13) + ' Bacakan AI<\/button>' +
+        '<button type="button" class="tb tb-sekunder" data-foto-hapus="' +
+        aman(f.id) + '" style="padding:5px 8px" title="Hapus foto">' +
+        ikonKecil('trash-2', 13) + '<\/button><\/div><\/div>';
+    }).join('') + '<\/div><div id="' + konteks + '-foto-hasil"><\/div>';
+}
+function ikatGaleriFoto(wadah, konteks) {
+  wadah.querySelectorAll('[data-foto-ket]').forEach(inp =>
+    inp.addEventListener('change', () => {
+      const f = daftarFoto(konteks).find(x => x.id === inp.dataset.fotoKet);
+      if (f) { f.keterangan = inp.value; simpan(); }
+    }));
+  wadah.querySelectorAll('[data-foto-hapus]').forEach(btn =>
+    btn.addEventListener('click', () => hapusFoto(konteks, btn.dataset.fotoHapus)));
+  wadah.querySelectorAll('[data-foto-baca]').forEach(btn =>
+    btn.addEventListener('click', () => bacaFotoAI(konteks, btn.dataset.fotoBaca)));
+  wadah.querySelectorAll('[data-foto-img]').forEach(img =>
+    img.addEventListener('error', () => {
+      const f = daftarFoto(konteks).find(x => x.id === img.dataset.fotoImg);
+      if (f && !f.rusak) {
+        f.rusak = true; simpan();
+        if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
+      }
+    }));
+}
+async function hapusFoto(konteks, id) {
+  const daftar = daftarFoto(konteks);
+  const i = daftar.findIndex(x => x.id === id);
+  if (i < 0) return;
+  daftar.splice(i, 1);
+  simpan();
+  if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
+  try { await fetch('/api/kualitatif/foto/' + id, {method: 'DELETE'}); } catch (e) {}
+}
+async function bacaFotoAI(konteks, id) {
+  const f = daftarFoto(konteks).find(x => x.id === id);
+  const hasil = el(konteks + '-foto-hasil');
+  if (!f || !hasil) return;
+  hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
+    '<div>AI sedang membaca foto…<\/div><\/div>';
+  try {
+    const r = await fetch(f.url);
+    if (!r.ok) throw new Error('Foto tidak bisa diambil dari server — mungkin sudah terhapus (lewat 3 hari).');
+    const blob = await r.blob();
+    const dataUrl = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej(new Error('Foto tidak bisa dibaca di perangkat ini.'));
+      fr.readAsDataURL(blob);
+    });
+    const konteksTeks = konteks === 'kerja' ? konteksPenelitian() : konteksUsaha();
+    const promptFoto = konteksTeks + '\n\nFoto terlampir adalah dokumen/bukti ' +
+      'untuk penelitian di atas' +
+      (f.keterangan ? ' (keterangan mahasiswa: ' + f.keterangan + ')' : '') +
+      '. Bacakan isinya sesuai aturan bentuk foto.';
+    const rr = await fetch('/api/kualitatif/saran', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: promptFoto, bentuk: 'foto', gambar: dataUrl})});
+    const d = await rr.json().catch(() => null);
+    if (!d || !d.boleh) {
+      hasil.innerHTML = catatanMerah((d && d.sebab) ||
+        'AI tidak menjawab. Baca fotonya sendiri — hasilnya sama baiknya.');
+      return;
+    }
+    hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
+      '<div><strong>Hasil bacaan AI:<\/strong><br>' +
+      aman(d.saran).replace(/\n/g, '<br>') +
+      (konteks === 'kerja'
+        ? '<div class="baris renggang" style="margin-top:8px"><button type="button" ' +
+          'class="tb tb-utama" id="kerja-foto-simpan">Simpan sebagai kutipan<\/button>' +
+          '<span class="samar" style="font-size:12px">Tiap paragraf jadi satu ' +
+          'kutipan milik ' + aman(f.informan || '') + ' — kode & tema kamu isi ' +
+          'di kartunya.<\/span><\/div>'
+        : '<p class="samar" style="font-size:12px;margin:8px 0 0">Pakai isi foto ' +
+          'ini saat menulis faktormu di atas.<\/p>') +
+      '<\/div><\/div>';
+    const btnSimpan = el('kerja-foto-simpan');
+    if (btnSimpan) btnSimpan.addEventListener('click', () =>
+      simpanFotoJadiKutipan(f, d.saran));
+  } catch (e) {
+    hasil.innerHTML = catatanMerah(e.message || 'Gagal membaca foto.');
+  }
+}
+function simpanFotoJadiKutipan(f, teks) {
+  const hasil = el('kerja-foto-hasil');
+  const inf = KUAL.tematik.informan.find(x => x.nama === f.informan) ||
+    informanTerpilih();
+  if (!inf) {
+    if (hasil) hasil.innerHTML = catatanMerah('Informan pemilik foto ini sudah ' +
+      'tidak ada — tambahkan informan dulu, lalu bacakan lagi.');
+    return;
+  }
+  const potongan = String(teks).split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
+  if (!potongan.length) return;
+  potongan.forEach(t => KUAL.tematik.segmen.push({
+    teks: t, kode: '', tema: '', informan: inf.nama,
+    teknik: inf.teknik, jenis: inf.jenis || 'internal'}));
+  simpan(); gambarSegmen();
+  if (hasil) hasil.innerHTML = '<div class="catatan renggang" ' +
+    'style="margin-top:10px"><div>' + potongan.length + ' kutipan tersimpan ' +
+    'dari foto — gulir ke daftar kutipan, lalu beri kode & tema.<\/div><\/div>';
+}
+function gambarFotoKerja() {
+  const w = el('kj-foto');
+  if (!w) return;
+  const f = informanTerpilih();
+  if (!f) { w.innerHTML = ''; return; }
+  const daftar = KUAL.tematik.foto.filter(x => x.informan === f.nama);
+  w.innerHTML = '<div class="medan" style="margin-top:12px"><label>Foto bukti milik ' +
+    aman(f.nama) + ' <span class="petunjuk">dokumen / foto lapangan — JPG/PNG/WebP, ' +
+    'maks 2MB; tersimpan 3 hari lalu terhapus otomatis<\/span><\/label>' +
+    '<div class="baris renggang"><input type="file" id="kj-foto-berkas" ' +
+    'accept="image/jpeg,image/png,image/webp">' +
+    '<button type="button" class="tb tb-sekunder" id="kj-foto-unggah">Unggah foto<\/button><\/div>' +
+    '<div id="kj-foto-status"><\/div>' + htmlGaleriFoto('kerja', daftar) + '<\/div>';
+  ikatGaleriFoto(w, 'kerja');
+  el('kj-foto-unggah').addEventListener('click', async () => {
+    const d = await kirimFoto(el('kj-foto-berkas'), el('kj-foto-status'));
+    if (!d) return;
+    KUAL.tematik.foto.push({id: d.id, url: d.url, informan: f.nama,
+      keterangan: '', dibuat: Date.now()});
+    simpan(); gambarFotoKerja();
+  });
+}
+function gambarFotoSwot() {
+  const w = el('sw-foto');
+  if (!w) return;
+  w.innerHTML = '<div class="medan" style="margin-top:12px"><label>Foto bukti ' +
+    '(boleh kosong) <span class="petunjuk">laporan penjualan, screenshot ulasan, ' +
+    'foto tempat — JPG/PNG/WebP, maks 2MB; tersimpan 3 hari lalu terhapus ' +
+    'otomatis<\/span><\/label>' +
+    '<div class="baris renggang"><input type="file" id="sw-foto-berkas" ' +
+    'accept="image/jpeg,image/png,image/webp">' +
+    '<button type="button" class="tb tb-sekunder" id="sw-foto-unggah">Unggah foto<\/button><\/div>' +
+    '<div id="sw-foto-status"><\/div>' + htmlGaleriFoto('swot', KUAL.swot.foto) + '<\/div>';
+  ikatGaleriFoto(w, 'swot');
+  el('sw-foto-unggah').addEventListener('click', async () => {
+    const d = await kirimFoto(el('sw-foto-berkas'), el('sw-foto-status'));
+    if (!d) return;
+    KUAL.swot.foto.push({id: d.id, url: d.url, keterangan: '', dibuat: Date.now()});
+    simpan(); gambarFotoSwot();
+  });
+}
 function gambarMilik() {
   const w = el('kj-milik');
   if (!w) return;
@@ -701,12 +924,14 @@ function gambarMilik() {
   if (!f) {
     w.innerHTML = '<div class="catatan renggang">Tambahkan informan dulu di ' +
       'Langkah A — transkrip yang kamu tempel akan tercatat sebagai milik informan itu.<\/div>';
+    gambarFotoKerja();
     return;
   }
   w.innerHTML = '<div class="catatan renggang"><div>Transkrip milik: <strong>' +
     aman(f.nama) + '<\/strong> <span class="samar">(' + aman(f.teknik) + ' · ' +
     aman(f.jenis || 'internal') + ')<\/span> — mau tempel transkrip orang lain? ' +
     'Klik namanya di Langkah A.<\/div><\/div>';
+  gambarFotoKerja();
 }
 el('kj-tambah-informan').addEventListener('click', () => {
   const nama = el('kj-informan').value.trim();
@@ -729,6 +954,9 @@ el('kj-tambah-informan').addEventListener('click', () => {
       if (x.informan === lamaNama) {
         x.informan = nama; x.teknik = f.teknik; x.jenis = f.jenis;
       }
+    });
+    KUAL.tematik.foto.forEach(x => {
+      if (x.informan === lamaNama) x.informan = nama;
     });
     if (KUAL.tematik.informanAktif === lamaNama) {
       KUAL.tematik.informanAktif = nama;
@@ -1510,7 +1738,7 @@ el('sw-unduh').addEventListener('click', () => {
 });
 
 /* ── init ── */
-gambarFaktor(); gambarMatriks(); gambarIFAS(); gambarTafsir();
+gambarFaktor(); gambarMatriks(); gambarIFAS(); gambarTafsir(); gambarFotoSwot();
 aturLangkah('tematik', 1);
 aturLangkah('swot', 1);
 </script>

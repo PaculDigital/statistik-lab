@@ -21,7 +21,8 @@ import json
 from pathlib import Path
 
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse,
+                               RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
@@ -572,6 +573,20 @@ BENTUK = {
         'ada yang pas.\n'
         'JANGAN menulis kalimat penjelasan apa pun sesudah dua baris itu.'
     ),
+    #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
+    #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
+    'foto': (
+        'SUSUNAN WAJIB untuk membaca foto dokumen/bukti (patuhi persis):\n'
+        'Kalau foto berisi TEKS: tuliskan teks yang terbaca, persis '
+        'seperti tertulis. Bagian yang tidak terbaca tulis '
+        '[tidak terbaca] — JANGAN mengarang isinya.\n'
+        'Sesudah teksnya, beri satu baris kosong, lalu tulis '
+        '"Poin penting:" dan 2 sampai 4 poin bernomor dalam bahasa '
+        'sederhana: apa arti isi foto ini untuk penelitian mahasiswa.\n'
+        'Kalau foto BUKAN dokumen teks (foto suasana/tempat/kegiatan): '
+        'jelaskan singkat apa yang terlihat dan apa artinya untuk '
+        'penelitian — tanpa bagian transkrip.'
+    ),
 }
 
 SYS_DASAR = ('Kamu asisten penelitian kualitatif untuk mahasiswa S1 '
@@ -650,6 +665,26 @@ async def kualitatif_saran(payload: dict):
     bentuk = str((payload or {}).get('bentuk', '') or '').strip().lower()
     sys_prompt = _system_prompt(bentuk)
 
+    #  Foto opsional (Bacakan Foto, 22Okt26): permintaan bergambar
+    #  dialihkan 9router ke model vision. Sah hanya data URL JPG/PNG/WebP
+    #  dengan plafon ±3,2 jt karakter base64 (≈2,4MB biner).
+    gambar = (payload or {}).get('gambar')
+    if gambar is not None:
+        sah = (isinstance(gambar, str) and len(gambar) <= 3_200_000 and
+               gambar.startswith(('data:image/jpeg;base64,',
+                                  'data:image/png;base64,',
+                                  'data:image/webp;base64,')))
+        if not sah:
+            return JSONResponse(
+                {'boleh': False,
+                 'sebab': 'Foto tidak sah — harus JPG/PNG/WebP dan tidak '
+                          'lebih dari 2MB.'},
+                status_code=400)
+    isi_user = prompt
+    if gambar:
+        isi_user = [{'type': 'text', 'text': prompt},
+                    {'type': 'image_url', 'image_url': {'url': gambar}}]
+
     tubuh = _json.dumps({
         'model': model, 'max_tokens': SARAN_MAX_TOKEN, 'temperature': 0.7,
         #  MATIKAN BERPIKIR (putusan Bos 21Okt26: "reasoning = false aja").
@@ -661,7 +696,7 @@ async def kualitatif_saran(payload: dict):
         'enable_thinking': False,
         'messages': [
             {'role': 'system', 'content': sys_prompt},
-            {'role': 'user', 'content': prompt},
+            {'role': 'user', 'content': isi_user},
         ]}).encode()
 
     def _sekali():
@@ -714,6 +749,129 @@ async def kualitatif_saran(payload: dict):
             {'boleh': False, 'sebab': f'AI tidak menjawab ({e}). Coba lagi '
                                      'atau pakai mode manual.'},
             status_code=502)
+
+
+# ═══ UNGGAH FOTO BUKTI KUALITATIF (permintaan Bos 22Okt26) ═══════════
+#  Aturan Bos: HANYA gambar (JPG/PNG/WebP — SVG DILARANG), maks 2MB,
+#  dikompresi, dan DIHAPUS setelah 3 hari. Proteksi berlapis:
+#    · plafon ukuran dibaca terbatas (berkas raksasa ditolak di pintu)
+#    · magic bytes dicek (bukan dari nama/ekstensi berkas)
+#    · gambar WAJIB bisa di-decode Pillow, lalu DI-ENCODE ULANG dari
+#      piksel menjadi JPEG bersih → script/macro/polyglot & EXIF musnah
+#    · nama berkas acak dari server; folder data/foto BUKAN folder
+#      statis & tidak pernah dieksekusi; sajian nosniff
+#    · jatah unggah per IP (anti banjir tanpa login)
+#  Folder: data/foto — di produksi ini VOLUME host (jalankan.sh me-mount
+#  data/ ke /app/data), jadi foto selamat dari ganti kontainer dan hanya
+#  gugur oleh umur 3 hari.
+import re as _re
+import secrets as _secrets
+import time as _time
+
+FOTO_DIR = Path(os.environ.get(
+    'FOTO_DIR', Path(__file__).resolve().parent.parent / 'data' / 'foto'))
+FOTO_MAKS = 2_000_000            # 2MB berkas asal (aturan Bos)
+FOTO_UMUR = 3 * 24 * 3600        # detik — hapus setelah 3 hari
+_FOTO_NAMA = _re.compile(r'^[A-Za-z0-9_-]{16,64}\.jpg$')
+_jatah_unggah: dict = {}         # ip -> [cap waktu]
+
+
+def _bersih_foto_lama():
+    """Buang foto yang umurnya lewat 3 hari (jalan tiap unggahan)."""
+    try:
+        FOTO_DIR.mkdir(parents=True, exist_ok=True)
+        kini = _time.time()
+        for f in FOTO_DIR.iterdir():
+            if f.is_file() and kini - f.stat().st_mtime > FOTO_UMUR:
+                f.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def _jatah_unggah_ok(ip: str) -> bool:
+    kini = _time.time()
+    daftar = [t for t in _jatah_unggah.get(ip, []) if kini - t < 3600]
+    if len(daftar) >= 30:
+        _jatah_unggah[ip] = daftar
+        return False
+    daftar.append(kini)
+    _jatah_unggah[ip] = daftar
+    return True
+
+
+@app.post('/api/kualitatif/unggah-foto')
+async def kualitatif_unggah_foto(request: Request,
+                                 berkas: UploadFile = File(...)):
+    ip = request.client.host if request.client else '?'
+    if not _jatah_unggah_ok(ip):
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Terlalu banyak unggahan dari jaringan ini dalam '
+                      '1 jam terakhir. Coba lagi nanti.'},
+            status_code=429)
+    data = await berkas.read(FOTO_MAKS + 1)
+    if len(data) > FOTO_MAKS:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto lebih dari 2MB — kecilkan dulu (screenshot '
+                      'ulang atau turunkan kualitas kamera), lalu coba lagi.'},
+            status_code=400)
+    kepala = data[:12]
+    jpg_png_webp = (kepala.startswith(b'\xff\xd8\xff') or
+                    kepala.startswith(b'\x89PNG\r\n\x1a\n') or
+                    (kepala[:4] == b'RIFF' and kepala[8:12] == b'WEBP'))
+    if not jpg_png_webp:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Berkas ini bukan foto JPG, PNG, atau WebP — hanya '
+                      'foto yang diterima.'},
+            status_code=400)
+    try:
+        import io as _io
+        from PIL import Image as _Image
+        with _Image.open(_io.BytesIO(data)) as im:
+            im.verify()
+        with _Image.open(_io.BytesIO(data)) as im:
+            im = im.convert('RGB')
+            im.thumbnail((1600, 1600))
+            buf = _io.BytesIO()
+            im.save(buf, 'JPEG', quality=80)
+        bersih = buf.getvalue()
+    except Exception:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto rusak atau tidak bisa dibaca — coba foto lain.'},
+            status_code=400)
+    _bersih_foto_lama()
+    nama = _secrets.token_urlsafe(24) + '.jpg'
+    (FOTO_DIR / nama).write_bytes(bersih)
+    return {'boleh': True, 'id': nama,
+            'url': '/api/kualitatif/foto/' + nama, 'ukuran': len(bersih)}
+
+
+@app.get('/api/kualitatif/foto/{nama}')
+async def kualitatif_foto(nama: str):
+    if not _FOTO_NAMA.match(nama):
+        return JSONResponse({'boleh': False, 'sebab': 'Nama foto tidak sah.'},
+                            status_code=404)
+    f = FOTO_DIR / nama
+    if not f.is_file():
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto tidak ditemukan — mungkin sudah lewat 3 hari.'},
+            status_code=404)
+    return Response(f.read_bytes(), media_type='image/jpeg',
+                    headers={'X-Content-Type-Options': 'nosniff',
+                             'Cache-Control': 'private, max-age=3600'})
+
+
+@app.delete('/api/kualitatif/foto/{nama}')
+async def kualitatif_hapus_foto(nama: str):
+    if not _FOTO_NAMA.match(nama):
+        return JSONResponse({'boleh': False, 'sebab': 'Nama foto tidak sah.'},
+                            status_code=404)
+    (FOTO_DIR / nama).unlink(missing_ok=True)
+    return {'boleh': True}
 
 
 @app.post('/api/kualitatif/ekspor-qdpx')
