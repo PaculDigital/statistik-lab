@@ -774,7 +774,7 @@ function htmlGaleriFoto(konteks, daftar) {
         '<div class="baris" style="gap:4px;margin-top:4px">' +
         '<button type="button" class="tb tb-sekunder" data-foto-baca="' +
         aman(f.id) + '" style="font-size:12px;padding:5px 8px">' +
-        ikonKecil('sparkles', 13) + ' Bacakan AI<\/button>' +
+        ikonKecil('sparkles', 13) + ' Analisa AI<\/button>' +
         '<button type="button" class="tb tb-sekunder" data-foto-hapus="' +
         aman(f.id) + '" style="padding:5px 8px" title="Hapus foto">' +
         ikonKecil('trash-2', 13) + '<\/button><\/div><\/div>';
@@ -808,12 +808,26 @@ async function hapusFoto(konteks, id) {
   if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
   try { await fetch('/api/kualitatif/foto/' + id, {method: 'DELETE'}); } catch (e) {}
 }
+function parsePoinFoto(teks) {
+  /* Pecah balasan AI (bentuk 'foto') jadi poin {teks, kode, tema}.
+     Pola toleran Markdown sama seperti parser kartu koding. */
+  const bersihNilai = v => v.trim().replace(/^[\s*“"]+|[\s*”"]+$/g, '');
+  return String(teks).replace(/```/g, '').split(/\n\s*\n/)
+    .map(blok => {
+      const mq = blok.match(/^\s*\**\s*KUTIPAN\s*\**\s*:\s*\**\s*(.+?)\s*$/mi);
+      if (!mq) return null;
+      const mk = blok.match(/^\s*\**\s*KODE\s*\**\s*:\s*\**\s*(.+?)\s*$/mi);
+      const mt = blok.match(/^\s*\**\s*TEMA\s*\**\s*:\s*\**\s*(.+?)\s*$/mi);
+      return {teks: bersihNilai(mq[1]), kode: mk ? bersihNilai(mk[1]) : '',
+              tema: mt ? bersihNilai(mt[1]) : ''};
+    }).filter(Boolean);
+}
 async function bacaFotoAI(konteks, id) {
   const f = daftarFoto(konteks).find(x => x.id === id);
   const hasil = el(konteks + '-foto-hasil');
   if (!f || !hasil) return;
   hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
-    '<div>AI sedang membaca foto…<\/div><\/div>';
+    '<div>AI sedang menganalisa foto…<\/div><\/div>';
   try {
     const r = await fetch(f.url);
     if (!r.ok) throw new Error('Foto tidak bisa diambil dari server — mungkin sudah terhapus (lewat 3 hari).');
@@ -824,11 +838,22 @@ async function bacaFotoAI(konteks, id) {
       fr.onerror = () => rej(new Error('Foto tidak bisa dibaca di perangkat ini.'));
       fr.readAsDataURL(blob);
     });
-    const konteksTeks = konteks === 'kerja' ? konteksPenelitian() : konteksUsaha();
-    const promptFoto = konteksTeks + '\n\nFoto terlampir adalah dokumen/bukti ' +
-      'untuk penelitian di atas' +
-      (f.keterangan ? ' (keterangan mahasiswa: ' + f.keterangan + ')' : '') +
-      '. Bacakan isinya sesuai aturan bentuk foto.';
+    let promptFoto;
+    if (konteks === 'kerja') {
+      const temas = daftarTema();
+      promptFoto = konteksPenelitian() +
+        '\nFoto terlampir adalah dokumen/bukti untuk penelitian di atas' +
+        (f.keterangan ? ' (keterangan mahasiswa: ' + f.keterangan + ')' : '') +
+        '. Analisa isinya sesuai aturan bentuk foto.' +
+        (temas.length
+          ? '\nTema yang SUDAH dipakai di penelitian ini: ' + temas.join(', ') + '.'
+          : '\nBelum ada tema yang dipakai di penelitian ini.');
+    } else {
+      promptFoto = konteksUsaha() +
+        '\nFoto terlampir adalah bukti untuk usaha di atas' +
+        (f.keterangan ? ' (keterangan: ' + f.keterangan + ')' : '') +
+        '. Analisa isinya sesuai aturan bentuk foto.';
+    }
     const rr = await fetch('/api/kualitatif/saran', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({prompt: promptFoto, bentuk: 'foto', gambar: dataUrl})});
@@ -838,23 +863,85 @@ async function bacaFotoAI(konteks, id) {
         'AI tidak menjawab. Baca fotonya sendiri — hasilnya sama baiknya.');
       return;
     }
+    const poin = parsePoinFoto(d.saran);
+    if (!poin.length) {
+      /* AI tidak mengikuti susunan poin — tampilkan teks mentahnya +
+         jalan simpan lama (tiap paragraf jadi kutipan tanpa kode). */
+      hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
+        '<div><strong>Hasil analisa AI:<\/strong><br>' +
+        aman(d.saran).replace(/\n/g, '<br>') +
+        (konteks === 'kerja'
+          ? '<div class="baris renggang" style="margin-top:8px"><button type="button" ' +
+            'class="tb tb-utama" id="kerja-foto-simpan">Simpan sebagai kutipan<\/button><\/div>'
+          : '') +
+        '<\/div><\/div>';
+      const btnLama = el('kerja-foto-simpan');
+      if (btnLama) btnLama.addEventListener('click', () =>
+        simpanFotoJadiKutipan(f, d.saran));
+      return;
+    }
+    if (konteks !== 'kerja') {
+      hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
+        '<div><strong>Hasil analisa AI — ' + poin.length + ' poin dari foto:<\/strong>' +
+        poin.map(pt => '<div style="margin-top:8px">' + aman(pt.teks) +
+          '<br><span class="samar" style="font-size:12px">Kode usulan: ' +
+          aman(pt.kode || '—') + ' · Tema usulan: ' + aman(pt.tema || '—') +
+          '<\/span><\/div>').join('') +
+        '<p class="samar" style="font-size:12px;margin:8px 0 0">Pakai poin-poin ' +
+        'ini saat menulis faktormu di atas.<\/p><\/div><\/div>';
+      return;
+    }
+    /* Tematik: daftar tinjau — mahasiswa boleh mengubah teks/kode/tema
+       SEBELUM menyimpan. Satu klik Simpan semua → kartu kutipan yang
+       SUDAH berkode & bertema (mahasiswa tidak mengetik dari nol). */
     hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
-      '<div><strong>Hasil bacaan AI:<\/strong><br>' +
-      aman(d.saran).replace(/\n/g, '<br>') +
-      (konteks === 'kerja'
-        ? '<div class="baris renggang" style="margin-top:8px"><button type="button" ' +
-          'class="tb tb-utama" id="kerja-foto-simpan">Simpan sebagai kutipan<\/button>' +
-          '<span class="samar" style="font-size:12px">Tiap paragraf jadi satu ' +
-          'kutipan milik ' + aman(f.informan || '') + ' — kode & tema kamu isi ' +
-          'di kartunya.<\/span><\/div>'
-        : '<p class="samar" style="font-size:12px;margin:8px 0 0">Pakai isi foto ' +
-          'ini saat menulis faktormu di atas.<\/p>') +
+      '<div><strong>Hasil analisa AI — ' + poin.length + ' poin dari foto.<\/strong> ' +
+      'Periksa tiap poin, ubah yang kurang pas, lalu simpan:' +
+      poin.map((pt, j) =>
+        '<div style="margin:10px 0;padding:10px;border:1px solid var(--garis);border-radius:8px">' +
+        '<div class="medan" style="margin:0 0 6px"><label>Kutipan ' + (j + 1) + '<\/label>' +
+        '<textarea data-fpoin-teks="' + j + '" rows="2" style="width:100%">' +
+        aman(pt.teks) + '<\/textarea><\/div>' +
+        '<div class="baris" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div class="medan" style="margin:0"><label>Kode<\/label>' +
+        '<input type="text" data-fpoin-kode="' + j + '" style="width:100%" value="' +
+        aman(pt.kode) + '"><\/div>' +
+        '<div class="medan" style="margin:0"><label>Tema<\/label>' +
+        '<input type="text" list="daftar-tema" data-fpoin-tema="' + j + '" style="width:100%" value="' +
+        aman(pt.tema) + '"><\/div><\/div><\/div>').join('') +
+      '<div class="baris renggang"><button type="button" class="tb tb-utama" ' +
+      'id="kerja-foto-simpan-poin">Simpan semua (' + poin.length +
+      ' kutipan)<\/button>' +
+      '<span class="samar" style="font-size:12px">Masuk sebagai kutipan milik ' +
+      aman(f.informan || '') + '.<\/span><\/div>' +
       '<\/div><\/div>';
-    const btnSimpan = el('kerja-foto-simpan');
-    if (btnSimpan) btnSimpan.addEventListener('click', () =>
-      simpanFotoJadiKutipan(f, d.saran));
+    el('kerja-foto-simpan-poin').addEventListener('click', () => {
+      const inf = KUAL.tematik.informan.find(x => x.nama === f.informan) ||
+        informanTerpilih();
+      if (!inf) {
+        hasil.innerHTML = catatanMerah('Informan pemilik foto ini sudah tidak ' +
+          'ada — tambahkan informan dulu, lalu analisa lagi.');
+        return;
+      }
+      let n = 0;
+      poin.forEach((pt, j) => {
+        const teks = hasil.querySelector('[data-fpoin-teks="' + j + '"]').value.trim();
+        if (!teks) return;
+        KUAL.tematik.segmen.push({
+          teks: teks,
+          kode: hasil.querySelector('[data-fpoin-kode="' + j + '"]').value.trim(),
+          tema: hasil.querySelector('[data-fpoin-tema="' + j + '"]').value.trim(),
+          informan: inf.nama, teknik: inf.teknik,
+          jenis: inf.jenis || 'internal'});
+        n++;
+      });
+      simpan(); gambarSegmen();
+      hasil.innerHTML = '<div class="catatan renggang" style="margin-top:10px">' +
+        '<div>' + n + ' kutipan berkode tersimpan dari foto — gulir ke daftar ' +
+        'kutipan untuk memeriksanya.<\/div><\/div>';
+    });
   } catch (e) {
-    hasil.innerHTML = catatanMerah(e.message || 'Gagal membaca foto.');
+    hasil.innerHTML = catatanMerah(e.message || 'Gagal menganalisa foto.');
   }
 }
 function simpanFotoJadiKutipan(f, teks) {

@@ -576,16 +576,23 @@ BENTUK = {
     #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
     #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
     'foto': (
-        'SUSUNAN WAJIB untuk membaca foto dokumen/bukti (patuhi persis):\n'
-        'Kalau foto berisi TEKS: tuliskan teks yang terbaca, persis '
-        'seperti tertulis. Bagian yang tidak terbaca tulis '
-        '[tidak terbaca] — JANGAN mengarang isinya.\n'
-        'Sesudah teksnya, beri satu baris kosong, lalu tulis '
-        '"Poin penting:" dan 2 sampai 4 poin bernomor dalam bahasa '
-        'sederhana: apa arti isi foto ini untuk penelitian mahasiswa.\n'
+        'SUSUNAN WAJIB untuk menganalisa foto dokumen/bukti (patuhi persis):\n'
+        'Pecah isi foto menjadi poin-poin: satu poin = satu kutipan yang '
+        'berdiri sendiri (satu ulasan, satu pernyataan, satu angka/data).\n'
+        'Tiap poin TEPAT tiga baris:\n'
+        'KUTIPAN: <isi poin persis seperti tertulis di foto; bagian yang '
+        'tidak terbaca tulis [tidak terbaca] — JANGAN mengarang isinya>\n'
+        'KODE: <2 sampai 4 kata, huruf biasa, menggambarkan isi poin>\n'
+        'TEMA: <nama tema poin ini>\n'
+        'Antar poin beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau penjelasan apa pun.\n'
+        'Tema WAJIB salah satu dari tema yang sudah dipakai (daftarnya '
+        'ada di pesan mahasiswa) bila ada yang cocok; buat tema baru '
+        'hanya bila benar-benar tidak ada yang pas.\n'
         'Kalau foto BUKAN dokumen teks (foto suasana/tempat/kegiatan): '
-        'jelaskan singkat apa yang terlihat dan apa artinya untuk '
-        'penelitian — tanpa bagian transkrip.'
+        'buat CUKUP 1 poin — KUTIPAN berisi penjelasan singkat apa yang '
+        'terlihat dan apa artinya untuk penelitian, KODE dan TEMA '
+        'usulannya.'
     ),
 }
 
