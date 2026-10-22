@@ -89,6 +89,7 @@ bash gerbang_uji.sh                  # gerbang penuh, EXIT 0 = aman
 | `CATATAN_DISKUSI_VALIDITAS_12_UJI.md` | diskusi validitas 12 uji |
 | `CATATAN_DISKUSI_GERBANG_MODEL_Y_GANDA.md` | diskusi gerbang model Y ganda |
 | `CATATAN_JEMBATAN_BAB4_FASE1_21OKT2026.md` | jembatan BAB IV Fase 1 — pintu hitung antar-layanan + vonis review |
+| `CATATAN_BUG_BUAT_DATA_22OKT2026.md` | 5 temuan review Buat Data (BUG-1…BUG-5) + bukti & akar |
 | `CACAT_MEDIASI_X_BANYAK_21SEP2026.md` | catatan cacat mediasi X banyak |
 | `AUDIT_UJI_LUAR_GERBANG_21SEP2026.md` | audit uji di luar gerbang |
 | `KOMBINASI_YANG_DIDUKUNG_21SEP2026.md` | kombinasi model yang didukung |
