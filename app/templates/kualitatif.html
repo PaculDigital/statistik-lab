@@ -454,6 +454,11 @@ function aturLangkah(jenis, n) {
   document.querySelectorAll((jenis === 'tematik' ? '#tematik-nav' : '#swot-nav') + ' [data-langkah]')
     .forEach(q => q.classList.toggle('tb-utama', q.dataset.langkah === String(n)));
   if (jenis === 'tematik' && String(n) === '3') gambarTriangulasi();
+  /* Langkah 4 wajib menggambar ulang form tafsir saat dibuka — dulu
+     hanya digambar saat muat awal & di tombol unduh, jadi mahasiswa
+     yang baru selesai koding melihat 'Belum ada tema' dan tidak bisa
+     menulis tafsir (temuan uji manual 22Okt26). */
+  if (jenis === 'tematik' && String(n) === '4') gambarTafsir();
   if (jenis === 'tematik') {
     if (String(n) === '3' && !KUAL.tematik.kunjungi3) {
       KUAL.tematik.kunjungi3 = true;
@@ -1820,8 +1825,9 @@ async function bantuKodeAI(i, btn) {
       'lebih besar dari kode.' +
       (temas.length
         ? '\nTema yang SUDAH dipakai di penelitian ini: ' + temas.join(', ') +
-          '. Pakai salah satu tema itu bila cocok, jangan membuat tema baru ' +
-          'yang mirip.'
+          '. Pakai salah satu tema itu HANYA bila benar-benar cocok ' +
+          'isinya; bila tidak ada yang cocok, usulkan tema baru yang ' +
+          'jelas berbeda.'
         : '') +
       '\n\nKutipan dari ' + s.informan + ':\n"' + s.teks + '"' +
       '\n\nBalas PERSIS dalam format 2 baris ini, tanpa penjelasan lain:\n' +
@@ -2156,6 +2162,17 @@ el('tafsir-unduh').addEventListener('click', () => {
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const temas = [...new Set(seg.map(s => s.tema))];
   let md = '# ' + (k.judul || 'Temuan Penelitian Kualitatif') + '\n\n';
+  /* Keterangan cakupan (perintah Bos 22Okt26): mahasiswa harus jelas
+     berkas ini hasil olah data saja, BUKAN Bab 4 utuh. */
+  md += '> **Tentang berkas ini — baca dulu.**\n' +
+    '> Berkas ini adalah hasil **Olah Data Analisis Kualitatif** saja: ' +
+    'kode, tema, hasil triangulasi, dan tafsir per tema dari data yang ' +
+    'kamu masukkan.\n' +
+    '> Berkas ini **bukan Bab 4 yang utuh**. Agar lengkap, kamu masih ' +
+    'perlu menulis sendiri: (1) **Gambaran umum** objek penelitian, ' +
+    '(2) **Profil informan** — siapa saja informanmu dan latar ' +
+    'belakangnya, (3) **Pembahasan** — kaitkan tiap temuan dengan teori ' +
+    'di Bab II dan penelitian terdahulu.\n\n';
   md += '## Rumusan Masalah\n\n' + (k.rumusan || '_[belum diisi]_') + '\n\n';
   if ((k.fokus || []).length) {
     md += '## Fokus Penelitian\n\n' +
@@ -2459,7 +2476,15 @@ function gambarIFAS() {
 }
 el('sw-unduh').addEventListener('click', () => {
   const f = KUAL.swot.faktor, st = KUAL.swot.strategi;
-  let md = '# Analisis SWOT\n\n## Faktor\n\n';
+  let md = '# Analisis SWOT\n\n' +
+    '> **Tentang berkas ini — baca dulu.**\n' +
+    '> Berkas ini adalah hasil **Olah Data Analisis SWOT** saja: faktor, ' +
+    'strategi SO/WO/ST/WT, dan skor IFAS/EFAS dari data yang kamu ' +
+    'masukkan.\n' +
+    '> Berkas ini **bukan Bab 4 yang utuh**. Untuk melengkapinya kamu ' +
+    'masih perlu menulis sendiri gambaran umum usaha/objek penelitian ' +
+    'dan **Pembahasan** yang mengaitkan hasil SWOT ini dengan teori di ' +
+    'Bab II.\n\n## Faktor\n\n';
   ['S', 'W', 'O', 'T'].forEach(k => {
     md += '### ' + SW_LABEL[k] + '\n';
     f.filter(x => x.k === k).forEach(x => { md += '- ' + x.teks + '\n'; });
