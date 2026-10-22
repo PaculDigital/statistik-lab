@@ -113,6 +113,58 @@
     </div>
 
     <div id="koding-latihan">
+      <style>
+        .lk-masuk { animation: lkMasuk .35s ease both; }
+        @keyframes lkMasuk { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .lk-goyang { animation: lkGoyang .4s ease; }
+        @keyframes lkGoyang { 0%,100% { transform: none; } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .lk-pop { animation: lkPop .35s ease; }
+        @keyframes lkPop { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+        .lk-level { display: block; width: 100%; text-align: left; border: 0; border-radius: 14px;
+          padding: 14px 16px; color: #fff; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+        .lk-level:active { transform: scale(.99); }
+        .lk-gelembung { position: relative; background: #fffdf5; border: 1px solid var(--garis);
+          border-left: 6px solid #f59e0b; border-radius: 10px; padding: 14px 14px 12px 16px;
+          font-size: 15.5px; line-height: 1.55; font-style: italic; margin-top: 10px; }
+        .lk-gelembung::before { content: "\201C"; position: absolute; top: -14px; right: 10px;
+          font-size: 54px; color: rgba(245,158,11,.25); font-style: normal; line-height: 1; }
+        .lk-opsi { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+          background: #fff; border: 1.5px solid var(--garis); border-radius: 10px; padding: 11px 12px;
+          margin-top: 8px; cursor: pointer; font-size: 14.5px; }
+        .lk-opsi .lk-huruf { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+          background: #eef1f6; display: flex; align-items: center; justify-content: center;
+          font-weight: 700; font-size: 13px; }
+        .lk-opsi:disabled { cursor: default; opacity: 1; }
+        .lk-opsi.lk-benar { background: #e7f7ee; border-color: #1a9e54; }
+        .lk-opsi.lk-benar .lk-huruf { background: #1a9e54; color: #fff; }
+        .lk-opsi.lk-kurang { background: #fdf3e0; border-color: #d99a06; }
+        .lk-opsi.lk-kurang .lk-huruf { background: #d99a06; color: #fff; }
+        .lk-opsi.lk-salah { background: #fdecea; border-color: #c0392b; }
+        .lk-opsi.lk-salah .lk-huruf { background: #c0392b; color: #fff; }
+        .lk-seg { height: 8px; border-radius: 99px; background: #e8ebf0; flex: 1; overflow: hidden; }
+        .lk-seg > i { display: block; height: 100%; border-radius: 99px; transition: width .4s ease; }
+        .lk-topik { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700;
+          letter-spacing: .04em; text-transform: uppercase; padding: 4px 10px; border-radius: 99px; color: #fff; }
+        .lk-umpan { border-radius: 10px; padding: 12px 14px; margin-top: 12px; font-size: 14px; line-height: 1.55; }
+        .lk-umpan.benar { background: #e7f7ee; border: 1px solid #1a9e54; }
+        .lk-umpan.kurang { background: #fdf3e0; border: 1px solid #d99a06; }
+        .lk-umpan.salah { background: #fdecea; border: 1px solid #c0392b; }
+        .lk-mini { background: #f7f8fa; border: 1px solid var(--garis); border-radius: 10px; padding: 10px 12px; }
+        .lk-corong { border-radius: 8px; color: #fff; padding: 8px 12px; font-size: 13px; margin-top: 6px; }
+        .lk-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .lk-duo button { padding: 16px 10px; font-size: 16px; border-radius: 12px; }
+      </style>
+      <div class="kartu">
+        <span class="eyebrow">{{ ikon('rocket', 13) }} Latihan Koding — permainan menilai kode</span>
+        <h3 style="margin:8px 0 4px">Latih kepekaan kodingmu</h3>
+        <p class="samar" style="font-size:13px">
+          Pernyataan acak, kamu menilai: jawabanmu <strong>Benar</strong>,
+          <strong>Kurang tepat</strong>, atau <strong>Salah</strong> — termasuk
+          jebakan klasik: menjawab <em>tema</em> padahal yang diminta <em>kode</em>.
+          Selesai latihan ini, ke Meja Kerja untuk data aslimu.
+        </p>
+        <div id="lk-akar"></div>
+      </div>
       <div class="kartu">
         <span class="eyebrow">{{ ikon('graduation-cap', 13) }} Latihan — transkrip contoh</span>
         <p class="samar" style="font-size:13px">
@@ -586,6 +638,393 @@ function cekLatihan() {
 }
 el('latihan-cek').addEventListener('click', cekLatihan);
 gambarLatihan();
+
+/* ═══ LATIHAN KODING — trainer menilai kode (permintaan Bos 22Okt26) ═══
+   Murni browser (tanpa AI): penilaian harus KONSISTEN untuk latihan
+   benar/salah. Bank tulisan tangan; tiap sesi menarik soal acak dan
+   urutan pilihan diacak, jadi bisa diulang tanpa hafal posisi.
+   Nilai: Benar 100 · Kurang tepat 50 · Salah 0. */
+const LK_TOPIK_WARNA = {'Belanja online': '#e11d48', 'Warung kopi': '#b45309',
+  'Ojek online': '#0ea5a4', 'Kuliah': '#2563eb', 'Game': '#7c3aed',
+  'Kos & kerja': '#059669'};
+const LK_BANK1 = [
+  {topik: 'Belanja online', kutipan: 'Aku lihat review dulu, kalau banyak yang bilang bagus baru aku beli.',
+   kode: 'percaya pada review', tema: 'Bukti sosial', umum: 'kebiasaan belanja online', meleset: 'pengaruh harga',
+   jelas: 'Intinya: penilaian pembeli lain jadi pegangan dia sebelum membeli.',
+   payung: 'Ia payung bagi banyak kode soal pengaruh orang lain — percaya pada review, ikut komentar penonton, tanya teman dulu.'},
+  {topik: 'Belanja online', kutipan: 'Host-nya lucu, betah aku nonton live-nya sampai sejam.',
+   kode: 'host menghibur', tema: 'Daya tarik host', umum: 'menonton live shopping', meleset: 'diskon saat live',
+   jelas: 'Yang dibicarakan pembawa acaranya yang menghibur — bukan harga, bukan review.',
+   payung: 'Ia payung bagi kode-kode soal pembawa acara: host menghibur, host ramah menjawab, host paham produk.'},
+  {topik: 'Belanja online', kutipan: 'Pas live ada diskon 50 persen, langsung aku checkout, takut kehabisan.',
+   kode: 'diskon saat live', tema: 'Pemicu harga', umum: 'belanja saat promo', meleset: 'percaya pada review',
+   jelas: 'Pemicu pembeliannya jelas: potongan harga yang sedang berjalan saat live.',
+   payung: 'Ia payung bagi kode-kode soal harga yang memicu beli: diskon saat live, gratis ongkir mendorong, harga flash sale.'},
+  {topik: 'Belanja online', kutipan: 'Sebenarnya nggak butuh-butuh amat, tapi karena FYP terus lewat, lama-lama penasaran dan beli.',
+   kode: 'penasaran karena sering lihat', tema: 'Paparan konten', umum: 'pengaruh media sosial', meleset: 'kebutuhan mendesak',
+   jelas: 'Tidak ada kebutuhan dan tidak ada pengaruh orang — yang bekerja adalah kemunculan berulang sampai penasaran.',
+   payung: 'Ia payung bagi kode-kode soal konten yang terus muncul: penasaran karena sering lihat, iklan muncul berulang, terpapar unboxing tiap hari.'},
+  {topik: 'Belanja online', kutipan: 'Aku bandingkan harga di 3 toko dulu, yang paling murah yang aku ambil.',
+   kode: 'bandingkan harga dulu', tema: 'Pertimbangan harga', umum: 'cara memilih toko', meleset: 'loyal pada satu toko',
+   jelas: 'Kebiasaannya spesifik: membandingkan dulu sebelum memutuskan — bukan asal murah sesaat.',
+   payung: 'Ia payung bagi cara orang menimbang harga: bandingkan harga dulu, tunggu tanggal kembar, hitung ongkir dulu.'},
+  {topik: 'Belanja online', kutipan: 'Sudah 3 kali beli di toko ini, nggak pernah kecewa, jadi langganan.',
+   kode: 'pengalaman baik berulang', tema: 'Kepercayaan pada toko', umum: 'belanja berulang', meleset: 'tergiur iklan',
+   jelas: 'Alasan loyalnya adalah pengalaman baik yang berulang — bukan iklan, bukan diskon.',
+   payung: 'Ia payung bagi kode-kode soal rasa percaya: pengalaman baik berulang, penjual cepat membalas, barang selalu sesuai foto.'},
+  {topik: 'Belanja online', kutipan: 'Dikasih gratis ongkir, jadi sekalian beli dua.',
+   kode: 'gratis ongkir mendorong', tema: 'Pemicu harga', umum: 'promo ongkir', meleset: 'kualitas produk',
+   jelas: 'Yang mendorong jumlah belinya bertambah adalah ongkir gratis — insentif harga.',
+   payung: 'Ia payung bagi kode-kode harga pemicu beli: diskon saat live, gratis ongkir mendorong, harga flash sale.'},
+  {topik: 'Belanja online', kutipan: 'Takut barangnya nggak sesuai foto, jadi aku chat penjualnya dulu.',
+   kode: 'tanya penjual sebelum beli', tema: 'Mengurangi risiko', umum: 'kebiasaan sebelum membeli', meleset: 'impulsif tanpa pikir',
+   jelas: 'Tindakannya justru hati-hati: memastikan dulu untuk mengurangi risiko kecewa.',
+   payung: 'Ia payung bagi cara pembeli berjaga-jaga: tanya penjual sebelum beli, cek rating toko, pilih bayar di tempat.'},
+  {topik: 'Warung kopi', kutipan: 'Langganan saya kebanyakan anak kos sekitar sini, mereka cari yang murah dan WiFi kencang.',
+   kode: 'pelanggan utama anak kos', tema: 'Profil pelanggan', umum: 'pelanggan warung kopi', meleset: 'strategi promosi',
+   jelas: 'Pemilik warung sedang menggambarkan siapa pelanggan utamanya dan apa yang mereka cari.',
+   payung: 'Ia payung bagi gambaran pelanggan: pelanggan utama anak kos, ramai oleh komunitas motor, pembeli dari kantor sebelah.'},
+  {topik: 'Warung kopi', kutipan: 'Kalau hujan deras, sepi. Yang datang cuma yang kosnya dekat.',
+   kode: 'cuaca memengaruhi kunjungan', tema: 'Faktor kunjungan', umum: 'kondisi warung', meleset: 'harga tidak terjangkau',
+   jelas: 'Yang dibicarakan sebab sepinya: cuaca — bukan harga, bukan rasa.',
+   payung: 'Ia payung bagi hal-hal yang membuat orang datang atau tidak: cuaca memengaruhi kunjungan, ada acara kampus, tanggal tua.'},
+  {topik: 'Warung kopi', kutipan: 'Saya kasih harga mahasiswa, untung tipis nggak apa-apa, yang penting ramai.',
+   kode: 'harga murah demi ramai', tema: 'Strategi harga', umum: 'menentukan harga', meleset: 'mengejar untung besar',
+   jelas: 'Keputusan pemiliknya jelas: mengorbankan margin demi keramaian.',
+   payung: 'Ia payung bagi keputusan soal harga: harga murah demi ramai, paket bundel hemat, gratis tambah es teh.'},
+  {topik: 'Ojek online', kutipan: 'Saya narik pagi saja, jam anak sekolah sama orang kerja. Habis itu sepi.',
+   kode: 'order ramai di pagi hari', tema: 'Pola waktu order', umum: 'jam kerja driver', meleset: 'tarif terlalu murah',
+   jelas: 'Yang digambarkan pola waktunya: order menumpuk di pagi hari.',
+   payung: 'Ia payung bagi pola kapan order datang: order ramai di pagi hari, sepi di siang bolong, ramai saat hujan.'},
+  {topik: 'Ojek online', kutipan: 'Kalau ada insentif kejar target, order jauh pun saya ambil.',
+   kode: 'insentif memengaruhi semangat', tema: 'Dorongan penghasilan', umum: 'soal pendapatan driver', meleset: 'kendaraan sering rusak',
+   jelas: 'Yang mengubah keputusannya adalah insentif target — faktor penghasilan.',
+   payung: 'Ia payung bagi hal-hal soal penghasilan: insentif memengaruhi semangat, tarif dasar terlalu kecil, menunggu order sambil hemat bensin.'},
+  {topik: 'Kuliah', kutipan: 'Kuliah online bikin saya ngantuk, materinya masuk dikit banget.',
+   kode: 'sulit fokus kuliah online', tema: 'Pengalaman kuliah daring', umum: 'kuliah daring', meleset: 'dosen tidak kompeten',
+   jelas: 'Keluhannya soal dirinya yang sulit fokus — bukan soal dosennya.',
+   payung: 'Ia payung bagi pengalaman mahasiswa selama daring: sulit fokus kuliah online, kuota cepat habis, rekaman kuliah membantu.'},
+  {topik: 'Kuliah', kutipan: 'Saya lebih paham kalau diskusi kelompok, ada teman yang jelasin pakai bahasa gampang.',
+   kode: 'belajar terbantu teman', tema: 'Belajar bersama', umum: 'cara belajar mahasiswa', meleset: 'malas belajar sendiri',
+   jelas: 'Yang membantunya paham adalah penjelasan teman — belajarnya memang terbantu orang lain.',
+   payung: 'Ia payung bagi belajar yang melibatkan orang lain: belajar terbantu teman, bertanya di grup kelas, mengajar teman sebelum ujian.'},
+  {topik: 'Game', kutipan: 'Main ranked kalau kalah terus bikin emosi, tapi besoknya main lagi.',
+   kode: 'kalah memicu emosi', tema: 'Pengalaman bermain', umum: 'bermain game online', meleset: 'pengeluaran untuk game',
+   jelas: 'Isinya perasaan saat bermain: kekalahan memicu emosi — bukan soal uang.',
+   payung: 'Ia payung bagi rasa selama bermain: kalah memicu emosi, menang membuat ketagihan, bermain untuk melepas penat.'},
+  {topik: 'Kos & kerja', kutipan: 'Gaji part-time saya pakai buat bayar kos, sisanya baru buat jajan.',
+   kode: 'gaji untuk kebutuhan pokok', tema: 'Pengelolaan uang', umum: 'keuangan mahasiswa', meleset: 'gaya hidup boros',
+   jelas: 'Pola pakai uangnya jelas: kebutuhan pokok dulu, hiburan belakangan.',
+   payung: 'Ia payung bagi cara mengatur uang: gaji untuk kebutuhan pokok, menabung dari sisa jajan, mencatat pengeluaran harian.'},
+  {topik: 'Kos & kerja', kutipan: 'Di grup WA kos, kalau ada yang masak banyak biasanya dibagi-bagi.',
+   kode: 'berbagi makanan antar penghuni', tema: 'Kehidupan kos', umum: 'pergaulan di kos', meleset: 'aturan kos yang ketat',
+   jelas: 'Yang diceritakan kebiasaan penghuni kos: saling berbagi makanan.',
+   payung: 'Ia payung bagi keseharian penghuni kos: berbagi makanan antar penghuni, patungan beli galon, saling meminjam alat masak.'},
+];
+const LK_BANK2 = [
+  {label: 'percaya pada review', jenis: 'kode', alasan: 'Menamai satu isi spesifik dari sepotong data — ciri kode.'},
+  {label: 'Bukti sosial', jenis: 'tema', alasan: 'Payung besar yang menaungi banyak kode soal pengaruh orang lain — ciri tema.'},
+  {label: 'diskon saat live', jenis: 'kode', alasan: 'Satu kejadian spesifik yang bisa ditunjuk di satu kutipan — kode.'},
+  {label: 'Pemicu harga', jenis: 'tema', alasan: 'Kelompok besar berisi diskon, gratis ongkir, flash sale — tema.'},
+  {label: 'bandingkan harga dulu', jenis: 'kode', alasan: 'Satu kebiasaan spesifik dalam satu potongan — kode.'},
+  {label: 'Pertimbangan harga', jenis: 'tema', alasan: 'Payung cara orang menimbang harga dari banyak potongan — tema.'},
+  {label: 'host menghibur', jenis: 'kode', alasan: 'Sifat spesifik yang disebut dalam satu kutipan — kode.'},
+  {label: 'Daya tarik host', jenis: 'tema', alasan: 'Menaungi host menghibur, host ramah, host paham produk — tema.'},
+  {label: 'tanya penjual sebelum beli', jenis: 'kode', alasan: 'Satu tindakan spesifik sebelum membeli — kode.'},
+  {label: 'Pengalaman kuliah daring', jenis: 'tema', alasan: 'Kelompok besar berisi fokus, kuota, rekaman kuliah — tema.'},
+  {label: 'sulit fokus kuliah online', jenis: 'kode', alasan: 'Satu keluhan spesifik dari satu potongan — kode.'},
+  {label: 'Pengelolaan uang', jenis: 'tema', alasan: 'Payung bagi gaji untuk kos, menabung, mencatat pengeluaran — tema.'},
+  {label: 'gaji untuk kebutuhan pokok', jenis: 'kode', alasan: 'Satu pola pakai uang yang spesifik — kode.'},
+  {label: 'Kehidupan kos', jenis: 'tema', alasan: 'Kelompok besar keseharian penghuni kos — tema.'},
+  {label: 'berbagi makanan antar penghuni', jenis: 'kode', alasan: 'Satu kebiasaan spesifik yang bisa ditunjuk — kode.'},
+  {label: 'Strategi harga', jenis: 'tema', alasan: 'Payung keputusan-keputusan soal harga — tema.'},
+  {label: 'insentif memengaruhi semangat', jenis: 'kode', alasan: 'Satu hubungan sebab-akibat spesifik — kode.'},
+  {label: 'Pola waktu order', jenis: 'tema', alasan: 'Menaungi ramai pagi, sepi siang, ramai saat hujan — tema.'},
+  {label: 'penasaran karena sering lihat', jenis: 'kode', alasan: 'Satu perasaan spesifik dari satu potongan — kode.'},
+  {label: 'Kepercayaan pada toko', jenis: 'tema', alasan: 'Payung bagi pengalaman baik, respons cepat, barang sesuai foto — tema.'},
+];
+const LK_BANK3 = [
+  {tema: 'Bukti sosial', anggota: ['percaya pada review', 'ikut komentar penonton', 'tanya teman sebelum beli'],
+   asing: 'diskon saat live', jelas: 'Diskon itu soal harga yang memicu beli — bukan pengaruh orang lain.'},
+  {tema: 'Pemicu harga', anggota: ['diskon saat live', 'gratis ongkir mendorong', 'harga flash sale'],
+   asing: 'host menghibur', jelas: 'Host menghibur itu daya tarik pembawa acara — bukan insentif harga.'},
+  {tema: 'Daya tarik host', anggota: ['host menghibur', 'host ramah menjawab', 'host paham produk'],
+   asing: 'bandingkan harga dulu', jelas: 'Membandingkan harga adalah kebiasaan pembeli menimbang — bukan sifat host.'},
+  {tema: 'Mengurangi risiko', anggota: ['tanya penjual sebelum beli', 'cek rating toko', 'pilih bayar di tempat'],
+   asing: 'penasaran karena sering lihat', jelas: 'Penasaran karena sering lihat itu paparan konten — bukan cara berjaga-jaga.'},
+  {tema: 'Pengelolaan uang', anggota: ['gaji untuk kebutuhan pokok', 'menabung dari sisa jajan', 'mencatat pengeluaran harian'],
+   asing: 'berbagi makanan antar penghuni', jelas: 'Berbagi makanan itu kehidupan kos — bukan cara mengatur uang.'},
+  {tema: 'Pengalaman kuliah daring', anggota: ['sulit fokus kuliah online', 'kuota cepat habis', 'rekaman kuliah membantu'],
+   asing: 'insentif memengaruhi semangat', jelas: 'Insentif itu dorongan penghasilan driver ojek — bukan pengalaman kuliah.'},
+  {tema: 'Kepercayaan pada toko', anggota: ['pengalaman baik berulang', 'penjual cepat membalas', 'barang selalu sesuai foto'],
+   asing: 'cuaca memengaruhi kunjungan', jelas: 'Cuaca itu faktor kunjungan warung — bukan rasa percaya pada toko.'},
+  {tema: 'Paparan konten', anggota: ['penasaran karena sering lihat', 'iklan muncul berulang', 'terpapar unboxing tiap hari'],
+   asing: 'cek rating toko', jelas: 'Cek rating adalah cara mengurangi risiko — bukan paparan konten.'},
+];
+const LK_LEVEL = {
+  1: {nama: 'Pilih Kode yang Tepat', ikon: 'target', jumlah: 8,
+      grad: 'linear-gradient(135deg,#6d5cff,#9d6bff)',
+      desc: 'Satu kutipan, empat pilihan. Jebakan: tema (payung), kode terlalu umum, kode meleset.'},
+  2: {nama: 'Kode atau Tema?', ikon: 'zap', jumlah: 10,
+      grad: 'linear-gradient(135deg,#0ea5a4,#22c3aa)',
+      desc: 'Satu label muncul — kode atau tema? Putaran cepat untuk melatih beda tingkatnya.'},
+  3: {nama: 'Kode yang Tidak Termasuk', ikon: 'network', jumlah: 6,
+      grad: 'linear-gradient(135deg,#f59e0b,#f97316)',
+      desc: 'Satu tema dan empat kode. Satu kode bukan anggota tema itu — temukan yang asing.'},
+};
+let LK = null;
+let lkTerbaik = {};
+try { lkTerbaik = JSON.parse(localStorage.getItem('latihan_koding_v1') || '{}'); } catch (e) {}
+function lkAcak(a) {
+  const x = [...a];
+  for (let i = x.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [x[i], x[j]] = [x[j], x[i]];
+  }
+  return x;
+}
+function lkBeranda() {
+  LK = null;
+  const akar = el('lk-akar');
+  akar.innerHTML =
+    '<div class="lk-masuk">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+    [['book-open', 'Apa itu kode?', 'Label pendek 2–4 kata yang menamai ISI satu potongan data. Lahir dari data — bukan dari indikator yang disiapkan di depan.'],
+     ['lightbulb', 'Pertanyaan kuncinya', 'Setiap membaca satu kutipan, tanya: "Intinya dia sedang bilang apa?" — jawabannya yang dipadatkan adalah kode.'],
+     ['check-circle-2', 'Aturan emas', 'Hal yang sama → kode yang sama. Jangan membuat nama baru untuk makna yang sama, nanti datamu tercerai.'],
+     ['x-circle', 'Jebakan terbesar', 'Menjawab dengan TEMA (payung besar) padahal yang diminta KODE (label satu potongan). Itu yang paling sering dinilai Kurang tepat.']]
+    .map(m => '<div class="lk-mini"><div style="font-weight:700;font-size:13.5px">' +
+      ikonKecil(m[0], 15) + ' ' + m[1] + '<\/div>' +
+      '<div class="samar" style="font-size:12.5px;margin-top:3px;line-height:1.5">' +
+      m[2] + '<\/div><\/div>').join('') + '<\/div>' +
+    '<div style="margin-top:12px"><strong style="font-size:13.5px">Corongnya:<\/strong>' +
+    '<div class="lk-corong" style="background:#94a3b8;width:100%">KUTIPAN — potongan data asli (±200 potong)<\/div>' +
+    '<div class="lk-corong" style="background:#64748b;width:78%">KODE — label per potong (±15–40 kode)<\/div>' +
+    '<div class="lk-corong" style="background:#334155;width:56%">TEMA — payung kelompok (3–7 tema)<\/div><\/div>' +
+    [1, 2, 3].map(lv => {
+      const L = LK_LEVEL[lv];
+      const terbaik = lkTerbaik['lv' + lv];
+      return '<button type="button" class="lk-level" data-lk-level="' + lv + '" ' +
+        'style="background:' + L.grad + '">' +
+        '<span style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px">' +
+        ikonKecil(L.ikon, 19) + ' Level ' + lv + ' — ' + L.nama + '<\/span>' +
+        '<span style="display:block;font-size:13px;opacity:.92;margin-top:4px;line-height:1.5">' +
+        L.desc + '<\/span>' +
+        '<span style="display:inline-block;margin-top:8px;background:rgba(255,255,255,.22);' +
+        'border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700">' +
+        L.jumlah + ' soal' + (terbaik != null ? ' · Skor terbaikmu: ' + terbaik : '') +
+        '<\/span><\/button>';
+    }).join('') + '<\/div>';
+  akar.querySelectorAll('[data-lk-level]').forEach(b =>
+    b.addEventListener('click', () => lkMulai(Number(b.dataset.lkLevel))));
+}
+function lkMulai(level) {
+  let soal;
+  if (level === 1) {
+    soal = lkAcak(LK_BANK1).slice(0, LK_LEVEL[1].jumlah).map(it => ({
+      ...it, opsi: lkAcak([
+        {teks: it.kode, jenis: 'tepat'}, {teks: it.tema, jenis: 'tema'},
+        {teks: it.umum, jenis: 'umum'}, {teks: it.meleset, jenis: 'meleset'}])}));
+  } else if (level === 2) {
+    soal = lkAcak(LK_BANK2).slice(0, LK_LEVEL[2].jumlah);
+  } else {
+    soal = lkAcak(LK_BANK3).slice(0, LK_LEVEL[3].jumlah).map(it => ({
+      ...it, opsi: lkAcak([...it.anggota.map(a => ({teks: a, jenis: 'anggota'})),
+                           {teks: it.asing, jenis: 'asing'}])}));
+  }
+  LK = {level: level, soal: soal, idx: 0, totalNilai: 0, benar: 0, kurang: 0,
+        salah: 0, rentetan: 0, terjawab: false};
+  lkGambarSoal();
+}
+function lkKepala() {
+  const persen = Math.round(LK.idx / LK.soal.length * 100);
+  return '<div style="display:flex;align-items:center;gap:10px;margin-top:12px">' +
+    '<span class="samar" style="font-size:12.5px;font-weight:700">Soal ' +
+    (LK.idx + 1) + '/' + LK.soal.length + '<\/span>' +
+    '<span class="lk-seg"><i style="width:' + persen + '%;background:' +
+    LK_LEVEL[LK.level].grad + '"><\/i><\/span>' +
+    (LK.rentetan >= 2
+      ? '<span class="lk-pop" style="display:inline-flex;align-items:center;gap:4px;' +
+        'font-size:12px;font-weight:800;color:#d99a06">' + ikonKecil('zap', 14) +
+        LK.rentetan + ' beruntun!<\/span>' : '') +
+    '<span style="font-size:12.5px;font-weight:700">Nilai: ' + LK.totalNilai + '<\/span><\/div>';
+}
+function lkGambarSoal() {
+  const akar = el('lk-akar');
+  const it = LK.soal[LK.idx];
+  LK.terjawab = false;
+  let h = '<div class="lk-masuk">' + lkKepala();
+  if (LK.level === 1) {
+    h += '<div style="margin-top:10px"><span class="lk-topik" style="background:' +
+      (LK_TOPIK_WARNA[it.topik] || '#666') + '">' + aman(it.topik) + '<\/span><\/div>' +
+      '<div class="lk-gelembung" id="lk-gelembung">"' + aman(it.kutipan) + '"<\/div>' +
+      '<p style="font-size:14px;font-weight:700;margin:12px 0 2px">Kode yang paling tepat untuk kutipan ini?<\/p>' +
+      it.opsi.map((o, i) =>
+        '<button type="button" class="lk-opsi" data-lk-opsi="' + i + '">' +
+        '<span class="lk-huruf">' + 'ABCD'[i] + '<\/span><span>' + aman(o.teks) +
+        '<\/span><\/button>').join('');
+  } else if (LK.level === 2) {
+    h += '<p style="font-size:14px;font-weight:700;margin:14px 0 2px">Label ini KODE atau TEMA?<\/p>' +
+      '<div class="lk-gelembung" id="lk-gelembung" style="text-align:center;' +
+      'font-size:19px;font-weight:800;font-style:normal;border-left-color:#0ea5a4">' +
+      aman(it.label) + '<\/div>' +
+      '<div class="lk-duo">' +
+      '<button type="button" class="tb tb-utama" data-lk-duo="kode">Ini KODE<\/button>' +
+      '<button type="button" class="tb tb-sekunder" data-lk-duo="tema">Ini TEMA<\/button><\/div>';
+  } else {
+    h += '<div style="margin-top:12px;border-radius:12px;padding:14px;color:#fff;' +
+      'background:' + LK_LEVEL[3].grad + '"><span style="font-size:12px;font-weight:700;' +
+      'letter-spacing:.05em">TEMA<\/span><div style="font-size:19px;font-weight:800">' +
+      aman(it.tema) + '<\/div><\/div>' +
+      '<p style="font-size:14px;font-weight:700;margin:12px 0 2px">Kode mana yang TIDAK termasuk tema itu?<\/p>' +
+      it.opsi.map((o, i) =>
+        '<button type="button" class="lk-opsi" data-lk-opsi="' + i + '">' +
+        '<span class="lk-huruf">' + 'ABCD'[i] + '<\/span><span>' + aman(o.teks) +
+        '<\/span><\/button>').join('');
+  }
+  h += '<div id="lk-umpan"><\/div><\/div>';
+  akar.innerHTML = h;
+  akar.querySelectorAll('[data-lk-opsi]').forEach(b =>
+    b.addEventListener('click', () => lkNilaiOpsi(Number(b.dataset.lkOpsi))));
+  akar.querySelectorAll('[data-lk-duo]').forEach(b =>
+    b.addEventListener('click', () => lkNilaiDuo(b.dataset.lkDuo)));
+}
+function lkUmpan(kategori, teks) {
+  const u = el('lk-umpan');
+  const ikonNama = kategori === 'benar' ? 'check-circle-2' :
+    kategori === 'kurang' ? 'lightbulb' : 'x-circle';
+  const judul = kategori === 'benar' ? 'Benar! +100' :
+    kategori === 'kurang' ? 'Kurang tepat +50' : 'Salah +0';
+  u.innerHTML = '<div class="lk-umpan ' + kategori + ' lk-masuk"><strong>' +
+    ikonKecil(ikonNama, 16) + ' ' + judul + '<\/strong><br>' + teks + '<\/div>' +
+    '<div class="baris renggang" style="margin-top:10px">' +
+    '<button type="button" class="tb tb-utama" id="lk-lanjut">' +
+    (LK.idx + 1 >= LK.soal.length ? 'Lihat hasil' : 'Soal berikutnya') +
+    '<\/button><\/div>';
+  el('lk-lanjut').addEventListener('click', () => {
+    LK.idx++;
+    if (LK.idx >= LK.soal.length) lkSelesai(); else lkGambarSoal();
+  });
+}
+function lkCatat(kategori) {
+  if (kategori === 'benar') { LK.totalNilai += 100; LK.benar++; LK.rentetan++; }
+  else if (kategori === 'kurang') { LK.totalNilai += 50; LK.kurang++; LK.rentetan = 0; }
+  else { LK.salah++; LK.rentetan = 0; }
+}
+function lkNilaiOpsi(i) {
+  if (LK.terjawab) return;
+  LK.terjawab = true;
+  const it = LK.soal[LK.idx];
+  const tombol = el('lk-akar').querySelectorAll('[data-lk-opsi]');
+  tombol.forEach(b => { b.disabled = true; });
+  if (LK.level === 1) {
+    const o = it.opsi[i];
+    tombol.forEach((b, j) => {
+      if (it.opsi[j].jenis === 'tepat') b.classList.add('lk-benar');
+    });
+    if (o.jenis === 'tepat') {
+      lkCatat('benar');
+      lkUmpan('benar', aman(it.jelas));
+    } else if (o.jenis === 'tema') {
+      tombol[i].classList.add('lk-kurang');
+      lkCatat('kurang');
+      lkUmpan('kurang', '"' + aman(it.tema) + '" itu <strong>TEMA<\/strong> — ' +
+        aman(it.payung) + ' Untuk SATU potongan ini, kodenya: <strong>"' +
+        aman(it.kode) + '"<\/strong>.');
+    } else if (o.jenis === 'umum') {
+      tombol[i].classList.add('lk-kurang');
+      lkCatat('kurang');
+      lkUmpan('kurang', '"' + aman(it.umum) + '" terlalu umum — hampir semua ' +
+        'kutipan bisa masuk label itu. Kode harus menangkap isi khas potongan ' +
+        'ini: <strong>"' + aman(it.kode) + '"<\/strong>. ' + aman(it.jelas));
+    } else {
+      tombol[i].classList.add('lk-salah');
+      const g = el('lk-gelembung');
+      if (g) g.classList.add('lk-goyang');
+      lkCatat('salah');
+      lkUmpan('salah', '"' + aman(it.meleset) + '" membicarakan hal lain — tidak ' +
+        'ada di kutipan ini. Kodenya: <strong>"' + aman(it.kode) + '"<\/strong>. ' +
+        aman(it.jelas));
+    }
+  } else {
+    const o = it.opsi[i];
+    tombol.forEach((b, j) => {
+      if (it.opsi[j].jenis === 'asing') b.classList.add('lk-benar');
+    });
+    if (o.jenis === 'asing') {
+      lkCatat('benar');
+      lkUmpan('benar', 'Betul — "' + aman(it.asing) + '" memang bukan anggota ' +
+        'tema ini. ' + aman(it.jelas));
+    } else {
+      tombol[i].classList.add('lk-salah');
+      lkCatat('salah');
+      lkUmpan('salah', '"' + aman(o.teks) + '" justru ANGGOTA tema "' +
+        aman(it.tema) + '". Yang asing: <strong>"' + aman(it.asing) +
+        '"<\/strong>. ' + aman(it.jelas));
+    }
+  }
+}
+function lkNilaiDuo(pilih) {
+  if (LK.terjawab) return;
+  LK.terjawab = true;
+  const it = LK.soal[LK.idx];
+  el('lk-akar').querySelectorAll('[data-lk-duo]').forEach(b => { b.disabled = true; });
+  if (pilih === it.jenis) {
+    lkCatat('benar');
+    lkUmpan('benar', '"' + aman(it.label) + '" memang ' +
+      it.jenis.toUpperCase() + '. ' + aman(it.alasan));
+  } else {
+    const g = el('lk-gelembung');
+    if (g) g.classList.add('lk-goyang');
+    lkCatat('salah');
+    lkUmpan('salah', '"' + aman(it.label) + '" itu <strong>' +
+      it.jenis.toUpperCase() + '<\/strong>, bukan ' + pilih.toUpperCase() +
+      '. ' + aman(it.alasan));
+  }
+}
+function lkSelesai() {
+  const skor = Math.round(LK.totalNilai / LK.soal.length);
+  const kunci = 'lv' + LK.level;
+  if (lkTerbaik[kunci] == null || skor > lkTerbaik[kunci]) {
+    lkTerbaik[kunci] = skor;
+    try { localStorage.setItem('latihan_koding_v1', JSON.stringify(lkTerbaik)); } catch (e) {}
+  }
+  const pesan = skor >= 85
+    ? 'Mantap! Kamu sudah bisa membedakan kode, tema, dan label yang meleset. Siap ke Meja Kerja untuk datamu sendiri.'
+    : skor >= 60
+      ? 'Sudah hampir siap. Yang masih bocor biasanya beda kode vs tema — mainkan lagi level ini sebentar.'
+      : 'Tidak apa-apa, ini memang konsep yang paling sering tertukar. Baca lagi panel pengetahuannya, lalu coba sekali lagi pelan-pelan.';
+  const kel = 2 * Math.PI * 52;
+  el('lk-akar').innerHTML =
+    '<div class="lk-masuk" style="text-align:center;padding-top:14px">' +
+    '<div style="position:relative;width:130px;height:130px;margin:0 auto">' +
+    '<svg width="130" height="130"><circle cx="65" cy="65" r="52" fill="none" ' +
+    'stroke="#e8ebf0" stroke-width="11"/>' +
+    '<circle cx="65" cy="65" r="52" fill="none" stroke="#1a9e54" stroke-width="11" ' +
+    'stroke-linecap="round" stroke-dasharray="' + kel.toFixed(1) + '" ' +
+    'stroke-dashoffset="' + (kel * (1 - skor / 100)).toFixed(1) + '" ' +
+    'transform="rotate(-90 65 65)"/><\/svg>' +
+    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+    'align-items:center;justify-content:center"><span style="font-size:34px;' +
+    'font-weight:800">' + skor + '<\/span><span class="samar" style="font-size:12px">' +
+    'dari 100<\/span><\/div><\/div>' +
+    '<div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap">' +
+    '<span class="lk-topik" style="background:#1a9e54">Benar: ' + LK.benar + '<\/span>' +
+    '<span class="lk-topik" style="background:#d99a06">Kurang tepat: ' + LK.kurang + '<\/span>' +
+    '<span class="lk-topik" style="background:#c0392b">Salah: ' + LK.salah + '<\/span><\/div>' +
+    '<p style="font-size:14px;line-height:1.6;margin:14px auto 4px;max-width:420px">' +
+    pesan + '<\/p>' +
+    '<p class="samar" style="font-size:12.5px">Skor terbaikmu di level ini: ' +
+    lkTerbaik[kunci] + '<\/p>' +
+    '<div class="baris" style="justify-content:center;gap:8px;margin-top:10px">' +
+    '<button type="button" class="tb tb-utama" id="lk-ulang">' +
+    ikonKecil('refresh-cw', 15) + ' Main lagi<\/button>' +
+    '<button type="button" class="tb tb-sekunder" id="lk-pilih">Pilih level lain<\/button>' +
+    '<\/div><\/div>';
+  el('lk-ulang').addEventListener('click', () => lkMulai(LK.level));
+  el('lk-pilih').addEventListener('click', lkBeranda);
+}
+lkBeranda();
 
 /* Tab latihan vs meja kerja */
 document.querySelectorAll('[data-tabkoding]').forEach(q =>
