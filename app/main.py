@@ -585,6 +585,26 @@ BENTUK = {
     ),
     #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
     #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
+    'pembahasan': (
+        'SUSUNAN WAJIB untuk draf pembahasan (patuhi persis):\n'
+        'Untuk TIAP tema tulis dua bagian: baris pertama "TEMA: '
+        '<nama tema PERSIS seperti di pesan mahasiswa>", sesudahnya '
+        'SATU paragraf mengalir 4 sampai 5 kalimat berisi draf '
+        'pembahasan tema itu.\n'
+        'Antar tema beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau daftar butir.\n'
+        'Isi tiap paragraf: nyatakan temuan tema itu (dari tafsir/'
+        'data mahasiswa), kaitkan dengan teori yang DITEMPEL '
+        'mahasiswa, lalu nilai — temuan ini SESUAI, MENAMBAH, atau '
+        'BERBEDA dari teori itu — dan apa artinya.\n'
+        'Teori HANYA dari tempelan mahasiswa: DILARANG menyebut nama '
+        'ahli, teori, jurnal, atau tahun apa pun di luar tempelan '
+        'itu. Bila mahasiswa tidak menempel teori, tulis penanda '
+        '[teori di Bab II] di tempat yang membutuhkan teori.\n'
+        'Tema berstatus PERLU DIPERKUAT dibahas hati-hati sebagai '
+        'temuan awal. Dilarang mengarang fakta di luar data yang '
+        'dikirim.'
+    ),
     'kembangkan': (
         'SUSUNAN WAJIB untuk saran pengembangan tema (patuhi persis):\n'
         'Tulis 3 arah pengembangan. Tiap arah diawali baris "ARAH: '

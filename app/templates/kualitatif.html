@@ -303,6 +303,22 @@
         <button class="tb tb-sekunder" id="qdc-unduh" title="Codebook saja: daftar kode & tema">{{ ikon('download', 15) }} .qdc (Codebook)</button>
       </div>
       <div id="tafsir-saran"></div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+        <span class="eyebrow">{{ ikon('book-open', 13) }} Pembahasan — kaitkan temuan ke teori Bab II</span>
+        <p class="samar" style="font-size:13px">
+          Pembahasan menjawab: temuanmu ini <strong>sesuai, menambah, atau berbeda</strong>
+          dengan teori di Bab II-mu? Tempel ringkasan teori yang kamu pakai
+          (nama teori/ahli + intinya), lalu minta AI menyusun drafnya dari
+          tafsirmu. AI <strong>hanya memakai teori yang kamu tempel</strong> — tidak mengarang sitasi.
+        </p>
+        <div class="medan"><label>Teori dari Bab II-ku <span class="petunjuk">tempel ringkasannya di sini — nama teori/ahli dan intinya</span></label>
+        <textarea id="bahas-teori" rows="3" style="width:100%" placeholder="cth: Bukti sosial (Cialdini): orang cenderung menilai suatu tindakan benar bila banyak orang melakukannya. Kepercayaan pada pengulas: pembeli percaya pada pengalaman nyata pengguna lain..."></textarea></div>
+        <div id="bahas-daftar"></div>
+        <div class="baris renggang" style="margin-top:10px">
+          <button class="tb tb-sekunder" id="bahas-ai">{{ ikon('sparkles', 15) }} Susun draf pembahasan dari AI</button>
+        </div>
+        <div id="bahas-saran"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -421,7 +437,7 @@ function el(id) { return document.getElementById(id); }
 
 /* ── Status tersimpan (localStorage; belum ada login) ── */
 const KUNCI_SIMPAN = 'kualitatif_v1';
-let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: []},
+let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: [], pembahasan: {}, teori: ''},
             swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}, foto: []}};
 try {
   const s = localStorage.getItem(KUNCI_SIMPAN);
@@ -444,6 +460,9 @@ const KONTEKS_CONTOH = {
 if (!KUAL.tematik.konteks || typeof KUAL.tematik.konteks !== 'object') {
   KUAL.tematik.konteks = JSON.parse(JSON.stringify(KONTEKS_CONTOH));
 }
+if (!KUAL.tematik.pembahasan || typeof KUAL.tematik.pembahasan !== 'object')
+  KUAL.tematik.pembahasan = {};
+if (typeof KUAL.tematik.teori !== 'string') KUAL.tematik.teori = '';
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
   if (typeof segarNavTematik === 'function') segarNavTematik();
@@ -477,7 +496,7 @@ function aturLangkah(jenis, n) {
      hanya digambar saat muat awal & di tombol unduh, jadi mahasiswa
      yang baru selesai koding melihat 'Belum ada tema' dan tidak bisa
      menulis tafsir (temuan uji manual 22Okt26). */
-  if (jenis === 'tematik' && String(n) === '4') gambarTafsir();
+  if (jenis === 'tematik' && String(n) === '4') { gambarTafsir(); gambarPembahasan(); }
   if (typeof gambarRekomendasi === 'function') gambarRekomendasi();
   if (jenis === 'tematik') {
     if (String(n) === '3' && !KUAL.tematik.kunjungi3) {
@@ -2232,6 +2251,125 @@ function gambarSaranTafsir(teks, temas, w) {
         'tema ini di atas, lalu ubah dengan bahasamu.';
     }));
 }
+
+/* ═══════════ PEMBAHASAN (tahap audit titik AI, 22Okt26) ═══════════
+   Lubang terbesar hasil audit: Bab 4 wajib punya pembahasan tapi app
+   dulu tidak menyentuhnya sama sekali. Polanya sama dengan tafsir
+   data penuh: AI menyusun DRAF per tema dari tafsir + status bukti
+   mahasiswa, teori HANYA dari tempelan mahasiswa (anti karang
+   sitasi); keputusan pakai/revisi di mahasiswa lewat tombol Pakai. */
+function gambarPembahasan() {
+  const teoriEl = el('bahas-teori');
+  if (teoriEl && document.activeElement !== teoriEl)
+    teoriEl.value = KUAL.tematik.teori || '';
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  const temas = [...new Set(seg.map(x => x.tema))];
+  const w = el('bahas-daftar');
+  if (!w) return;
+  if (!temas.length) { w.innerHTML = ''; return; }
+  w.innerHTML = temas.map(t =>
+    '<div class="kartu" style="margin-top:10px"><span class="eyebrow">Pembahasan — ' +
+    aman(t) + '<\/span>' +
+    '<div class="medan" style="margin-top:6px"><label>Draf pembahasanmu <span class="petunjuk">kaitkan tema ini dengan teori Bab II-mu<\/span><\/label>' +
+    '<textarea data-bahas="' + aman(t) + '" rows="4" style="width:100%" placeholder="Contoh pola: Temuan ini sesuai dengan teori ... karena ... Berbeda dengan penelitian terdahulu yang menemukan ..., penelitian ini justru ...">' +
+    aman(KUAL.tematik.pembahasan[t] || '') + '<\/textarea><\/div><\/div>').join('');
+  w.querySelectorAll('[data-bahas]').forEach(ta =>
+    ta.addEventListener('input', () => {
+      KUAL.tematik.pembahasan[ta.dataset.bahas] = ta.value;
+      simpan();
+    }));
+}
+el('bahas-teori').addEventListener('input', () => {
+  KUAL.tematik.teori = el('bahas-teori').value;
+  simpan();
+});
+el('bahas-ai').addEventListener('click', async () => {
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  const temas = [...new Set(seg.map(x => x.tema))];
+  const w = el('bahas-saran');
+  if (!temas.length) {
+    w.innerHTML = '<div class="catatan renggang"><div>Belum ada tema. ' +
+      'Selesaikan Langkah 2 (Koding) dulu.<\/div><\/div>';
+    return;
+  }
+  const teori = (KUAL.tematik.teori || '').trim();
+  const blokData = temas.map(t => {
+    const st = statsTemaKu(t);
+    let isi = 'TEMA: ' + t + '\nStatus bukti: ' +
+      (st.kuat ? 'KUAT' : 'PERLU DIPERKUAT') + ' — ' + st.kutipan +
+      ' kutipan dari ' + st.infs.length + ' informan.\n';
+    const taf = (KUAL.tematik.tafsir[t] || '').trim();
+    if (taf) isi += 'Tafsirku: ' + taf + '\n';
+    else isi += 'Kode tema ini: ' + st.kodes.join('; ') + '\nKutipan: ' +
+      st.seg.slice(0, 4).map(x => '"' +
+        x.teks.replace(/\s+/g, ' ').slice(0, 160) + '"').join(' ') + '\n';
+    return isi;
+  }).join('\n');
+  const p = konteksPenelitian() +
+    '\nTEORI DARI BAB II-KU (hanya teori ini yang boleh kamu pakai):\n' +
+    (teori || '(belum kutempel — tulis draf dengan penanda [teori di Bab II] di tempat yang membutuhkan teori)') +
+    '\n\nBerikut tema dan tafsirku. Susun DRAF PEMBAHASAN untuk TIAP tema.\n\n' +
+    blokData +
+    '\nATURAN PEMBAHASAN:\n' +
+    '1. Nama tema tulis PERSIS seperti di atas.\n' +
+    '2. Teori HANYA dari tempelanku di atas — DILARANG menyebut nama ahli, teori, atau tahun di luar tempelan itu.\n' +
+    '3. Tiap tema: nyatakan temuannya, kaitkan dengan teori, lalu nilai — temuan ini SESUAI, MENAMBAH, atau BERBEDA dari teori itu, dan apa artinya.\n' +
+    '4. Tema berstatus PERLU DIPERKUAT dibahas hati-hati sebagai temuan awal, jangan diklaim kuat.';
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang menyusun draf pembahasan dari tafsirmu…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(p, 'pembahasan');
+    gambarSaranPembahasan(teks, temas, w);
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum ' +
+      'bisa membantu: ' + aman(e.message || 'coba lagi.') + '<\/div><\/div>';
+  }
+});
+function gambarSaranPembahasan(teks, temas, w) {
+  const blok = {};
+  let kini = null;
+  teks.replace(/```/g, '').split('\n').forEach(b => {
+    const m = b.match(/^\s*\**\s*TEMA\s*:\s*(.+?)\s*\**\s*$/i);
+    if (m) { kini = m[1].replace(/["“”]/g, '').trim(); blok[kini] = ''; return; }
+    if (kini) blok[kini] = (blok[kini] + ' ' + b.trim()).trim();
+  });
+  const cocok = temas.filter(t =>
+    Object.keys(blok).some(k => k.toLowerCase() === t.toLowerCase() && blok[k]));
+  if (!cocok.length) {
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Draf pembahasan dari AI<\/span>' +
+      '<div style="white-space:pre-wrap;font-size:14px;margin-top:6px">' +
+      aman(teks) + '<\/div><p class="samar" style="font-size:12px">' +
+      'Draf ini tidak terpisah per tema — pakai bagian yang cocok, ' +
+      'ketik ulang dengan bahasamu di kolom pembahasan.<\/p><\/div>';
+    return;
+  }
+  w.innerHTML = cocok.map(t => {
+    const kunci = Object.keys(blok).find(k => k.toLowerCase() === t.toLowerCase());
+    return '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Draf pembahasan — ' + aman(t) + '<\/span>' +
+      '<p style="font-size:14px;margin:8px 0">' + aman(blok[kunci]) + '<\/p>' +
+      '<button class="tb tb-sekunder" data-pakai-bahas="' + aman(t) + '">' +
+      'Pakai draf ini untuk tema ini<\/button> ' +
+      '<span class="samar" data-status-bahas="' + aman(t) +
+      '" style="font-size:12px">masuk ke kolom pembahasan sebagai draf — ' +
+      'kembangkan dengan bahasamu & penelitian terdahulu.<\/span><\/div>';
+  }).join('');
+  w.querySelectorAll('[data-pakai-bahas]').forEach(b =>
+    b.addEventListener('click', () => {
+      const t = b.dataset.pakaiBahas;
+      const kunci = Object.keys(blok).find(k => k.toLowerCase() === t.toLowerCase());
+      const ada = (KUAL.tematik.pembahasan[t] || '').trim();
+      if (ada && !confirm('Kolom pembahasan tema "' + t + '" sudah ada ' +
+          'isinya. Timpa dengan draf AI?')) return;
+      KUAL.tematik.pembahasan[t] = blok[kunci];
+      simpan(); gambarPembahasan();
+      const st = w.querySelector('[data-status-bahas="' +
+        t.replace(/"/g, '') + '"]');
+      if (st) st.textContent = 'Sudah dipakai ✓ — lihat kolom pembahasan ' +
+        'tema ini di atas, lalu kembangkan dengan bahasamu.';
+    }));
+}
 async function unduhQDA(jenis) {
   const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
   if (!terkode.length) {
@@ -2278,14 +2416,14 @@ el('tafsir-unduh').addEventListener('click', () => {
   /* Keterangan cakupan (perintah Bos 22Okt26): mahasiswa harus jelas
      berkas ini hasil olah data saja, BUKAN Bab 4 utuh. */
   md += '> **Tentang berkas ini — baca dulu.**\n' +
-    '> Berkas ini adalah hasil **Olah Data Analisis Kualitatif** saja: ' +
-    'kode, tema, hasil triangulasi, dan tafsir per tema dari data yang ' +
-    'kamu masukkan.\n' +
+    '> Berkas ini adalah hasil **Olah Data Analisis Kualitatif**: ' +
+    'kode, tema, hasil triangulasi, tafsir per tema, dan draf ' +
+    'pembahasan (bila kamu menyusunnya) dari data yang kamu masukkan.\n' +
     '> Berkas ini **bukan Bab 4 yang utuh**. Agar lengkap, kamu masih ' +
     'perlu menulis sendiri: (1) **Gambaran umum** objek penelitian, ' +
     '(2) **Profil informan** — siapa saja informanmu dan latar ' +
-    'belakangnya, (3) **Pembahasan** — kaitkan tiap temuan dengan teori ' +
-    'di Bab II dan penelitian terdahulu.\n\n';
+    'belakangnya. Draf pembahasan di berkas ini juga masih perlu kamu ' +
+    'kembangkan dengan penelitian terdahulu.\n\n';
   md += '## Rumusan Masalah\n\n' + (k.rumusan || '_[belum diisi]_') + '\n\n';
   if ((k.fokus || []).length) {
     md += '## Fokus Penelitian\n\n' +
@@ -2316,6 +2454,13 @@ el('tafsir-unduh').addEventListener('click', () => {
     d.slice(0, 5).forEach(q => { md += '- "' + q.teks + '" (' + q.informan + ')\n'; });
     md += '\n';
   });
+  const adaBahas = temas.filter(t => (KUAL.tematik.pembahasan[t] || '').trim());
+  if (adaBahas.length) {
+    md += '\n## Draf Pembahasan\n\n';
+    adaBahas.forEach(t => {
+      md += '### ' + t + '\n\n' + KUAL.tematik.pembahasan[t].trim() + '\n\n';
+    });
+  }
   unduhMD('temuan-kualitatif.md', md);
 });
 
@@ -2793,6 +2938,18 @@ function temuanUntuk(jenis, n) {
           label: 'Minta AI membaca hasil ini', go: picuAI('tri-ai', 'tri-saran')}); });
     }
     if (n === 4) {
+      if (temas.length && !(KUAL.tematik.teori || '').trim())
+        items.push({kunci: 'teori', teks: 'Tempel <strong>ringkasan teori ' +
+          'Bab II<\/strong>-mu di blok Pembahasan bawah — tanpa itu AI tidak ' +
+          'bisa menyusun draf pembahasan yang setia pada teorimu.',
+          label: 'Tempel teori', go: () => el('bahas-teori').focus()});
+      temas.filter(t => (KUAL.tematik.tafsir[t] || '').trim() &&
+          !(KUAL.tematik.pembahasan[t] || '').trim()).slice(0, 3)
+        .forEach(t => items.push({kunci: 'bahas:' + t, teks: 'Pembahasan ' +
+          'untuk tema <strong>' + aman(t) + '<\/strong> belum disusun — ' +
+          'tafsirmu sudah ada, tinggal dikaitkan ke teori.',
+          label: 'Susun draf pembahasan dari AI',
+          go: picuAI('bahas-ai', 'bahas-saran')}));
       temas.filter(t => !(KUAL.tematik.tafsir[t] || '').trim()).slice(0, 4)
         .forEach(t => items.push({kunci: 'tafsir:' + t, teks: 'Tafsir untuk tema ' +
           '<strong>' + aman(t) + '<\/strong> masih kosong.',
