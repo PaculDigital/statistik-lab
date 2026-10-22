@@ -61,6 +61,26 @@
     </p>
     <span style="position:absolute;left:22px;bottom:16px;font-weight:700;color:var(--teal)">Mulai →</span>
   </button>
+  <div class="kartu" style="grid-column:1/-1">
+    <span class="eyebrow">{{ ikon('download', 13) }} Berkas Penelitian</span>
+    <h3 style="margin:8px 0 4px">Datamu, dalam satu berkas</h3>
+    <p class="samar" style="font-size:13px;margin:0">
+      Selama ini datamu tersimpan otomatis di perangkat ini saja. Simpan sebagai
+      berkas supaya bisa <strong>dibuka di perangkat atau browser lain</strong>,
+      dicadangkan, atau dikirim ke dosen untuk diperiksa. Isinya seluruh data
+      Analisis Tematik + SWOT. <strong>Foto bukti tidak ikut tersimpan</strong>
+      (foto memang hanya tersimpan 3 hari di server) — tetapi hasil bacaan
+      &amp; analisa fotonya ikut tersimpan penuh.
+    </p>
+    <p style="font-size:13px;margin:8px 0 4px">Penelitian saat ini:
+      <strong id="berkas-judul">—</strong></p>
+    <div class="baris renggang">
+      <button type="button" class="tb tb-utama" id="berkas-simpan">{{ ikon('download', 14) }} Simpan Berkas</button>
+      <button type="button" class="tb tb-sekunder" id="berkas-buka">{{ ikon('file-text', 14) }} Buka Berkas…</button>
+      <input type="file" id="berkas-input" accept=".json,application/json" class="sembunyi">
+    </div>
+    <div id="berkas-status" style="font-size:13px;margin-top:6px"></div>
+  </div>
 </div>
 
 {# ══════════════ PANEL TEMATIK ══════════════ #}
@@ -504,8 +524,90 @@ function simpan() {
         document.activeElement.closest('.rekom'))) gambarRekomendasi();
 }
 
+/* ── Berkas Penelitian (keputusan Bos 22Okt26): tanpa database, data
+   kualitatif bisa disimpan sebagai SATU berkas JSON per judul penelitian
+   dan dibuka di perangkat/browser mana pun. Foto bukti TIDAK ikut
+   (keputusan Bos: berkas kecil; foto memang berumur 3 hari di server),
+   tapi seluruh data teks — termasuk kutipan hasil bacaan foto — ikut. */
+function unduhJSON(namaBerkas, isi) {
+  const blob = new Blob([isi], {type: 'application/json;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = namaBerkas;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function slugJudul(j) {
+  const s = (j || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/g, '');
+  return s || 'penelitian-kualitatif';
+}
+function gambarInfoBerkas() {
+  const j = el('berkas-judul');
+  if (j) j.textContent = (KUAL.tematik.konteks && KUAL.tematik.konteks.judul) ||
+    'Penelitian kualitatif';
+}
+el('berkas-simpan').addEventListener('click', () => {
+  const data = JSON.parse(JSON.stringify(KUAL));
+  data.tematik.foto = [];
+  data.swot.foto = [];
+  const paket = {
+    aplikasi: 'statistik-lab-kualitatif', versi: 1,
+    judul: (KUAL.tematik.konteks && KUAL.tematik.konteks.judul) || '',
+    diekspor_pada: new Date().toISOString(), data,
+  };
+  unduhJSON(slugJudul(paket.judul) + '.kualitatif.json',
+            JSON.stringify(paket, null, 2));
+  el('berkas-status').innerHTML = '<span style="color:var(--teal-dalam,#0E7569)">' +
+    '<strong>Berkas tersimpan.<\/strong> Simpan baik-baik — berkas itu ' +
+    'rumah datamu di luar perangkat ini.<\/span>';
+});
+el('berkas-buka').addEventListener('click', () => el('berkas-input').click());
+el('berkas-input').addEventListener('change', async () => {
+  const masukan = el('berkas-input');
+  const berkasFile = masukan.files && masukan.files[0];
+  masukan.value = '';
+  if (!berkasFile) return;
+  const status = el('berkas-status');
+  let isi = null;
+  try { isi = JSON.parse(await berkasFile.text()); } catch (e) {}
+  const sah = isi && isi.aplikasi === 'statistik-lab-kualitatif' && isi.data &&
+    typeof isi.data.tematik === 'object' && typeof isi.data.swot === 'object';
+  if (!sah) {
+    status.innerHTML = '<span style="color:#B3261E"><strong>Berkas tidak ' +
+      'dipakai.<\/strong> Ini bukan berkas Berkas Penelitian dari aplikasi ' +
+      'ini (atau isinya rusak). Datamu yang sekarang TIDAK berubah.<\/span>';
+    return;
+  }
+  const tgl = isi.diekspor_pada
+    ? new Date(isi.diekspor_pada).toLocaleString('id-ID') : '-';
+  if (!confirm('Memuat berkas penelitian "' + (isi.judul || berkasFile.name) +
+      '" (disimpan ' + tgl + ')?\n\nData yang sekarang tampil akan DIGANTI. ' +
+      'Data lama disimpan sebagai cadangan di perangkat ini.')) return;
+  try {
+    localStorage.setItem('kualitatif_cadangan',
+                         localStorage.getItem(KUNCI_SIMPAN) || '');
+  } catch (e) {}
+  const bawaan = {
+    tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: [],
+      pembahasan: {}, teori: '', gambaran: '',
+      konteks: JSON.parse(JSON.stringify(KONTEKS_CONTOH)), informanAktif: ''},
+    swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}, foto: []},
+  };
+  const gabung = Object.assign({}, bawaan, isi.data);
+  gabung.tematik = Object.assign({}, bawaan.tematik, isi.data.tematik || {});
+  gabung.swot = Object.assign({}, bawaan.swot, isi.data.swot || {});
+  gabung.tematik.foto = [];
+  gabung.swot.foto = [];
+  KUAL = gabung;
+  simpan();
+  location.reload();
+});
+gambarInfoBerkas();
+
 /* ── Pintu & navigasi langkah ── */
 function tampilPintu(nama) {
+  if (!nama && typeof gambarInfoBerkas === 'function') gambarInfoBerkas();
   el('kual-pintu').classList.toggle('sembunyi', !!nama);
   el('panel-tematik').classList.toggle('sembunyi', nama !== 'tematik');
   el('panel-swot').classList.toggle('sembunyi', nama !== 'swot');
