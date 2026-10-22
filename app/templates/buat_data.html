@@ -1243,8 +1243,13 @@ function tampilkanHasil(d) {
 function unduh(bentuk, untuk) {
   const bentukAman = bentuk === 'xlsx' ? 'xlsx' : 'csv';
   const alatAman = untuk === 'pls' ? 'pls' : 'spss';
+  // CSV WAJIB pemisah ';' (temuan Bos 22Okt26): Excel Indonesia memakai
+  // koma sebagai pemisah DESIMAL, jadi CSV berkomma terbaca SATU KOLOM
+  // semua. Server sudah mendukung ?pemisah=; — halaman harus memintanya.
+  // XLSX tidak terpengaruh pemisah.
   window.location.href =
-    '/api/unduh?bentuk=' + bentukAman + '&untuk=' + alatAman;
+    '/api/unduh?bentuk=' + bentukAman + '&untuk=' + alatAman +
+    (bentukAman === 'csv' ? '&pemisah=;' : '');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -1109,38 +1109,113 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
 # ── simpan hasil terakhir untuk unduhan ─────────────────────────────────
 # ⚠️ Disimpan ke BERKAS, bukan hanya memori: kalau server restart atau ada
 # beberapa pekerja (uvicorn worker), memori proses bisa berbeda → unduhan 404.
-_TERAKHIR_JALUR = None
+#
+# SESI ANONIM (keputusan Bos 22Okt26): simpanan DIPISAH per sesi browser
+# (cookie sl_sesi berisi kode acak, tanpa login). Dulu satu simpanan
+# bersama untuk semua pengunjung → dua mahasiswa generate berbarengan,
+# unduhan bisa TERTUKAR (yang turun data orang lain). Sekarang berkasnya
+# terakhir_<sesi>.pkl; tanpa sesi sah → terakhir.pkl bersama (perilaku
+# lama, hanya untuk klien tanpa cookie).
+_TERAKHIR_PER_SESI = {}
+_SWEEP = {'waktu': 0.0}
+_BATAS_BERKAS_SESI = 300     # jumlah berkas sesi terbanyak yang disimpan
+_BATAS_CACHE_SESI = 100      # entri terbanyak di cache memori cadangan
 
 
-def _berkas_terakhir():
+def _tampung(k, d) -> None:
+    """Taruh ke cache memori DENGAN batas (BUG-4 review 22Okt26: dulu
+    dict ini tidak pernah dibersihkan — tumbuh selama container hidup.
+    Cache hanya cadangan bila berkas gagal dibaca, jadi membuang yang
+    paling lama aman.)"""
+    _TERAKHIR_PER_SESI[k] = d
+    while len(_TERAKHIR_PER_SESI) > _BATAS_CACHE_SESI:
+        _TERAKHIR_PER_SESI.pop(next(iter(_TERAKHIR_PER_SESI)), None)
+
+
+def _kunci_sesi(sesi) -> str:
+    import re
+    return sesi if sesi and re.fullmatch(r'[a-f0-9]{32}', str(sesi)) else ''
+
+
+def _berkas_terakhir(sesi=None):
     from pathlib import Path
     d = Path('/app/data')
     if not d.exists():
         d = Path(__file__).resolve().parent.parent / 'data'
     d.mkdir(parents=True, exist_ok=True)
-    return d / 'terakhir.pkl'
+    k = _kunci_sesi(sesi)
+    return d / (f'terakhir_{k}.pkl' if k else 'terakhir.pkl')
 
 
-def simpan_terakhir(d: dict) -> None:
-    import pickle
-    with open(_berkas_terakhir(), 'wb') as f:
-        pickle.dump(d, f, protocol=5)
-
-
-def ambil_terakhir() -> dict:
-    global _TERAKHIR_JALUR
-    if _TERAKHIR_JALUR is not None:
-        return _TERAKHIR_JALUR
-    import pickle
-    p = _berkas_terakhir()
-    if not p.exists():
-        return {}
+def _sapu_sesi_lama(folder) -> None:
+    """Hapus berkas sesi berumur > 7 hari; jalan paling sering 1 jam sekali."""
+    import time
+    now = time.time()
+    if now - _SWEEP['waktu'] < 3600:
+        return
+    _SWEEP['waktu'] = now
+    batas = now - 7 * 24 * 3600
     try:
-        with open(p, 'rb') as f:
-            _TERAKHIR_JALUR = pickle.load(f)
-        return _TERAKHIR_JALUR
-    except Exception:                          # noqa: BLE001
-        return {}
+        for f in folder.glob('terakhir_*.pkl'):
+            try:
+                if f.stat().st_mtime < batas:
+                    f.unlink()
+            except OSError:
+                pass
+    except OSError:
+        pass
+    # Batas JUMLAH (BUG-3 review agen Bos 22Okt26): umur saja tidak cukup
+    # — 1.000 mahasiswa dalam 7 hari berarti 1.000 berkas menumpuk.
+    # Sisakan yang terbaru; entri cache memorinya ikut dibuang.
+    try:
+        sisa = sorted(folder.glob('terakhir_*.pkl'),
+                      key=lambda f: f.stat().st_mtime, reverse=True)
+        for f in sisa[_BATAS_BERKAS_SESI:]:
+            try:
+                f.unlink()
+                _TERAKHIR_PER_SESI.pop(f.name[len('terakhir_'):-len('.pkl')], None)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def simpan_terakhir(d: dict, sesi=None) -> None:
+    import os
+    import pickle
+    k = _kunci_sesi(sesi) or '__bersama'
+    _tampung(k, d)
+    berkas = _berkas_terakhir(sesi)
+    # Tulis atomik (berkas sementara lalu ganti nama): unduhan yang datang
+    # bersamaan dengan generate tidak membaca berkas setengah tertulis.
+    tmp = berkas.with_name(berkas.name + '.tmp')
+    with open(tmp, 'wb') as f:
+        pickle.dump(d, f, protocol=5)
+    os.replace(tmp, berkas)
+    _sapu_sesi_lama(berkas.parent)
+
+
+def ambil_terakhir(sesi=None) -> dict:
+    """Selalu baca dari BERKAS sesi itu — jangan percaya cache memori.
+
+    BUG (temuan Bos 22Okt26): dulu cache memori diisi sekali saat unduhan
+    pertama lalu TIDAK PERNAH diperbarui, sedangkan simpan_terakhir hanya
+    menulis berkas. Akibatnya mahasiswa mengubah setelan, membuat data
+    baru, lalu mengunduh — yang turun tetap data PERTAMA selamanya.
+    Sekarang berkas adalah satu-satunya sumber kebenaran (memang itu
+    alasan penyimpanan berkas dipilih: aman lintas pekerja); memori
+    hanya cadangan bila berkas gagal dibaca."""
+    import pickle
+    k = _kunci_sesi(sesi) or '__bersama'
+    p = _berkas_terakhir(sesi)
+    if p.exists():
+        try:
+            with open(p, 'rb') as f:
+                _tampung(k, pickle.load(f))
+            return _TERAKHIR_PER_SESI[k]
+        except Exception:                      # noqa: BLE001
+            pass
+    return _TERAKHIR_PER_SESI.get(k) or {}
 
 
 def _baris(d: dict):
