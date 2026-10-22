@@ -32,6 +32,31 @@ STATIC = BASE / 'static'
 _VERSI_ASET = '0'
 
 app = FastAPI(title='Penelitian STATISTIK Lab.', docs_url=None, redoc_url=None)
+
+
+@app.middleware('http')
+async def _pasang_sesi(request: Request, call_next):
+    """Sesi ANONIM (keputusan Bos 22Okt26): tiap browser menerima cookie
+    sl_sesi berisi kode acak (tanpa login, tanpa data pribadi; 30 hari).
+    Dipakai HANYA untuk memisahkan simpanan 'data terakhir' Buat Data
+    antar-pengunjung supaya unduhan tidak tertukar saat dipakai banyak
+    mahasiswa bersamaan. Sesi tersedia sebagai request.state.sesi."""
+    import re
+    import uuid
+    sesi = request.cookies.get('sl_sesi', '')
+    disajikan = bool(re.fullmatch(r'[a-f0-9]{32}', sesi or ''))
+    # Hanya sesi yang DISAJIKAN browser yang dipakai memisahkan simpanan.
+    # Klien tanpa cookie (menolak cookie / akses API langsung) jatuh ke
+    # slot bersama seperti perilaku lama — tidak lebih buruk dari dulu.
+    request.state.sesi = sesi if disajikan else None
+    response = await call_next(request)
+    if not disajikan:
+        sesi = uuid.uuid4().hex
+        proto = request.headers.get('x-forwarded-proto', request.url.scheme)
+        response.set_cookie(
+            'sl_sesi', sesi, max_age=30 * 24 * 3600, path='/',
+            httponly=True, samesite='lax', secure=(proto == 'https'))
+    return response
 app.mount('/static', StaticFiles(directory=str(STATIC)), name='static')
 
 templates = Jinja2Templates(directory=str(BASE / 'templates'))
@@ -1090,7 +1115,7 @@ async def api_jatah_judul():
 
 
 @app.post('/api/buat-data')
-async def api_buat_data(payload: dict):
+async def api_buat_data(payload: dict, request: Request):
     """Bangun data + ukur ulang hasilnya sendiri (lokal, tanpa AI)."""
     from fastapi import HTTPException
     from app.berkas_kerja import buat_data, simpan_terakhir, ke_csv, ke_xlsx
@@ -1108,13 +1133,13 @@ async def api_buat_data(payload: dict):
         )
     except Exception as e:                       # noqa: BLE001
         raise HTTPException(status_code=400, detail=f'Gagal membuat data: {e}')
-    simpan_terakhir(d)
+    simpan_terakhir(d, sesi=getattr(request.state, 'sesi', None))
     d_kirim = {k: v for k, v in d.items() if k != 'data'}
     return JSONResponse(d_kirim)
 
 
 @app.post('/api/buat-data/jalur')
-async def api_buat_data_jalur(payload: dict):
+async def api_buat_data_jalur(payload: dict, request: Request):
     """Bangun data MODEL JALUR (mediasi/moderasi) + ukur hasilnya sendiri.
 
     (Wulan, 19Okt26 — temuan audit 16Okt26: halaman ?model=mediasi|moderasi
@@ -1135,7 +1160,7 @@ async def api_buat_data_jalur(payload: dict):
         )
     except Exception as e:                       # noqa: BLE001
         raise HTTPException(status_code=400, detail=f'Gagal membuat data: {e}')
-    simpan_terakhir(d)
+    simpan_terakhir(d, sesi=getattr(request.state, 'sesi', None))
     d_kirim = {k: v for k, v in d.items() if k != 'data'}
     return JSONResponse(d_kirim)
 
@@ -1484,8 +1509,8 @@ async def api_diagnosis_periksa(payload: dict):
 
 
 @app.get('/api/unduh')
-async def api_unduh(bentuk: str = 'csv', untuk: str = 'spss',
-                    pemisah: str = ','):
+async def api_unduh(request: Request, bentuk: str = 'csv',
+                    untuk: str = 'spss', pemisah: str = ','):
     """Unduh data siap impor.
 
     untuk   : 'spss' → nama PANJANG ('Kualitas_Produk_1')  ← bawaan, aman
@@ -1498,7 +1523,7 @@ async def api_unduh(bentuk: str = 'csv', untuk: str = 'spss',
     from fastapi import HTTPException
     from fastapi.responses import Response
     from app.berkas_kerja import ambil_terakhir, ke_csv, ke_xlsx
-    d = ambil_terakhir()
+    d = ambil_terakhir(sesi=getattr(request.state, 'sesi', None))
     if not d:
         raise HTTPException(status_code=404, detail='Belum ada data. Buat dulu.')
 
