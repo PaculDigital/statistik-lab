@@ -1123,24 +1123,34 @@ def _berkas_terakhir():
 
 def simpan_terakhir(d: dict) -> None:
     import pickle
+    global _TERAKHIR_JALUR
+    _TERAKHIR_JALUR = d
     with open(_berkas_terakhir(), 'wb') as f:
         pickle.dump(d, f, protocol=5)
 
 
 def ambil_terakhir() -> dict:
+    """Selalu baca dari BERKAS — jangan percaya cache memori.
+
+    BUG (temuan Bos 22Okt26): dulu cache memori _TERAKHIR_JALUR diisi
+    sekali saat unduhan pertama lalu TIDAK PERNAH diperbarui, sedangkan
+    simpan_terakhir hanya menulis berkas. Akibatnya mahasiswa mengubah
+    setelan (mis. β → signifikan/tidak), membuat data baru, lalu
+    mengunduh — yang turun tetap data PERTAMA selamanya (sampai server
+    restart). Sekarang berkas adalah satu-satunya sumber kebenaran
+    (memang itu alasan penyimpanan berkas dipilih: aman lintas pekerja);
+    memori hanya cadangan bila berkas gagal dibaca."""
     global _TERAKHIR_JALUR
-    if _TERAKHIR_JALUR is not None:
-        return _TERAKHIR_JALUR
     import pickle
     p = _berkas_terakhir()
-    if not p.exists():
-        return {}
-    try:
-        with open(p, 'rb') as f:
-            _TERAKHIR_JALUR = pickle.load(f)
-        return _TERAKHIR_JALUR
-    except Exception:                          # noqa: BLE001
-        return {}
+    if p.exists():
+        try:
+            with open(p, 'rb') as f:
+                _TERAKHIR_JALUR = pickle.load(f)
+            return _TERAKHIR_JALUR
+        except Exception:                      # noqa: BLE001
+            pass
+    return _TERAKHIR_JALUR or {}
 
 
 def _baris(d: dict):
