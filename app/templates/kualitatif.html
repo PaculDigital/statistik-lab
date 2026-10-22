@@ -514,6 +514,10 @@ if (!KUAL.tematik.pembahasan || typeof KUAL.tematik.pembahasan !== 'object')
   KUAL.tematik.pembahasan = {};
 if (typeof KUAL.tematik.teori !== 'string') KUAL.tematik.teori = '';
 if (typeof KUAL.tematik.gambaran !== 'string') KUAL.tematik.gambaran = '';
+/* Sembuhkan data lama yang tipenya rusak (mis. dari berkas impor
+   beracun sebelum pagar rapikanDataKual ada) — halaman tidak boleh
+   meledak hanya karena data tersimpan berbentuk aneh. */
+KUAL = rapikanDataKual(KUAL, false);
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
   if (typeof segarNavTematik === 'function') segarNavTematik();
@@ -529,6 +533,55 @@ function simpan() {
    dan dibuka di perangkat/browser mana pun. Foto bukti TIDAK ikut
    (keputusan Bos: berkas kecil; foto memang berumur 3 hari di server),
    tapi seluruh data teks — termasuk kutipan hasil bacaan foto — ikut. */
+function rapikanDataKual(d, tanpaFoto) {
+  /* Paksa tipe tiap kolom data kualitatif ke bentuk yang aplikasi
+     harapkan. Perbaikan bug 'berkas lolos validasi tapi halaman rusak'
+     (review agen Bos 22Okt26): validasi lama hanya memeriksa tematik/
+     swot berupa objek — isinya (mis. segmen berupa STRING) lolos,
+     tersimpan, lalu meledak di .forEach/.filter sesudah muat ulang.
+     Dipakai saat IMPOR (tanpaFoto=true) dan saat MUAT dari
+     localStorage (tanpaFoto=false) supaya data yang sudah terlanjur
+     beracun sembuh sendiri. Kolom tak dikenal dibiarkan (milik fitur
+     lain/versi lain); elemen array non-objek dibuang. */
+  const arr = v => (Array.isArray(v) ? v : [])
+    .filter(x => x && typeof x === 'object' && !Array.isArray(x));
+  const obj = v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  const str = v => (typeof v === 'string') ? v : '';
+  const t = obj(d && d.tematik);
+  const w = obj(d && d.swot);
+  const konteks = Object.assign(
+    JSON.parse(JSON.stringify(KONTEKS_CONTOH)), obj(t.konteks));
+  konteks.judul = str(konteks.judul) || KONTEKS_CONTOH.judul;
+  konteks.rumusan = str(konteks.rumusan);
+  konteks.fokus = Array.isArray(konteks.fokus)
+    ? konteks.fokus.filter(x => typeof x === 'string') : [];
+  konteks.jenis = Array.isArray(konteks.jenis)
+    ? konteks.jenis.filter(x => typeof x === 'string') : [];
+  const strategi = obj(w.strategi);
+  return {
+    ...d,
+    tematik: {
+      ...t,
+      panduan: str(t.panduan),
+      informan: arr(t.informan),
+      segmen: arr(t.segmen),
+      tafsir: obj(t.tafsir),
+      foto: tanpaFoto ? [] : arr(t.foto),
+      pembahasan: obj(t.pembahasan),
+      teori: str(t.teori),
+      gambaran: str(t.gambaran),
+      konteks,
+      informanAktif: str(t.informanAktif),
+    },
+    swot: {
+      ...w,
+      faktor: arr(w.faktor),
+      strategi: {so: str(strategi.so), wo: str(strategi.wo),
+                 st: str(strategi.st), wt: str(strategi.wt)},
+      foto: tanpaFoto ? [] : arr(w.foto),
+    },
+  };
+}
 function unduhJSON(namaBerkas, isi) {
   const blob = new Blob([isi], {type: 'application/json;charset=utf-8'});
   const a = document.createElement('a');
@@ -588,18 +641,7 @@ el('berkas-input').addEventListener('change', async () => {
     localStorage.setItem('kualitatif_cadangan',
                          localStorage.getItem(KUNCI_SIMPAN) || '');
   } catch (e) {}
-  const bawaan = {
-    tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: [],
-      pembahasan: {}, teori: '', gambaran: '',
-      konteks: JSON.parse(JSON.stringify(KONTEKS_CONTOH)), informanAktif: ''},
-    swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}, foto: []},
-  };
-  const gabung = Object.assign({}, bawaan, isi.data);
-  gabung.tematik = Object.assign({}, bawaan.tematik, isi.data.tematik || {});
-  gabung.swot = Object.assign({}, bawaan.swot, isi.data.swot || {});
-  gabung.tematik.foto = [];
-  gabung.swot.foto = [];
-  KUAL = gabung;
+  KUAL = rapikanDataKual(isi.data, true);
   simpan();
   location.reload();
 });
