@@ -1460,6 +1460,25 @@ function htmlGaleriFoto(konteks, daftar) {
   return '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
     daftar.map(f => {
       if (fotoKedaluwarsa(f)) {
+        const lewatUmur = !f.dibuat ||
+          (Date.now() - f.dibuat > FOTO_UMUR_MS);
+        if (!lewatUmur) {
+          /* Umur foto masih dalam 3 hari tapi gagal dimuat: berkas
+             kemungkinan masih utuh di server — JANGAN bohongi
+             mahasiswa dengan tulisan 'terhapus'. Beri jalan pulih. */
+          return '<div style="width:150px"><div class="samar" style="width:150px;' +
+            'height:110px;border-radius:8px;border:1px dashed var(--garis,#bbb);' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'text-align:center;font-size:12px;padding:6px">Foto gagal dimuat ' +
+            '— mungkin sinyal putus sesaat<\/div>' +
+            '<div class="baris" style="gap:4px;margin-top:4px">' +
+            '<button type="button" class="tb tb-sekunder" data-foto-coba="' +
+            aman(f.id) + '" style="font-size:12px;padding:5px 8px">' +
+            ikonKecil('refresh-cw', 13) + ' Coba muat lagi<\/button>' +
+            '<button type="button" class="tb tb-sekunder" data-foto-hapus="' +
+            aman(f.id) + '" style="padding:5px 8px" title="Hapus foto">' +
+            ikonKecil('trash-2', 13) + '<\/button><\/div><\/div>';
+        }
         return '<div style="width:150px"><div class="samar" style="width:150px;' +
           'height:110px;border-radius:8px;border:1px dashed var(--garis,#bbb);' +
           'display:flex;align-items:center;justify-content:center;' +
@@ -1496,6 +1515,13 @@ function ikatGaleriFoto(wadah, konteks) {
       const f = daftarFoto(konteks).find(x => x.id === inp.dataset.fotoKet);
       if (f) { f.keterangan = inp.value; simpan(); }
     }));
+  wadah.querySelectorAll('[data-foto-coba]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const f = daftarFoto(konteks).find(x => x.id === btn.dataset.fotoCoba);
+      if (!f) return;
+      f.rusak = false; simpan();
+      if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
+    }));
   wadah.querySelectorAll('[data-foto-hapus]').forEach(btn =>
     btn.addEventListener('click', () => hapusFoto(konteks, btn.dataset.fotoHapus)));
   wadah.querySelectorAll('[data-foto-baca]').forEach(btn =>
@@ -1507,10 +1533,21 @@ function ikatGaleriFoto(wadah, konteks) {
     });
     img.addEventListener('error', () => {
       const f = daftarFoto(konteks).find(x => x.id === img.dataset.fotoImg);
-      if (f && !f.rusak) {
-        f.rusak = true; simpan();
-        if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
+      if (!f || f.rusak) return;
+      /* Perbaikan bug 'foto mati permanen' (review agen Bos 22Okt26):
+         dulu SATU error apa pun (termasuk sinyal putus 1 detik)
+         langsung menulis f.rusak=true selamanya, tanpa jalan pulih.
+         Sekarang: coba muat ulang sekali diam-diam (parameter acak
+         penghindar cache); rusak hanya bila percobaan itu pun gagal,
+         dan placeholder-nya menyediakan tombol 'Coba muat lagi'. */
+      if (!img.dataset.sudahCoba) {
+        img.dataset.sudahCoba = '1';
+        img.src = f.url + (f.url.includes('?') ? '&' : '?') +
+          'coba=' + Date.now();
+        return;
       }
+      f.rusak = true; simpan();
+      if (konteks === 'kerja') gambarFotoKerja(); else gambarFotoSwot();
     });
   });
 }
@@ -1544,6 +1581,10 @@ function tutupFotoBesar() {
   document.body.style.overflow = '';
 }
 el('foto-besar-tutup').addEventListener('click', tutupFotoBesar);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' &&
+      !el('foto-besar').classList.contains('sembunyi')) tutupFotoBesar();
+});
 el('foto-besar').addEventListener('click', e => {
   if (e.target === el('foto-besar')) tutupFotoBesar();
 });
