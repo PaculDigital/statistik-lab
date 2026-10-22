@@ -21,7 +21,8 @@ import json
 from pathlib import Path
 
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse,
+                               RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
@@ -520,11 +521,21 @@ BENTUK = {
     #  Tafsir: contoh paragraf mengalir, bukan butir.
     'tafsir': (
         'SUSUNAN WAJIB untuk contoh tafsir (patuhi persis):\n'
-        'Satu tema ditulis sebagai SATU paragraf mengalir 2 sampai 3 '
-        'kalimat (bukan butir, bukan bernomor).\n'
-        'Awali dengan nama temanya dalam kalimat biasa, lalu lanjutkan '
-        'dengan maknanya. Jangan buka dengan kata "Tema:" diikuti titik dua.\n'
-        'Bahasa mengalir seperti orang menjelaskan ke teman, bukan laporan.'
+        'Untuk TIAP tema tulis dua bagian: baris pertama "TEMA: <nama '
+        'tema PERSIS seperti di pesan mahasiswa>", sesudahnya SATU '
+        'paragraf mengalir 3 sampai 4 kalimat berisi tafsir tema itu.\n'
+        'Antar tema beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau daftar butir.\n'
+        'Tafsir HANYA boleh memakai isi kutipan dan kode yang dikirim '
+        'mahasiswa — dilarang menambah fakta, nama, angka, atau '
+        'kejadian baru. Angka (jumlah kutipan/informan) yang disebut '
+        'harus sama persis dengan data yang dikirim.\n'
+        'Tema berstatus PERLU DIPERKUAT ditafsir hati-hati: nyatakan '
+        'buktinya masih terbatas dan dari siapa saja sumbernya; tema '
+        'KUAT boleh dinyatakan dengan yakin.\n'
+        'Tiap paragraf mengaitkan tema itu dengan rumusan masalah di '
+        'konteks. Bahasa mengalir seperti orang menjelaskan ke teman, '
+        'bukan laporan kaku.'
     ),
     #  Triangulasi: bantu mahasiswa MEMBACA hasil hitungan otomatis —
     #  bukan vonis baru; status kuat/lemah tetap dari data.
@@ -571,6 +582,114 @@ BENTUK = {
         'bila ada yang cocok; hanya buat tema baru kalau benar-benar tidak '
         'ada yang pas.\n'
         'JANGAN menulis kalimat penjelasan apa pun sesudah dua baris itu.'
+    ),
+    #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
+    #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
+    'pertajam': (
+        'SUSUNAN WAJIB untuk penilaian rumusan & fokus (patuhi persis):\n'
+        'Baris pertama: "PENILAIAN: <1-2 kalimat — rumusan dan fokus '
+        'mahasiswa ini sudah tajam atau masih umum, dan kenapa>".\n'
+        'Baris kedua: "RUMUSAN: <satu kalimat PERNYATAAN — usulan '
+        'rumusan yang dipertajam; BUKAN kalimat tanya>".\n'
+        'Lalu baris "FOKUS:" dan 3 sampai 5 baris "- <satu fokus>", '
+        'tiap fokus tajam dan bisa digali lewat wawancara, observasi, '
+        'atau dokumen.\n'
+        'Tanpa pengantar atau penutup lain. Tetap setia pada topik '
+        'dan konteks mahasiswa — jangan mengganti objek penelitiannya.'
+    ),
+    'swot_bobot': (
+        'SUSUNAN WAJIB untuk saran bobot & rating (patuhi persis, '
+        'balasan ini DIBACA MESIN):\n'
+        'Satu baris per faktor, urutan PERSIS seperti daftar yang '
+        'dikirim mahasiswa, format:\n'
+        '<KELOMPOK><NOMOR>: BOBOT <angka 0-1, desimal TITIK> RATING '
+        '<1-4> | <alasan singkat>\n'
+        'Contoh: S1: BOBOT 0.30 RATING 4 | paling menentukan bagi '
+        'pelanggan\n'
+        'Bobot gabungan S+W berjumlah kira-kira 1, begitu juga O+T. '
+        'Rating: untuk S dan O, 4 = sangat kuat; untuk W dan T, '
+        '1 = sangat parah, 4 = hampir tidak terasa.\n'
+        'JANGAN beri pengantar, penutup, atau baris lain apa pun.'
+    ),
+    'gambaran': (
+        'SUSUNAN WAJIB untuk draf gambaran umum & profil informan '
+        '(patuhi persis):\n'
+        'Tulis 2 sampai 3 paragraf mengalir (bukan butir): paragraf '
+        'pertama gambaran umum objek penelitian dari konteks yang '
+        'dikirim; paragraf berikutnya profil informan — jumlah, '
+        'komposisi jenis (internal/eksternal), teknik pengumpulan '
+        'datanya, dan sebaran kutipan per informan.\n'
+        'Angka dan nama WAJIB persis seperti data yang dikirim. '
+        'DILARANG mengarang fakta tentang objek (tempat, produk, '
+        'sejarah) atau latar informan (umur, pekerjaan, pendidikan) '
+        'yang tidak ada di data — bila suatu bagian belum ada '
+        'datanya, tulis penanda [lengkapi: ...] di tempatnya.\n'
+        'Bahasa laporan yang sopan dan mengalir, siap ditempel ke '
+        'Bab 4 dan dikembangkan mahasiswa.'
+    ),
+    'pembahasan': (
+        'SUSUNAN WAJIB untuk draf pembahasan (patuhi persis):\n'
+        'Untuk TIAP tema tulis dua bagian: baris pertama "TEMA: '
+        '<nama tema PERSIS seperti di pesan mahasiswa>", sesudahnya '
+        'SATU paragraf mengalir 4 sampai 5 kalimat berisi draf '
+        'pembahasan tema itu.\n'
+        'Antar tema beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau daftar butir.\n'
+        'Isi tiap paragraf: nyatakan temuan tema itu (dari tafsir/'
+        'data mahasiswa), kaitkan dengan teori yang DITEMPEL '
+        'mahasiswa, lalu nilai — temuan ini SESUAI, MENAMBAH, atau '
+        'BERBEDA dari teori itu — dan apa artinya.\n'
+        'Teori HANYA dari tempelan mahasiswa: DILARANG menyebut nama '
+        'ahli, teori, jurnal, atau tahun apa pun di luar tempelan '
+        'itu. Bila mahasiswa tidak menempel teori, tulis penanda '
+        '[teori di Bab II] di tempat yang membutuhkan teori.\n'
+        'Tema berstatus PERLU DIPERKUAT dibahas hati-hati sebagai '
+        'temuan awal. Dilarang mengarang fakta di luar data yang '
+        'dikirim.'
+    ),
+    'kembangkan': (
+        'SUSUNAN WAJIB untuk saran pengembangan tema (patuhi persis):\n'
+        'Tulis 3 arah pengembangan. Tiap arah diawali baris "ARAH: '
+        '<judul singkat arahnya>", lalu 2 sampai 3 kalimat isi: makna '
+        'yang bisa diperdalam dari data seperti ini, dan contoh '
+        'pertanyaan pendalaman (dalam tanda kutip) untuk informan '
+        'berikutnya.\n'
+        'Antar arah beri SATU baris kosong. JANGAN beri pengantar '
+        'atau penutup.\n'
+        'Hanya memakai data tema yang dikirim mahasiswa — dilarang '
+        'mengarang kutipan, nama, angka, atau fakta baru. Sebut nama '
+        'temanya persis seperti di pesan mahasiswa.'
+    ),
+    'swot_baca': (
+        'SUSUNAN WAJIB untuk bacaan hasil SWOT (patuhi persis):\n'
+        'Tulis paragraf mengalir (bukan butir-butir): (1) arti posisi '
+        'kuadran bagi usaha ini, sebut skor IFAS/EFAS PERSIS seperti '
+        'yang dikirim; (2) faktor penentu yang paling berpengaruh — '
+        'sebut teks faktornya; (3) penilaian strategi mahasiswa: '
+        'sudah cocok dengan kuadrannya atau belum, dan kenapa; '
+        '(4) tutup dengan 2 sampai 3 prioritas tindakan paling '
+        'penting.\n'
+        'DILARANG mengubah atau mengarang angka dan faktor di luar '
+        'yang dikirim. Bahasa sederhana untuk mahasiswa.'
+    ),
+    'foto': (
+        'SUSUNAN WAJIB untuk menganalisa foto dokumen/bukti (patuhi persis):\n'
+        'Pecah isi foto menjadi poin-poin: satu poin = satu kutipan yang '
+        'berdiri sendiri (satu ulasan, satu pernyataan, satu angka/data).\n'
+        'Tiap poin TEPAT tiga baris:\n'
+        'KUTIPAN: <isi poin persis seperti tertulis di foto; bagian yang '
+        'tidak terbaca tulis [tidak terbaca] — JANGAN mengarang isinya>\n'
+        'KODE: <2 sampai 4 kata, huruf biasa, menggambarkan isi poin>\n'
+        'TEMA: <nama tema poin ini>\n'
+        'Antar poin beri SATU baris kosong. JANGAN beri pengantar, '
+        'penutup, penomoran, atau penjelasan apa pun.\n'
+        'Tema WAJIB salah satu dari tema yang sudah dipakai (daftarnya '
+        'ada di pesan mahasiswa) bila ada yang cocok; buat tema baru '
+        'hanya bila benar-benar tidak ada yang pas.\n'
+        'Kalau foto BUKAN dokumen teks (foto suasana/tempat/kegiatan): '
+        'buat CUKUP 1 poin — KUTIPAN berisi penjelasan singkat apa yang '
+        'terlihat dan apa artinya untuk penelitian, KODE dan TEMA '
+        'usulannya.'
     ),
 }
 
@@ -650,6 +769,26 @@ async def kualitatif_saran(payload: dict):
     bentuk = str((payload or {}).get('bentuk', '') or '').strip().lower()
     sys_prompt = _system_prompt(bentuk)
 
+    #  Foto opsional (Bacakan Foto, 22Okt26): permintaan bergambar
+    #  dialihkan 9router ke model vision. Sah hanya data URL JPG/PNG/WebP
+    #  dengan plafon ±3,2 jt karakter base64 (≈2,4MB biner).
+    gambar = (payload or {}).get('gambar')
+    if gambar is not None:
+        sah = (isinstance(gambar, str) and len(gambar) <= 3_200_000 and
+               gambar.startswith(('data:image/jpeg;base64,',
+                                  'data:image/png;base64,',
+                                  'data:image/webp;base64,')))
+        if not sah:
+            return JSONResponse(
+                {'boleh': False,
+                 'sebab': 'Foto tidak sah — harus JPG/PNG/WebP dan tidak '
+                          'lebih dari 2MB.'},
+                status_code=400)
+    isi_user = prompt
+    if gambar:
+        isi_user = [{'type': 'text', 'text': prompt},
+                    {'type': 'image_url', 'image_url': {'url': gambar}}]
+
     tubuh = _json.dumps({
         'model': model, 'max_tokens': SARAN_MAX_TOKEN, 'temperature': 0.7,
         #  MATIKAN BERPIKIR (putusan Bos 21Okt26: "reasoning = false aja").
@@ -661,7 +800,7 @@ async def kualitatif_saran(payload: dict):
         'enable_thinking': False,
         'messages': [
             {'role': 'system', 'content': sys_prompt},
-            {'role': 'user', 'content': prompt},
+            {'role': 'user', 'content': isi_user},
         ]}).encode()
 
     def _sekali():
@@ -714,6 +853,129 @@ async def kualitatif_saran(payload: dict):
             {'boleh': False, 'sebab': f'AI tidak menjawab ({e}). Coba lagi '
                                      'atau pakai mode manual.'},
             status_code=502)
+
+
+# ═══ UNGGAH FOTO BUKTI KUALITATIF (permintaan Bos 22Okt26) ═══════════
+#  Aturan Bos: HANYA gambar (JPG/PNG/WebP — SVG DILARANG), maks 2MB,
+#  dikompresi, dan DIHAPUS setelah 3 hari. Proteksi berlapis:
+#    · plafon ukuran dibaca terbatas (berkas raksasa ditolak di pintu)
+#    · magic bytes dicek (bukan dari nama/ekstensi berkas)
+#    · gambar WAJIB bisa di-decode Pillow, lalu DI-ENCODE ULANG dari
+#      piksel menjadi JPEG bersih → script/macro/polyglot & EXIF musnah
+#    · nama berkas acak dari server; folder data/foto BUKAN folder
+#      statis & tidak pernah dieksekusi; sajian nosniff
+#    · jatah unggah per IP (anti banjir tanpa login)
+#  Folder: data/foto — di produksi ini VOLUME host (jalankan.sh me-mount
+#  data/ ke /app/data), jadi foto selamat dari ganti kontainer dan hanya
+#  gugur oleh umur 3 hari.
+import re as _re
+import secrets as _secrets
+import time as _time
+
+FOTO_DIR = Path(os.environ.get(
+    'FOTO_DIR', Path(__file__).resolve().parent.parent / 'data' / 'foto'))
+FOTO_MAKS = 2_000_000            # 2MB berkas asal (aturan Bos)
+FOTO_UMUR = 3 * 24 * 3600        # detik — hapus setelah 3 hari
+_FOTO_NAMA = _re.compile(r'^[A-Za-z0-9_-]{16,64}\.jpg$')
+_jatah_unggah: dict = {}         # ip -> [cap waktu]
+
+
+def _bersih_foto_lama():
+    """Buang foto yang umurnya lewat 3 hari (jalan tiap unggahan)."""
+    try:
+        FOTO_DIR.mkdir(parents=True, exist_ok=True)
+        kini = _time.time()
+        for f in FOTO_DIR.iterdir():
+            if f.is_file() and kini - f.stat().st_mtime > FOTO_UMUR:
+                f.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def _jatah_unggah_ok(ip: str) -> bool:
+    kini = _time.time()
+    daftar = [t for t in _jatah_unggah.get(ip, []) if kini - t < 3600]
+    if len(daftar) >= 30:
+        _jatah_unggah[ip] = daftar
+        return False
+    daftar.append(kini)
+    _jatah_unggah[ip] = daftar
+    return True
+
+
+@app.post('/api/kualitatif/unggah-foto')
+async def kualitatif_unggah_foto(request: Request,
+                                 berkas: UploadFile = File(...)):
+    ip = request.client.host if request.client else '?'
+    if not _jatah_unggah_ok(ip):
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Terlalu banyak unggahan dari jaringan ini dalam '
+                      '1 jam terakhir. Coba lagi nanti.'},
+            status_code=429)
+    data = await berkas.read(FOTO_MAKS + 1)
+    if len(data) > FOTO_MAKS:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto lebih dari 2MB — kecilkan dulu (screenshot '
+                      'ulang atau turunkan kualitas kamera), lalu coba lagi.'},
+            status_code=400)
+    kepala = data[:12]
+    jpg_png_webp = (kepala.startswith(b'\xff\xd8\xff') or
+                    kepala.startswith(b'\x89PNG\r\n\x1a\n') or
+                    (kepala[:4] == b'RIFF' and kepala[8:12] == b'WEBP'))
+    if not jpg_png_webp:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Berkas ini bukan foto JPG, PNG, atau WebP — hanya '
+                      'foto yang diterima.'},
+            status_code=400)
+    try:
+        import io as _io
+        from PIL import Image as _Image
+        with _Image.open(_io.BytesIO(data)) as im:
+            im.verify()
+        with _Image.open(_io.BytesIO(data)) as im:
+            im = im.convert('RGB')
+            im.thumbnail((1600, 1600))
+            buf = _io.BytesIO()
+            im.save(buf, 'JPEG', quality=80)
+        bersih = buf.getvalue()
+    except Exception:
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto rusak atau tidak bisa dibaca — coba foto lain.'},
+            status_code=400)
+    _bersih_foto_lama()
+    nama = _secrets.token_urlsafe(24) + '.jpg'
+    (FOTO_DIR / nama).write_bytes(bersih)
+    return {'boleh': True, 'id': nama,
+            'url': '/api/kualitatif/foto/' + nama, 'ukuran': len(bersih)}
+
+
+@app.get('/api/kualitatif/foto/{nama}')
+async def kualitatif_foto(nama: str):
+    if not _FOTO_NAMA.match(nama):
+        return JSONResponse({'boleh': False, 'sebab': 'Nama foto tidak sah.'},
+                            status_code=404)
+    f = FOTO_DIR / nama
+    if not f.is_file():
+        return JSONResponse(
+            {'boleh': False,
+             'sebab': 'Foto tidak ditemukan — mungkin sudah lewat 3 hari.'},
+            status_code=404)
+    return Response(f.read_bytes(), media_type='image/jpeg',
+                    headers={'X-Content-Type-Options': 'nosniff',
+                             'Cache-Control': 'private, max-age=3600'})
+
+
+@app.delete('/api/kualitatif/foto/{nama}')
+async def kualitatif_hapus_foto(nama: str):
+    if not _FOTO_NAMA.match(nama):
+        return JSONResponse({'boleh': False, 'sebab': 'Nama foto tidak sah.'},
+                            status_code=404)
+    (FOTO_DIR / nama).unlink(missing_ok=True)
+    return {'boleh': True}
 
 
 @app.post('/api/kualitatif/ekspor-qdpx')

@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir \
         scipy==1.15.1 \
         pandas==2.2.3 \
         openpyxl==3.1.5 \
+        Pillow==13.0.0 \
         pyreadstat==1.2.9
 
 # lapisan berubah — taruh di bawah supaya cache pip tidak kebuang
