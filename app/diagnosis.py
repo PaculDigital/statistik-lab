@@ -317,6 +317,60 @@ def periksa_spss(df: pd.DataFrame, kolom_x: list[str], kolom_y: str,
     # ── ⑥ DURBIN-WATSON ──
     dw = _durbin_watson(resid)
 
+    # ── ⑧ BEDAH "TUNJUKKAN AKIBATNYA" (perintah Boss 22Okt26) ───────────
+    # Vonis saja tidak mengajar. Untuk syarat yang GAGAL, model mahasiswa
+    # dihitung ulang dalam keadaan lain — X kembar dibuang, baris menyimpang
+    # dibuang, galat baku robust — supaya AKIBATNYA terlihat dari angkanya
+    # sendiri. Semua dari _regresi_sederhana yang sama (bukan rumus baru).
+    # Satu demo gagal TIDAK boleh menjatuhkan hasil utama → try sendiri.
+    bedah: dict[str, Any] = {}
+
+    def _ringkas(rr):
+        return [{'nama': nm, 'b': _f(b), 'p': _f(p)}
+                for nm, b, p in zip(pred, np.atleast_1d(rr['coef'])[1:],
+                                    np.atleast_1d(rr['p'])[1:])]
+
+    try:
+        if _ada(vif_maks) and vif_maks > 10 and len(pred) >= 2:
+            j = int(np.nanargmax([v if _ada(v) else -1 for v in vif]))
+            tetap = [i2 for i2 in range(len(pred)) if i2 != j]
+            rr = _regresi_sederhana(X[:, tetap], y)
+            bedah['vif'] = {
+                'buang': pred[j],
+                'dengan': _ringkas(_regresi_sederhana(X, y)),
+                'tanpa': [{'nama': pred[i2], 'b': _f(b), 'p': _f(p)}
+                          for i2, b, p in zip(
+                              tetap, np.atleast_1d(rr['coef'])[1:],
+                              np.atleast_1d(rr['p'])[1:])]}
+    except Exception:                                        # noqa: BLE001
+        pass
+    try:
+        baris_luar = sorted(set(int(i) for i in luar)
+                            | set(int(i) for i in luar_y))
+        if baris_luar and len(baris_luar) < n:
+            dibuang = set(baris_luar)
+            simpan = np.array([i2 for i2 in range(n) if i2 not in dibuang])
+            bedah['outlier'] = {
+                'baris': [i2 + 1 for i2 in baris_luar],
+                'dengan': _ringkas(_regresi_sederhana(X, y)),
+                'tanpa': _ringkas(_regresi_sederhana(X[simpan], y[simpan]))}
+    except Exception:                                        # noqa: BLE001
+        pass
+    try:
+        if hetero is False:
+            # Galat baku robust HC1: p versi "tahan sebaran tidak rata".
+            meat = (A * (resid ** 2 * (n / (n - k)))[:, None]).T @ A
+            pinv = np.linalg.pinv(A.T @ A)
+            se_r = np.sqrt(np.diag(pinv @ meat @ pinv))
+            t_r = coef / np.where(se_r > 0, se_r, np.nan)
+            p_r = 2 * (1 - st.t.cdf(np.abs(t_r), df=n - k))
+            bedah['hetero'] = {'baris': [
+                {'nama': nm, 'p_biasa': _f(pb), 'p_robust': _f(pr)}
+                for nm, pb, pr in zip(pred, np.atleast_1d(pval)[1:],
+                                      np.atleast_1d(p_r)[1:])]}
+    except Exception:                                        # noqa: BLE001
+        pass
+
     # ── ⑦ MEDIASI & MODERASI (ACC Bos 21Sep26) ──────────────────────────
     # Sebelum ini, peran Z DIBUANG dan M diperlakukan seperti X biasa →
     # mahasiswa yang memilih kartu Mediasi/Moderasi TIDAK dapat hasilnya.
@@ -360,6 +414,7 @@ def periksa_spss(df: pd.DataFrame, kolom_x: list[str], kolom_y: str,
         'outlier': {'sisa': [int(i) + 1 for i in luar], 'y': [int(i) + 1 for i in luar_y],
                     'n_sisa': int(len(luar)), 'n_y': int(len(luar_y))},
         'dw': _f(dw),
+        'bedah': bedah,
         # ── BAHAN GAMBAR (Tahap 2, ACC Bos 20Sep26) ────────────────────────
         # Sisa mentah DIPAKAI untuk menggambar scatter ZPRED × ZRESID
         # di browser — jadi grafiknya dari DATA USER, bukan contoh.
@@ -471,6 +526,25 @@ def periksa_pls(df: pd.DataFrame, konstruk: dict[str, list[str]],
             'lulus_ave': _ada(ave) and ave >= 0.50,
             'lulus_cr': _ada(al) and al >= 0.70,
         })
+        # Bedah PLS (Boss 22Okt26): kalau konstruk ini bermasalah, tunjukkan
+        # angka TANPA butir terlemahnya — mahasiswa melihat sendiri akibat
+        # satu butir lemah menarik turun AVE/CR satu konstruk.
+        if len(ada) >= 3 and (not hasil[-1]['lulus_muat']
+                              or not hasil[-1]['lulus_ave']):
+            try:
+                lemah = min((m for m in muat if _ada(m['muat'])),
+                            key=lambda m: m['muat'])
+                item2 = item.drop(columns=[lemah['butir']])
+                skor2 = item2.sum(axis=1).to_numpy(dtype=float)
+                muat2 = [_r(item2[c].to_numpy(dtype=float), skor2)
+                         for c in item2.columns]
+                ave2 = float(np.nanmean([v * v for v in muat2 if _ada(v)]))
+                hasil[-1]['bedah'] = {
+                    'butir': lemah['butir'],
+                    'ave_tanpa': _f(ave2),
+                    'cr_tanpa': _f(_alpha(item2.to_numpy(dtype=float)))}
+            except Exception:                                # noqa: BLE001
+                pass
 
     # VIF inner: seberapa kembar skor antar konstruk
     skor_all = {}

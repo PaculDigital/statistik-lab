@@ -226,6 +226,15 @@
 {% endblock %}
 
 {% block skrip %}
+<style>
+#area-cetak { display: none; }
+@media print {
+  body.mode-cetak > *:not(#area-cetak) { display: none !important; }
+  body.mode-cetak #area-cetak { display: block !important; }
+  #area-cetak table { border-collapse: collapse; width: 100%; margin: 6px 0 12px; }
+  #area-cetak th, #area-cetak td { border: 1px solid #888; padding: 4px 6px; font-size: 12px; text-align: left; }
+}
+</style>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
    DIAGNOSIS DATA — sisi tampilan. SEMUA hitungan ada di server.
@@ -234,6 +243,10 @@
    ═══════════════════════════════════════════════════════════════════════ */
 let ALAT = 'spss';
 let KUNCI = null;
+let KECUALI = [];        // baris outlier yang dikeluarkan dari pemeriksaan (nomor berkas)
+let LOG_KECUALI = [];    // [{baris:[...], alasan:'...'}] — tercetak di Laporan Layak Olah
+let KIRIM_AKTIF = null;  // payload periksa terakhir, untuk hitung ulang
+let HASIL_AKTIF = null;  // respons periksa terakhir, untuk menyusun laporan
 let KOLOM = [];
 let nX = 0;
 
@@ -278,6 +291,7 @@ document.getElementById('berkas').addEventListener('change', async function () {
     const d = await r.json();
     if (!r.ok) { pesan('pesan-unggah', d.detail || 'Berkasnya belum bisa dibaca.', 'galat'); return; }
     KUNCI = d.kunci;
+    KECUALI = []; LOG_KECUALI = [];
     KOLOM = d.kolom;
     document.getElementById('pesan-unggah').innerHTML = '';
     document.getElementById('nama-berkas').textContent = d.nama_berkas;
@@ -561,6 +575,304 @@ function kotakNasihat(n, nomor) {
     '<\/div>';
 }
 
+/* ════ DUA ZONA + BEDAH + LAPORAN (perintah Boss 22Okt26) ════════════
+   Zona 1 = UJI SYARAT (datanya layak diolah?) — Zona 2 = UJI HIPOTESIS
+   (apa jawaban penelitiannya?). Mahasiswa TIDAK boleh mencampur dua
+   fungsi ini; makanya halaman memisahkannya secara fisik, dengan kotak
+   wajib "hasil boleh tidak signifikan" menjaga Zona 2. */
+function spandukZona1() {
+  return '<div style="margin:22px 0 14px;padding:14px 16px;border-radius:12px;background:#EEF3F6;border:1px solid #C9D8E0">' +
+    '<span class="eyebrow" style="color:#33617D">Zona 1 — Uji Syarat<\/span>' +
+    '<p style="margin:4px 0 0"><strong>Pertanyaannya: apakah datamu layak diolah?<\/strong> ' +
+    'Pemeriksaan di zona ini tentang kualitas datanya, bukan tentang hipotesis. ' +
+    'Zona ini memang sebaiknya lulus semua — supaya angka di Zona 2 bisa dipercaya.<\/p><\/div>';
+}
+function spandukJembatan() {
+  return '<div style="margin:26px 0 14px;padding:16px;border-radius:12px;background:linear-gradient(135deg,#FFF8E7,#FFEFCC);border:1px solid #EDD9A3">' +
+    '<p style="margin:0;font-size:1.02rem"><strong>Syarat lulus ≠ hipotesis pasti signifikan.<\/strong> ' +
+    'Dua zona ini menjawab dua pertanyaan yang berbeda. Yang dibetulkan di Zona 1 adalah ' +
+    '<em>syaratnya<\/em> — hasil di Zona 2 tetap apa adanya.<\/p><\/div>';
+}
+function kotakWajibHipotesis() {
+  return '<div class="kartu" style="margin-bottom:13px;border-left:4px solid #B5762A">' +
+    '<h3 style="margin:0 0 6px">Hasil boleh TIDAK signifikan<\/h3>' +
+    '<p style="margin:0 0 6px">Tidak signifikan bukan kegagalan dan bukan kesalahan data. Artinya: ' +
+    'dengan data ini, pengaruhnya <strong>belum terbukti<\/strong> — hipotesismu ditolak, dan itu ' +
+    'jawaban penelitian yang sah. Tetap laporkan apa adanya, lalu bahas kemungkinan penyebabnya di Bab IV.<\/p>' +
+    '<p style="margin:0">Mengeluarkan outlier atau mengutak-atik data <strong>demi membuat hasil ' +
+    'jadi signifikan adalah manipulasi<\/strong>. Yang dibetulkan di Zona 1 adalah syarat datanya — ' +
+    'bukan hasil hipotesismu.<\/p><\/div>';
+}
+function spandukZona2() {
+  return '<div style="margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#F1EEE7;border:1px solid #D8CFC2">' +
+    '<span class="eyebrow">Zona 2 — Uji Hipotesis<\/span>' +
+    '<p style="margin:4px 0 0"><strong>Pertanyaannya: apa jawaban penelitianmu?<\/strong><\/p><\/div>' +
+    kotakWajibHipotesis();
+}
+/* Tabel banding "dengan vs tanpa" untuk demo akibat */
+function tabelBedah(b) {
+  const tanpa = {};
+  (b.tanpa || []).forEach(r => { tanpa[r.nama] = r; });
+  return tabelBaris(['Variabel', 'B sekarang', 'p sekarang', 'B sesudah', 'p sesudah'],
+    (b.dengan || []).map(r => {
+      const t = tanpa[r.nama];
+      return [r.nama, angka(r.b), angka(r.p),
+              t ? angka(t.b) : '— (dikeluarkan)', t ? angka(t.p) : ''];
+    }));
+}
+function kotakBedah(id, isi) {
+  return '<div style="margin-top:10px">' +
+    '<button type="button" class="tb" onclick="var e=document.getElementById(\'' + id +
+      '\');e.hidden=!e.hidden;">Tunjukkan akibatnya<\/button>' +
+    '<div id="' + id + '" hidden style="margin-top:9px">' + isi + '<\/div><\/div>';
+}
+function bedahVifHtml(b) {
+  if (!b) return '';
+  return kotakBedah('bedah-vif',
+    '<p style="margin:0 0 4px;font-size:.92rem">Kalau <strong>' + b.buang + '<\/strong> dikeluarkan dari model ' +
+    '(VIF-nya paling tinggi), angka variabel lain berubah begini:<\/p>' + tabelBedah(b) +
+    '<p style="margin:8px 0 0;font-size:.92rem">Perhatikan kolom <strong>p<\/strong>: pengaruh yang tadinya ' +
+    'tertutup bisa muncul — bukan karena datanya berubah, tapi karena tidak lagi berebut menjelaskan ' +
+    'hal yang sama dengan kembarannya.<\/p>');
+}
+function bedahHeteroHtml(b) {
+  if (!b) return '';
+  return kotakBedah('bedah-hetero',
+    '<p style="margin:0 0 4px;font-size:.92rem">Nilai p dihitung ulang memakai galat baku yang tahan ' +
+    'sebaran tidak rata (robust):<\/p>' +
+    tabelBaris(['Variabel', 'p (galat baku biasa)', 'p (robust)'],
+      (b.baris || []).map(r => [r.nama, angka(r.p_biasa), angka(r.p_robust)])) +
+    '<p style="margin:8px 0 0;font-size:.92rem">Kesimpulan yang berubah antara dua kolom ini artinya ' +
+    'kesimpulanmu rapuh — ia bergantung pada sebaran sisa yang tidak rata.<\/p>');
+}
+function bedahOutlierHtml(b) {
+  if (!b) return '';
+  return kotakBedah('bedah-outlier',
+    '<p style="margin:0 0 4px;font-size:.92rem">Kalau ' + (b.baris || []).length +
+    ' baris menyimpang itu dikeluarkan, hasil modelmu berubah begini:<\/p>' + tabelBedah(b) +
+    '<p style="margin:8px 0 0;font-size:.92rem">Demo ini untuk <strong>melihat dampaknya<\/strong>. Mengeluarkan baris ' +
+    'hanya sah kalau ada sebab jujur (salah input, diisi asal, bukan responden sasaran) — dan wajib lewat ' +
+    'panel di bawah supaya tercatat di laporan. Mengeluarkan baris demi membuat p signifikan = manipulasi.<\/p>');
+}
+function panelKecualiHtml(barisOut, pengecualian) {
+  let h = '';
+  if (pengecualian && pengecualian.jumlah) {
+    h += '<div class="catatan" style="margin-top:10px">Pemeriksaan ini <strong>sudah mengeluarkan ' +
+      pengecualian.jumlah + ' baris<\/strong>: ' + pengecualian.baris.join(', ') +
+      '. Pengeluarannya tercatat dan tercetak di Laporan Layak Olah.<\/div>';
+  }
+  if (!barisOut.length) return h;
+  h += '<div style="margin-top:12px;border-top:1px dashed #D8CFC2;padding-top:10px">' +
+    '<p style="margin:0 0 6px"><strong>Keluarkan baris menyimpang dari pemeriksaan<\/strong><\/p>' +
+    '<p style="margin:0 0 8px;font-size:.9rem;color:#6B6259">Centang baris yang sesudah kamu periksa ' +
+    'memang keliru. Tulis alasannya — alasan ini <strong>tercetak di Laporan Layak Olah<\/strong>, ' +
+    'terbuka untuk dosenmu.<\/p>' +
+    barisOut.map(b => '<label style="display:inline-block;margin:0 10px 6px 0;font-size:.92rem">' +
+      '<input type="checkbox" class="kotak-kecuali" value="' + b + '" checked> Baris ' + b + '<\/label>').join('') +
+    '<textarea id="alasan-kecuali" rows="2" style="width:100%;margin-top:6px" ' +
+      'placeholder="Alasan mengeluarkan baris ini (wajib — tercetak di laporan)…"><\/textarea>' +
+    '<button type="button" class="tb tb-utama" style="margin-top:8px" ' +
+      'onclick="hitungUlangTanpaOutlier()">Hitung ulang tanpa baris tercentang<\/button><\/div>';
+  return h;
+}
+async function hitungUlangTanpaOutlier() {
+  const alasanEl = document.getElementById('alasan-kecuali');
+  const alasan = alasanEl ? (alasanEl.value || '').trim() : '';
+  const baru = Array.from(document.querySelectorAll('.kotak-kecuali:checked'))
+    .map(c => parseInt(c.value, 10)).filter(v => !isNaN(v));
+  if (!baru.length) { alert('Centang dulu baris yang mau dikeluarkan.'); return; }
+  if (alasan.length < 5) {
+    alert('Tulis dulu alasannya (wajib) — alasan ini tercetak di laporan.');
+    if (alasanEl) alasanEl.focus();
+    return;
+  }
+  const tambahan = baru.filter(b => KECUALI.indexOf(b) === -1);
+  if (tambahan.length) LOG_KECUALI.push({ baris: tambahan, alasan: alasan });
+  KECUALI = Array.from(new Set(KECUALI.concat(baru))).sort((x, y) => x - y);
+  const kirim = Object.assign({}, KIRIM_AKTIF, { buang_baris: KECUALI.slice() });
+  try {
+    const r = await fetch('/api/diagnosis/periksa', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kirim) });
+    const d = await r.json();
+    if (!r.ok) { alert(d.detail || 'Belum bisa dihitung ulang.'); return; }
+    gambarHasil(d);
+  } catch (e) { alert('Koneksi ke server terputus. Coba lagi ya.'); }
+}
+function bedahPlsHtml(k) {
+  if (!k.bedah) return '';
+  return '<div class="catatan" style="margin-top:10px"><strong>Tunjukkan akibatnya:<\/strong> tanpa butir ' +
+    '<strong>' + k.bedah.butir + '<\/strong> (yang terlemah), AVE variabel ini berubah ' +
+    angka(k.ave) + ' → <strong>' + angka(k.bedah.ave_tanpa) + '<\/strong> dan reliabilitasnya ' +
+    angka(k.cr) + ' → <strong>' + angka(k.bedah.cr_tanpa) + '<\/strong>. Satu butir lemah menarik ' +
+    'turun satu variabel — itu sebabnya butir seperti ini diperbaiki atau dibuang ' +
+    '<em>dengan dicatat<\/em>, bukan diam-diam.<\/div>';
+}
+/* Zona 2 SPSS: tabel hipotesis (data koef yang sama, dibingkai ulang) */
+function tabelHipotesisHtml(d) {
+  if (!d.koef || !d.koef.length) return '';
+  const baris = d.koef.map(k => {
+    const tetap = k.nama === '(Konstanta)';
+    const putusan = tetap ? '—'
+      : (k.p !== null && k.p !== undefined && k.p < 0.05
+          ? '<strong>Signifikan<\/strong>'
+          : 'Tidak signifikan — sah, tetap laporkan');
+    return [(tetap ? k.nama : k.nama + ' → ' + d.y), angka(k.b), angka(k.t), angka(k.p), putusan];
+  });
+  return '<div class="kartu" style="margin-bottom:13px">' +
+    '<h3 style="margin:0 0 6px;font-size:1rem">Pengaruh tiap variabel ke ' + d.y + '<\/h3>' +
+    tabelBaris(['Jalur', 'B', 't', 'p', 'Putusan'], baris) +
+    '<p style="margin:9px 0 0;font-size:.92rem"><strong>R² = ' + angka(d.r2) + '<\/strong> ' +
+    '(terkoreksi ' + angka(d.r2_adj) + ') — ' + angka(d.r2 * 100, 1) + '% keragaman ' + d.y +
+    ' dijelaskan model ini, dari ' + d.n + ' responden.<\/p><\/div>';
+}
+/* Zona 2 PLS: hubungan menuju konstruk Y (korelasi skor dari mesin) */
+function jalurPlsHtml(d) {
+  const y = d.y_konstruk;
+  const pasangan = (d.fornell || []).filter(
+    f => (f.pasangan || '').split(' ↔ ').indexOf(y) !== -1);
+  let isi = '<p style="margin:0 0 4px;color:#6B6259">Hubungan tiap variabel dengan <strong>' +
+    y + '<\/strong> (korelasi skor konstruk, dihitung dari datamu):<\/p>';
+  if (pasangan.length) {
+    isi += tabelBaris(['Jalur', 'Korelasi'], pasangan.map(f => {
+      const lain = f.pasangan.split(' ↔ ').filter(n => n !== y)[0] || f.pasangan;
+      return [lain + ' → ' + y, angka(f.korelasi, 3)];
+    }));
+  } else {
+    isi += '<p style="margin:0">Belum ada pasangan yang bisa ditampilkan.<\/p>';
+  }
+  isi += '<p style="margin:9px 0 0;font-size:.92rem">Di SmartPLS, putusan signifikan/tidaknya jalur ' +
+    'memakai <strong>bootstrapping<\/strong> — jalankan di SmartPLS dari data yang sama. Apa pun hasilnya ' +
+    'nanti: jalur yang tidak signifikan tetap dilaporkan dan dibahas, sama seperti di SPSS.<\/p>';
+  return '<div class="kartu" style="margin-bottom:13px">' +
+    '<h3 style="margin:0 0 6px;font-size:1rem">Hubungan menuju ' + y + '<\/h3>' + isi + '<\/div>';
+}
+/* ── LAPORAN DATA LAYAK OLAH ─────────────────────────────────────── */
+function seksiLaporanHtml(d) {
+  const st = d.status_laporan;
+  if (st === 'layak' || st === 'layak_catatan') {
+    return '<div class="kartu" style="margin-top:22px;border-left:4px solid #4E8A5A">' +
+      '<h3 style="margin:0 0 6px">Laporan Data Layak Olah<\/h3>' +
+      '<p style="margin:0 0 10px">Zona 1 bersih — datamu dinyatakan <strong>' +
+      (st === 'layak' ? 'LAYAK' : 'LAYAK DENGAN CATATAN') + '<\/strong>. Unduh laporannya untuk ' +
+      'dibawa ke bimbingan dan dilampirkan sebagai bukti pendukung Bab 4. Di dalamnya tercetak ' +
+      'sidik jari data, semua angka uji syarat, hasil Zona 2, dan setiap baris yang pernah ' +
+      'dikeluarkan beserta alasannya.<\/p>' +
+      (st === 'layak_catatan'
+        ? '<p style="margin:0 0 10px;font-size:.92rem">Catatan: Durbin-Watson di luar rentang ' +
+          '1,5–2,5. Pada data kuesioner potong-lintang ini lazim ditoleransi — dan tetap ' +
+          'dicatat terbuka di laporan.<\/p>' : '') +
+      '<button type="button" class="tb tb-utama" onclick="cetakLaporan()">Cetak / simpan PDF laporan<\/button><\/div>';
+  }
+  return '<div class="kartu" style="margin-top:22px;border-left:4px solid #B5762A">' +
+    '<h3 style="margin:0 0 6px">Laporan Layak Olah belum terbit<\/h3>' +
+    '<p style="margin:0">Selama masih ada syarat merah sungguhan di Zona 1, laporan tidak ' +
+    'diterbitkan — supaya laporan itu tetap berarti "data ini bersih". Yang bisa kamu bawa ' +
+    'sekarang adalah daftar perbaikannya: kartu-kartu "Cara membetulkannya" di halaman ini. ' +
+    'Betulkan, unggah ulang, periksa lagi — begitu Zona 1 hijau, tombol unduh laporan menyala di sini.<\/p><\/div>';
+}
+function tabelCetak(judul, baris) {
+  return '<table><thead><tr>' + judul.map(j => '<th>' + j + '<\/th>').join('') +
+    '<\/tr><\/thead><tbody>' + baris.map(r => '<tr>' + r.map(c => '<td>' + c + '<\/td>').join('') +
+    '<\/tr>').join('') + '<\/tbody><\/table>';
+}
+function susunLaporanHtml(d) {
+  const tgl = new Date().toLocaleDateString('id-ID',
+    { day: 'numeric', month: 'long', year: 'numeric' });
+  const alat = d.mode === 'pls' ? 'SmartPLS' : 'SPSS';
+  let h = '<div style="font-family:Arial,sans-serif;color:#000;max-width:720px;margin:0 auto">' +
+    '<h1 style="font-size:19px;margin:0 0 2px">Laporan Data Layak Olah<\/h1>' +
+    '<p style="margin:0 0 2px;font-size:12px">Diagnosis Data — statistik.bikinaja.id · Alat: ' +
+    alat + ' · Tanggal periksa: ' + tgl + '<\/p>' +
+    '<p style="margin:0 0 6px;font-size:12px">Status: <strong>' +
+    (d.status_laporan === 'layak' ? 'LAYAK' : 'LAYAK DENGAN CATATAN') +
+    '<\/strong> · Responden terperiksa: ' + d.n +
+    ' · Sidik jari data: <strong>' + (d.sidik_jari || '—') + '<\/strong><\/p>';
+  h += '<h2 style="font-size:14px;margin:14px 0 4px">Zona 1 — Uji Syarat<\/h2>';
+  if (d.mode !== 'pls') {
+    const n = d.normalitas || {}, het = d.hetero || {}, out = d.outlier || {}, lin = d.linearitas || {};
+    const baris = [
+      ['Normalitas sisa', 'KS p ' + angka(n.ks_p) + ' · Shapiro p ' + angka(n.shapiro_p), 'mayoritas p > 0,05', n.lulus ? 'Lulus' : 'Belum lulus'],
+      ['Heteroskedastisitas (Glejser)', 'p terkecil ' + angka(het.glejser_p), '> 0,05', het.lulus ? 'Lulus' : 'Belum lulus'],
+      ['Multikolinearitas (VIF)', 'VIF tertinggi ' + angka(d.vif_maks, 2), '≤ 10', (d.vif_maks || 0) <= 10 ? 'Lulus' : 'Belum lulus'],
+      ['Linearitas', 'p ' + angka(lin.p), '> 0,05', lin.lulus ? 'Lulus' : 'Belum lulus'],
+      ['Outlier', 'menyimpang (sisa) ' + (out.n_sisa || 0) + ' baris · Y ekstrem ' + (out.n_y || 0) + ' baris', 'Y ekstrem < 3 baris', (out.n_y || 0) < 3 ? 'Lulus' : 'Belum lulus']];
+    if (d.dw !== null && d.dw !== undefined) {
+      baris.push(['Autokorelasi (Durbin-Watson)', angka(d.dw, 3), '1,5 – 2,5',
+        (d.dw >= 1.5 && d.dw <= 2.5) ? 'Lulus' : 'Catatan']);
+    }
+    h += tabelCetak(['Syarat', 'Angka uji', 'Ambang', 'Vonis'], baris);
+    h += '<h2 style="font-size:14px;margin:14px 0 4px">Zona 2 — Uji Hipotesis<\/h2>';
+    h += tabelCetak(['Jalur', 'B', 't', 'p', 'Putusan'],
+      (d.koef || []).filter(k => k.nama !== '(Konstanta)').map(k => [
+        k.nama + ' → ' + d.y, angka(k.b), angka(k.t), angka(k.p),
+        (k.p !== null && k.p !== undefined && k.p < 0.05) ? 'Signifikan' : 'Tidak signifikan']));
+    h += '<p style="font-size:12px;margin:0">R² = ' + angka(d.r2) + ' (terkoreksi ' +
+      angka(d.r2_adj) + '). Hasil tidak signifikan adalah temuan yang sah dan tetap dilaporkan.<\/p>';
+  } else {
+    const barisK = (d.konstruk || []).map(k => {
+      const terendah = (k.muat || []).reduce(
+        (a, m) => (a === null || (m.muat || 0) < a) ? (m.muat || 0) : a, null);
+      return ['Variabel ' + k.nama,
+        'AVE ' + angka(k.ave) + ' · CR ' + angka(k.cr) + ' · loading terendah ' + angka(terendah),
+        'AVE ≥ 0,50 · CR ≥ 0,70 · loading ≥ 0,70',
+        (k.lulus_muat && k.lulus_ave && k.lulus_cr) ? 'Lulus' : 'Belum lulus'];
+    });
+    if (d.vif_inner_maks !== null && d.vif_inner_maks !== undefined) {
+      barisK.push(['VIF antar-variabel', 'tertinggi ' + angka(d.vif_inner_maks, 2), '≤ 5',
+        d.vif_inner_maks <= 5 ? 'Lulus' : 'Belum lulus']);
+    }
+    if (d.fornell && d.fornell.length) {
+      barisK.push(['Fornell-Larcker', 'semua pasangan diperiksa', 'korelasi ≤ akar AVE',
+        d.fornell_ada_masalah ? 'Belum lulus' : 'Lulus']);
+    }
+    if (d.htmt && d.htmt.length) {
+      barisK.push(['HTMT', 'semua pasangan diperiksa', '< 0,85 (ketat) / 0,90',
+        d.htmt_ada_masalah ? 'Belum lulus' : 'Lulus']);
+    }
+    h += tabelCetak(['Syarat', 'Angka uji', 'Ambang', 'Vonis'], barisK);
+    h += '<h2 style="font-size:14px;margin:14px 0 4px">Zona 2 — Hubungan Antar-Variabel<\/h2>';
+    const y = d.y_konstruk;
+    const pasangan = (d.fornell || []).filter(
+      f => (f.pasangan || '').split(' ↔ ').indexOf(y) !== -1);
+    h += tabelCetak(['Jalur', 'Korelasi skor konstruk'], pasangan.map(f => {
+      const lain = f.pasangan.split(' ↔ ').filter(nm => nm !== y)[0] || f.pasangan;
+      return [lain + ' → ' + y, angka(f.korelasi, 3)];
+    }));
+    h += '<p style="font-size:12px;margin:0">Signifikansi jalur (bootstrapping) dihitung di SmartPLS ' +
+      'dari data yang sama. Jalur tidak signifikan adalah temuan sah dan tetap dilaporkan.<\/p>';
+  }
+  h += '<h2 style="font-size:14px;margin:14px 0 4px">Pengecualian Baris<\/h2>';
+  if (LOG_KECUALI.length) {
+    h += LOG_KECUALI.map(e => '<p style="margin:0 0 4px;font-size:12px">Baris dikeluarkan: ' +
+      '<strong>' + e.baris.join(', ') + '<\/strong> — alasan peneliti: “' + aman(e.alasan) + '”<\/p>').join('');
+  } else if (d.pengecualian && d.pengecualian.jumlah) {
+    h += '<p style="margin:0;font-size:12px">' + d.pengecualian.jumlah +
+      ' baris dikeluarkan: ' + d.pengecualian.baris.join(', ') + '<\/p>';
+  } else {
+    h += '<p style="margin:0;font-size:12px">Tidak ada baris yang dikeluarkan dari pemeriksaan ini.<\/p>';
+  }
+  h += '<p style="font-size:11px;margin-top:18px">Verifikasi: unggah berkas data yang sama ke ' +
+    'Diagnosis Data (statistik.bikinaja.id) dengan peran yang sama — sidik jari dan angka-angkanya ' +
+    'harus identik dengan laporan ini. Laporan ini bukti pendukung; angka resmi Bab 4 tetap hasil ' +
+    'olahan SPSS/SmartPLS peneliti.<\/p><\/div>';
+  return h;
+}
+function cetakLaporan() {
+  const d = HASIL_AKTIF;
+  if (!d) return;
+  let area = document.getElementById('area-cetak');
+  if (!area) {
+    area = document.createElement('div');
+    area.id = 'area-cetak';
+    document.body.appendChild(area);
+  }
+  area.innerHTML = susunLaporanHtml(d);
+  document.body.classList.add('mode-cetak');
+  window.onafterprint = function () { document.body.classList.remove('mode-cetak'); };
+  window.print();
+}
+
 function gambarHasil(d) {
   const wadah = document.getElementById('kartu-hasil');
   let h = '';
@@ -581,21 +893,17 @@ function gambarHasil(d) {
         ? '. Tidak semua harus dibetulkan — lihat penjelasan tiap bagian.'
         : '. Datamu siap diolah lebih lanjut.') +
     '<\/p><\/div>';
+  HASIL_AKTIF = d;
+  if (d.sidik_jari) {
+    h += '<div class="catatan" style="margin-bottom:16px">Sidik jari data: ' +
+      '<strong>' + d.sidik_jari + '<\/strong> — kode ini sama kalau berkas dan ' +
+      'angkanya sama, dan berubah kalau datanya berubah. Kode ini tercetak ' +
+      'di Laporan Layak Olah sebagai bukti datanya tidak diganti sesudah diperiksa.<\/div>';
+  }
 
   /* ══════════ MODE SPSS ══════════ */
   if (d.mode !== 'pls') {
-    /* Model ringkas */
-    if (d.koef && d.koef.length) {
-      h += kartuUji('Model yang diperiksa', true,
-        '<p style="margin:0 0 4px;color:#6B6259">' +
-        'Prediktor: ' + (d.prediktor || []).join(', ') + ' · Y: ' + d.y + '<\/p>' +
-        tabelBaris(['Prediktor', 'B', 't', 'p'],
-          d.koef.map(k => [k.nama, angka(k.b), angka(k.t), angka(k.p)])) +
-        '<p style="margin:9px 0 0;font-size:.92rem">' +
-        '<strong>R² = ' + angka(d.r2) + '<\/strong> (R² terkoreksi ' + angka(d.r2_adj) + ') — ' +
-        'artinya ' + angka(d.r2 * 100, 1) + '% keragaman Y bisa dijelaskan model. ' +
-        '<strong>' + (d.prediktor || []).length + '<\/strong> prediktor dianalisis dari ' + d.n + ' responden.<\/p>');
-    }
+    h += spandukZona1();
 
     /* ① Normalitas */
     const n = d.normalitas || {};
@@ -638,6 +946,7 @@ function gambarHasil(d) {
         'makin melebar seperti corong, itu heteroskedastisitas.<\/p>' +
       '<p style="margin:7px 0 0;font-size:.92rem">' +
       'Nilai p di bawah 0,05 artinya sebaran sisa tidak rata — ada yang perlu diperiksa.<\/p>' +
+      bedahHeteroHtml(d.bedah && d.bedah.hetero) +
       catatanTitik(d.n ? d.n.length : 0));
 
     /* ③ Multikolinearitas */
@@ -647,7 +956,8 @@ function gambarHasil(d) {
       '<p style="margin:0;color:#6B6259">Apakah X saling kembar.<\/p>' +
       (vif.length ? tabelBaris(['Prediktor', 'VIF'],
         vif.map(v => [v.nama, angka(v.vif, 2)])) : '') +
-      '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman; di atas 10 perlu ditangani.<\/p>');
+      '<p style="margin:9px 0 0;font-size:.92rem">VIF di bawah 5 umumnya aman; di atas 10 perlu ditangani.<\/p>' +
+      bedahVifHtml(d.bedah && d.bedah.vif));
 
     /* ④ Linearitas */
     if (d.linearitas) {
@@ -667,17 +977,25 @@ function gambarHasil(d) {
           'hubungannya tidak lurus.<\/p>');
     }
 
-    /* ⑤ Outlier */
+    /* ⑤ Outlier — nomor baris ASLI dari mesin, sudah diterjemahkan
+       server ke nomor baris berkas. Di sinilah penanganan outlier oleh
+       mahasiswa tinggal (Zona 1) — tercatat, beralasan, tercetak. */
     const out = d.outlier || {};
-    h += kartuUji('Data menyimpang jauh', (out.n_y || 0) < 3,
-      '<p style="margin:0;color:#6B6259">Responden yang jawabannya jauh berbeda dari yang lain.<\/p>' +
+    const barisOut = Array.from(new Set(
+      [].concat(out.sisa || [], out.y || []))).sort((x, y) => x - y);
+    h += kartuUji('Data menyimpang jauh (outlier)', (out.n_y || 0) < 3,
+      '<p style="margin:0;color:#6B6259">Responden yang jawabannya jauh berbeda ' +
+      'dari pola umum. Nomor = urutan baris di berkasmu.<\/p>' +
       tabelBaris(['Yang ditemukan', 'Jumlah'],
-        [['Menyimpang di Y', (out.n_y || 0) + ' titik'],
-         ['Menyimpang di X', (out.n_x || 0) + ' titik']]) +
-      '<p style="margin:9px 0 0;font-size:.92rem">' +
-      (out.batas_atas !== undefined
-        ? 'Batas wajar Y: ' + angka(out.batas_bawah, 2) + ' sampai ' + angka(out.batas_atas, 2) + '.'
-        : '') + '<\/p>');
+        [['Menyimpang menurut sisa model', (out.n_sisa || 0) + ' baris'],
+         ['Nilai Y sangat ekstrem', (out.n_y || 0) + ' baris']]) +
+      (barisOut.length
+        ? '<p style="margin:9px 0 0;font-size:.92rem">Barisnya: <strong>' +
+          barisOut.join(', ') + '<\/strong><\/p>'
+        : '<p style="margin:9px 0 0;font-size:.92rem">Tidak ada baris yang ' +
+          'menyimpang jauh.<\/p>') +
+      bedahOutlierHtml(d.bedah && d.bedah.outlier) +
+      panelKecualiHtml(barisOut, d.pengecualian));
 
     /* ⑥ Durbin-Watson */
     if (d.dw !== null && d.dw !== undefined) {
@@ -688,6 +1006,7 @@ function gambarHasil(d) {
     }
   } else {
     /* ══════════ MODE SmartPLS ══════════ */
+    h += spandukZona1();
     (d.konstruk || []).forEach(function (k) {
       const muat = k.muat || [];
       const lemah = muat.filter(function (m) { return (m.muat || 0) < 0.7; });
@@ -708,7 +1027,8 @@ function gambarHasil(d) {
           ? '<p style="margin:9px 0 0;font-size:.92rem">' + lemah.length +
             ' butir di bawah 0,70: ' + lemah.map(function (m) { return m.butir; }).join(', ') +
             '. Lihat cara membetulkannya di bawah.<\/p>'
-          : '<p style="margin:9px 0 0;font-size:.92rem">Semua butir sudah kuat.<\/p>'));
+          : '<p style="margin:9px 0 0;font-size:.92rem">Semua butir sudah kuat.<\/p>') +
+        bedahPlsHtml(k));
     });
 
     if (d.vif_inner && d.vif_inner.length) {
@@ -748,6 +1068,15 @@ function gambarHasil(d) {
         'mirip — pertimbangkan menggabung butirnya atau buang salah satu.<\/p>');
     }
   }
+
+  /* ── JEMBATAN + ZONA 2 (Boss 22Okt26) ──────────────────────────────
+     Sesudah Zona 1 dan sebelum hubungan lanjutan (mediasi/moderasi —
+     itu pun bagian Zona 2), mahasiswa WAJIB melewati kalimat jembatan
+     dan kotak "boleh tidak signifikan". */
+  h += spandukJembatan();
+  h += spandukZona2();
+  if (d.mode !== 'pls') { h += tabelHipotesisHtml(d); }
+  else { h += jalurPlsHtml(d); }
 
   /* ══════════ MEDIASI & MODERASI (ACC Bos 21Sep26) ══════════
      Server sudah mengirim semua angkanya di kunci `kaitan` (modul
@@ -898,8 +1227,10 @@ function gambarHasil(d) {
   /* ══════════ NASIHAT — datang dari server ══════════ */
   const masalah = d.masalah || [];
   if (masalah.length) {
-    h += '<h2 style="margin:26px 0 4px">Cara membetulkannya<\/h2>' +
-         '<p style="margin:0 0 14px;color:#6B6259">Satu per satu, mulai dari yang paling perlu.<\/p>';
+    h += '<h2 style="margin:26px 0 4px">Cara membetulkannya — perbaikan untuk Zona 1<\/h2>' +
+         '<p style="margin:0 0 14px;color:#6B6259">Ini daftar perbaikan UJI SYARAT dari Zona 1. ' +
+         'Membetulkan syarat membuat angkanya bisa dipercaya — bukan untuk mengubah hasil Zona 2. ' +
+         'Satu per satu, mulai dari yang paling perlu.<\/p>';
     masalah.forEach(function (m, i) { h += kotakNasihat(m.nasihat, i + 1); });
   } else {
     h += '<div class="kartu" style="margin-top:20px;border-left:4px solid #4E8A5A">' +
@@ -908,6 +1239,8 @@ function gambarHasil(d) {
       'Lanjutkan ke analisis di ' + (d.mode === 'pls' ? 'SmartPLS' : 'SPSS') + ' ya. ' +
       'Kalau nanti hasilnya berbeda dari harapan, unggah lagi ke sini.<\/p><\/div>';
   }
+
+  h += seksiLaporanHtml(d);
 
   wadah.innerHTML = h;
   wadah.hidden = false;
@@ -1059,6 +1392,8 @@ async function periksa() {
     if (!target) { pesan('pesan-periksa', 'Tunjuk dulu variabel yang mau dijelaskan.', 'galat'); return; }
     kirim.konstruk = konstruk; kirim.kolom_y_konstruk = target;
   }
+  if (ALAT === 'spss' && KECUALI.length) kirim.buang_baris = KECUALI.slice();
+  KIRIM_AKTIF = kirim;
   pesan('pesan-periksa', 'Sedang memeriksa…');
   const t = document.getElementById('tombol-periksa');
   t.disabled = true;
@@ -1137,6 +1472,7 @@ async function pakaiContoh(rasa) {
        sungguhan (baca fungsi unggah di atas), supaya tidak ada dua jalan
        berbeda yang bisa saling menyimpang. */
     KUNCI = d.kunci;
+    KECUALI = []; LOG_KECUALI = [];
     KOLOM = d.kolom;
     document.getElementById('pesan-unggah').innerHTML = '';
     document.getElementById('nama-berkas').textContent = nama + ' — data contoh';

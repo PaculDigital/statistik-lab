@@ -1445,6 +1445,17 @@ def _hias_hasil(r: dict, mode: str) -> dict:
     r['nasihat_semua'] = {k: nasihat.ambil(k, mode)
                           for k in nasihat.daftar_kode(mode)}
     r['mode'] = mode
+    # ── STATUS LAPORAN LAYAK OLAH (Boss 22Okt26) ────────────────────────
+    # Laporan hanya terbit bila Zona 1 (uji syarat) bersih. Satu-satunya
+    # catatan yang ditoleransi: 'dw' (autokorelasi pada data kuesioner
+    # potong-lintang lazim tidak kritis) — tetap TERCETAK sebagai catatan,
+    # tidak disembunyikan. Masalah lain apa pun → 'belum'.
+    if not kode_masalah:
+        r['status_laporan'] = 'layak'
+    elif set(kode_masalah) <= {'dw'}:
+        r['status_laporan'] = 'layak_catatan'
+    else:
+        r['status_laporan'] = 'belum'
     return r
 
 
@@ -1488,6 +1499,41 @@ async def api_diagnosis_periksa(payload: dict):
     # ATURAN: sebelum memanggil fungsi, BACA tanda tangannya (grep "^def").
     missing = str(payload.get('missing', 'buang'))
     buang_kosong = 'rata' if missing == 'rata' else 'baris'
+
+    # ── PENGECUALIAN OUTLIER (Boss 22Okt26) ─────────────────────────────
+    # Mahasiswa boleh menandai baris menyimpang untuk dikeluarkan dari
+    # pemeriksaan (dengan alasan tertulis di halaman). Nomor baris =
+    # nomor urut baris di berkas yang diunggah (baris data, tanpa kepala).
+    # Baris dikeluarkan SEBELUM mesin berjalan, dan nomor-nomor yang mesin
+    # kembalikan (outlier, bedah) diterjemahkan kembali ke nomor berkas —
+    # jadi nomor yang dilihat mahasiswa TIDAK bergeser antar-pemeriksaan.
+    peta_sisa = None          # posisi mesin -> nomor baris berkas
+    dikeluarkan: list[int] = []
+    pakai2: list[str] = []
+    if mode != 'pls':
+        try:
+            import pandas as _pd
+            pakai2 = ((payload.get('kolom_x') or [])
+                      + (payload.get('kolom_m') or [])
+                      + [str(payload.get('kolom_y') or '')])
+            ang = df[pakai2].apply(_pd.to_numeric, errors='coerce')
+            if buang_kosong == 'baris':
+                selamat = [i + 1 for i in range(len(df))
+                           if not ang.iloc[i].isna().any()]
+            else:
+                selamat = list(range(1, len(df) + 1))
+            mau = set()
+            for b in (payload.get('buang_baris') or []):
+                try:
+                    mau.add(int(b))
+                except (TypeError, ValueError):
+                    pass
+            dikeluarkan = sorted(b for b in mau if b in selamat)
+            if dikeluarkan:
+                df = df.drop(index=[df.index[b - 1] for b in dikeluarkan])
+            peta_sisa = [b for b in selamat if b not in dikeluarkan]
+        except Exception:                                        # noqa: BLE001
+            peta_sisa = None
     try:
         if mode == 'pls':
             # ⚠️ periksa_pls TIDAK punya parameter buang_kosong — jangan kirim.
@@ -1504,6 +1550,46 @@ async def api_diagnosis_periksa(payload: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     r = _hias_hasil(r, mode)
+
+    # ── TERJEMAHAN NOMOR + SIDIK JARI (Boss 22Okt26) ────────────────────
+    import hashlib
+
+    def _sidik(kolom, bingkai):
+        mentah = ','.join(kolom) + '\n' + '\n'.join(
+            ';'.join('%.10g' % v for v in baris)
+            for baris in bingkai.to_numpy(dtype=float))
+        return hashlib.sha256(mentah.encode()).hexdigest()[:16]
+
+    if mode != 'pls':
+        if peta_sisa:
+            def _petakan(daftar):
+                return [peta_sisa[j - 1] for j in (daftar or [])
+                        if isinstance(j, int) and 1 <= j <= len(peta_sisa)]
+            if isinstance(r.get('outlier'), dict):
+                r['outlier']['sisa'] = _petakan(r['outlier'].get('sisa'))
+                r['outlier']['y'] = _petakan(r['outlier'].get('y'))
+            _bo = (r.get('bedah') or {}).get('outlier')
+            if isinstance(_bo, dict):
+                _bo['baris'] = _petakan(_bo.get('baris'))
+        r['pengecualian'] = {'baris': dikeluarkan, 'jumlah': len(dikeluarkan)}
+        try:
+            import pandas as _pd
+            ang2 = df[pakai2].apply(_pd.to_numeric, errors='coerce')
+            ang2 = (ang2.dropna() if buang_kosong == 'baris'
+                    else ang2.fillna(ang2.mean(numeric_only=True)))
+            r['sidik_jari'] = _sidik(pakai2, ang2) if len(ang2) else None
+        except Exception:                                        # noqa: BLE001
+            r['sidik_jari'] = None
+    else:
+        r['pengecualian'] = {'baris': [], 'jumlah': 0}
+        try:
+            import pandas as _pd
+            kolom_pls = [c for dftar in (payload.get('konstruk') or {}).values()
+                         for c in dftar if c in df.columns]
+            angp = df[kolom_pls].apply(_pd.to_numeric, errors='coerce').dropna()
+            r['sidik_jari'] = _sidik(kolom_pls, angp) if len(angp) else None
+        except Exception:                                        # noqa: BLE001
+            r['sidik_jari'] = None
 
     return JSONResponse(r)
 
