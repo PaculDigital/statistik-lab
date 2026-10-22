@@ -585,6 +585,48 @@ BENTUK = {
     ),
     #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
     #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
+    'pertajam': (
+        'SUSUNAN WAJIB untuk penilaian rumusan & fokus (patuhi persis):\n'
+        'Baris pertama: "PENILAIAN: <1-2 kalimat — rumusan dan fokus '
+        'mahasiswa ini sudah tajam atau masih umum, dan kenapa>".\n'
+        'Baris kedua: "RUMUSAN: <satu kalimat PERNYATAAN — usulan '
+        'rumusan yang dipertajam; BUKAN kalimat tanya>".\n'
+        'Lalu baris "FOKUS:" dan 3 sampai 5 baris "- <satu fokus>", '
+        'tiap fokus tajam dan bisa digali lewat wawancara, observasi, '
+        'atau dokumen.\n'
+        'Tanpa pengantar atau penutup lain. Tetap setia pada topik '
+        'dan konteks mahasiswa — jangan mengganti objek penelitiannya.'
+    ),
+    'swot_bobot': (
+        'SUSUNAN WAJIB untuk saran bobot & rating (patuhi persis, '
+        'balasan ini DIBACA MESIN):\n'
+        'Satu baris per faktor, urutan PERSIS seperti daftar yang '
+        'dikirim mahasiswa, format:\n'
+        '<KELOMPOK><NOMOR>: BOBOT <angka 0-1, desimal TITIK> RATING '
+        '<1-4> | <alasan singkat>\n'
+        'Contoh: S1: BOBOT 0.30 RATING 4 | paling menentukan bagi '
+        'pelanggan\n'
+        'Bobot gabungan S+W berjumlah kira-kira 1, begitu juga O+T. '
+        'Rating: untuk S dan O, 4 = sangat kuat; untuk W dan T, '
+        '1 = sangat parah, 4 = hampir tidak terasa.\n'
+        'JANGAN beri pengantar, penutup, atau baris lain apa pun.'
+    ),
+    'gambaran': (
+        'SUSUNAN WAJIB untuk draf gambaran umum & profil informan '
+        '(patuhi persis):\n'
+        'Tulis 2 sampai 3 paragraf mengalir (bukan butir): paragraf '
+        'pertama gambaran umum objek penelitian dari konteks yang '
+        'dikirim; paragraf berikutnya profil informan — jumlah, '
+        'komposisi jenis (internal/eksternal), teknik pengumpulan '
+        'datanya, dan sebaran kutipan per informan.\n'
+        'Angka dan nama WAJIB persis seperti data yang dikirim. '
+        'DILARANG mengarang fakta tentang objek (tempat, produk, '
+        'sejarah) atau latar informan (umur, pekerjaan, pendidikan) '
+        'yang tidak ada di data — bila suatu bagian belum ada '
+        'datanya, tulis penanda [lengkapi: ...] di tempatnya.\n'
+        'Bahasa laporan yang sopan dan mengalir, siap ditempel ke '
+        'Bab 4 dan dikembangkan mahasiswa.'
+    ),
     'pembahasan': (
         'SUSUNAN WAJIB untuk draf pembahasan (patuhi persis):\n'
         'Untuk TIAP tema tulis dua bagian: baris pertama "TEMA: '

@@ -101,9 +101,11 @@
       <div class="baris renggang">
         <button class="tb tb-utama" id="tp-manual">{{ ikon('wand-2', 15) }} Susun manual</button>
         <button class="tb tb-sekunder" id="tp-ai">{{ ikon('sparkles', 15) }} Minta saran AI</button>
+        <button class="tb tb-sekunder" id="tp-pertajam">{{ ikon('target', 15) }} Pertajam rumusan & fokus</button>
       </div>
     </div>
     <div id="tp-hasil"></div>
+    <div id="tp-pertajam-hasil"></div>
     <div class="baris renggang" style="margin-top:10px">
       <button type="button" class="tb tb-utama" data-lanjut="2">Lanjut ke Langkah 2 · Koding →</button>
     </div>
@@ -278,6 +280,21 @@
   <div class="langkah-tematik sembunyi" data-langkah="4">
     <div id="konteks-4"></div>
     <div id="rekom-t4"></div>
+    <div class="kartu" style="margin-bottom:14px">
+      <span class="eyebrow">{{ ikon('users', 13) }} Gambaran Umum &amp; Profil Informan</span>
+      <p class="samar" style="font-size:13px">
+        Draf untuk awal Bab 4-mu: gambaran objek penelitian dan siapa saja
+        informanmu. Tulis sendiri, atau minta AI menyusunnya dari konteks
+        &amp; daftar informanmu. AI tidak mengarang latar informan yang
+        tidak ada di datamu — bagian yang belum ada data ditandainya.
+      </p>
+      <div class="medan"><label>Draf gambaran umum &amp; profil informan</label>
+      <textarea id="gambaran-teks" rows="6" style="width:100%" placeholder="Akan terisi dari AI, atau tulis sendiri di sini..."></textarea></div>
+      <div class="baris renggang" style="margin-top:8px">
+        <button class="tb tb-sekunder" id="gambaran-ai">{{ ikon('sparkles', 15) }} Susun draf dari AI</button>
+        <span class="samar" style="font-size:12px">Hasil AI masuk ke kolom di atas sebagai draf — periksa &amp; ubah dengan bahasamu.</span>
+      </div>
+    </div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('book-marked', 13) }} Langkah 4 — Tafsir &amp; unduh</span>
       <h3 style="margin:8px 0 4px">Ubah tema jadi cerita temuan</h3>
@@ -416,6 +433,11 @@
         Rangkuti (selisih S−W dan O−T), hasil posisinya bisa berbeda — samakan
         dulu dengan dosenmu cara mana yang dipakai di skripsimu.
       </p>
+      <div class="baris renggang" style="margin:10px 0">
+        <button class="tb tb-sekunder" id="sw-ai-bobot">{{ ikon('sparkles', 15) }} Minta saran bobot &amp; rating dari AI</button>
+        <span class="samar" style="font-size:12px">AI mengusulkan angka dari konteks usahamu — aplikasi menormalkan totalnya pas 1,00.</span>
+      </div>
+      <div id="sw-saran-bobot"></div>
       <h4>IFAS (faktor dalam: S + W)</h4>
       <div id="sw-ifas"></div>
       <h4>EFAS (faktor luar: O + T)</h4>
@@ -437,7 +459,7 @@ function el(id) { return document.getElementById(id); }
 
 /* ── Status tersimpan (localStorage; belum ada login) ── */
 const KUNCI_SIMPAN = 'kualitatif_v1';
-let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: [], pembahasan: {}, teori: ''},
+let KUAL = {tematik: {panduan: '', informan: [], segmen: [], tafsir: {}, foto: [], pembahasan: {}, teori: '', gambaran: ''},
             swot: {faktor: [], strategi: {so: '', wo: '', st: '', wt: ''}, foto: []}};
 try {
   const s = localStorage.getItem(KUNCI_SIMPAN);
@@ -463,6 +485,7 @@ if (!KUAL.tematik.konteks || typeof KUAL.tematik.konteks !== 'object') {
 if (!KUAL.tematik.pembahasan || typeof KUAL.tematik.pembahasan !== 'object')
   KUAL.tematik.pembahasan = {};
 if (typeof KUAL.tematik.teori !== 'string') KUAL.tematik.teori = '';
+if (typeof KUAL.tematik.gambaran !== 'string') KUAL.tematik.gambaran = '';
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
   if (typeof segarNavTematik === 'function') segarNavTematik();
@@ -496,7 +519,7 @@ function aturLangkah(jenis, n) {
      hanya digambar saat muat awal & di tombol unduh, jadi mahasiswa
      yang baru selesai koding melihat 'Belum ada tema' dan tidak bisa
      menulis tafsir (temuan uji manual 22Okt26). */
-  if (jenis === 'tematik' && String(n) === '4') { gambarTafsir(); gambarPembahasan(); }
+  if (jenis === 'tematik' && String(n) === '4') { gambarTafsir(); gambarPembahasan(); gambarGambaran(); }
   if (typeof gambarRekomendasi === 'function') gambarRekomendasi();
   if (jenis === 'tematik') {
     if (String(n) === '3' && !KUAL.tematik.kunjungi3) {
@@ -2370,6 +2393,190 @@ function gambarSaranPembahasan(teks, temas, w) {
         'tema ini di atas, lalu kembangkan dengan bahasamu.';
     }));
 }
+
+/* ═══════ TAHAP 3 AUDIT TITIK AI (22Okt26): pertajam, bobot, gambaran ═══════ */
+el('tp-pertajam').addEventListener('click', async () => {
+  const w = el('tp-pertajam-hasil');
+  const p = konteksPenelitian() +
+    '\nNilai ketajaman rumusan masalah dan fokus penelitianku di atas, ' +
+    'lalu usulkan versi yang lebih tajam. Rumusan wajib kalimat ' +
+    'pernyataan. Fokus harus bisa digali lewat wawancara, observasi, ' +
+    'atau dokumen — bukan hal yang cuma bisa dijawab angka.';
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang menilai rumusan & fokusmu…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(p, 'pertajam');
+    gambarSaranPertajam(teks, w);
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum ' +
+      'bisa membantu: ' + aman(e.message || 'coba lagi.') + '<\/div><\/div>';
+  }
+});
+function gambarSaranPertajam(teks, w) {
+  let nilai = '', rumusan = '';
+  const fokus = [];
+  teks.replace(/```/g, '').split('\n').forEach(b => {
+    let m = b.match(/^\s*\**\s*PENILAIAN\s*:\s*(.+?)\s*$/i);
+    if (m) { nilai = m[1]; return; }
+    m = b.match(/^\s*\**\s*RUMUSAN\s*:\s*(.+?)\s*$/i);
+    if (m) { rumusan = m[1].replace(/["“”]/g, '').trim(); return; }
+    m = b.match(/^\s*[-•]\s*(.+?)\s*$/);
+    if (m && rumusan) fokus.push(m[1].replace(/\*\*/g, '').trim());
+  });
+  if (!rumusan && !fokus.length) {
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Penilaian AI<\/span>' +
+      '<div style="white-space:pre-wrap;font-size:14px;margin-top:6px">' +
+      aman(teks) + '<\/div><\/div>';
+    return;
+  }
+  let h = '<div class="kartu"><span class="eyebrow">' +
+    ikonKecil('sparkles', 13) + ' Penilaian & usulan AI<\/span>';
+  if (nilai) h += '<p style="font-size:14px;margin:8px 0"><strong>Penilaian:<\/strong> ' + aman(nilai) + '<\/p>';
+  if (rumusan) h += '<p style="font-size:14px;margin:8px 0"><strong>Rumusan usulan:<\/strong> ' +
+    aman(rumusan) + '<\/p><button class="tb tb-sekunder" id="pertajam-pakai-rumusan">Pakai rumusan ini<\/button> ';
+  if (fokus.length) {
+    h += '<p style="font-size:14px;margin:10px 0 4px"><strong>Fokus usulan:<\/strong><\/p><ul style="margin:0 0 8px;font-size:14px">' +
+      fokus.map(f => '<li>' + aman(f) + '<\/li>').join('') +
+      '<\/ul><button class="tb tb-sekunder" id="pertajam-pakai-fokus">Pakai daftar fokus ini<\/button>';
+  }
+  h += '<p class="samar" style="font-size:12px;margin-top:8px">Usulan masuk menggantikan isian form — periksa dulu, kamu tetap penentunya.<\/p><\/div>';
+  w.innerHTML = h;
+  const br = el('pertajam-pakai-rumusan');
+  if (br) br.addEventListener('click', () => {
+    if ((el('tp-rumusan').value || '').trim() &&
+        !confirm('Rumusan masalahmu sudah terisi. Timpa dengan usulan AI?')) return;
+    el('tp-rumusan').value = rumusan;
+    simpanKonteksDariForm();
+    br.textContent = 'Sudah dipakai ✓';
+  });
+  const bf = el('pertajam-pakai-fokus');
+  if (bf) bf.addEventListener('click', () => {
+    if (!confirm('Ganti daftar fokusmu dengan ' + fokus.length + ' fokus usulan AI?')) return;
+    KUAL.tematik.konteks.fokus = fokus.slice(0, 6);
+    gambarFokusDaftar();
+    simpanKonteksDariForm();
+    bf.textContent = 'Sudah dipakai ✓';
+  });
+}
+/* ── Saran bobot & rating SWOT ── */
+el('sw-ai-bobot').addEventListener('click', async () => {
+  const w = el('sw-saran-bobot');
+  const f = KUAL.swot.faktor;
+  if (!f.length) {
+    w.innerHTML = '<div class="catatan renggang"><div>Belum ada faktor — ' +
+      'isi dulu di Langkah 1.<\/div><\/div>';
+    return;
+  }
+  const daftar = [];
+  const perKel = {};
+  ['S', 'W', 'O', 'T'].forEach(k => {
+    perKel[k] = f.map((x, i) => ({x: x, i: i})).filter(o => o.x.k === k);
+    perKel[k].forEach((o, j) => daftar.push(k + (j + 1) + ': ' + o.x.teks));
+  });
+  const p = konteksUsaha() +
+    '\nBerikut faktor SWOT-ku. Usulkan BOBOT dan RATING untuk TIAP ' +
+    'faktor, sesuai konteks usaha di atas.\n' + daftar.join('\n');
+  w.innerHTML = '<div class="catatan">' + ikonKecil('sparkles', 16) +
+    '<div>AI sedang mengusulkan bobot & rating…<\/div><\/div>';
+  try {
+    const teks = await mintaTeksAI(p, 'swot_bobot');
+    gambarSaranBobot(teks, perKel, w);
+  } catch (e) {
+    w.innerHTML = '<div class="catatan merah renggang"><div>AI belum ' +
+      'bisa membantu: ' + aman(e.message || 'coba lagi.') + '<\/div><\/div>';
+  }
+});
+function gambarSaranBobot(teks, perKel, w) {
+  const usul = {};
+  teks.replace(/```/g, '').split('\n').forEach(b => {
+    const m = b.match(/^\s*\**\s*([SWOT])(\d+)\s*:\s*BOBOT\s*([\d.,]+)\s*RATING\s*(\d)\s*(?:\|\s*(.+))?$/i);
+    if (m) usul[m[1].toUpperCase() + m[2]] = {
+      bobot: parseFloat(m[3].replace(',', '.')) || 0,
+      rating: Math.min(4, Math.max(1, parseInt(m[4]) || 1)),
+      alasan: (m[5] || '').trim()};
+  });
+  const total = ['S', 'W', 'O', 'T'].reduce((a, k) => a + perKel[k].length, 0);
+  if (Object.keys(usul).length < total) {
+    w.innerHTML = '<div class="kartu"><span class="eyebrow">' +
+      ikonKecil('sparkles', 13) + ' Saran bobot & rating AI<\/span>' +
+      '<div style="white-space:pre-wrap;font-size:14px;margin-top:6px">' +
+      aman(teks) + '<\/div><p class="samar" style="font-size:12px">' +
+      'Format saran tidak lengkap — isi bobot & rating manual di tabel.<\/p><\/div>';
+    return;
+  }
+  let h = '<div class="kartu"><span class="eyebrow">' + ikonKecil('sparkles', 13) +
+    ' Saran bobot & rating AI<\/span><div style="margin-top:6px">';
+  ['S', 'W', 'O', 'T'].forEach(k => perKel[k].forEach((o, j) => {
+    const u = usul[k + (j + 1)];
+    h += '<p style="font-size:13.5px;margin:5px 0"><strong>' + k + (j + 1) +
+      '.<\/strong> ' + aman(o.x.teks) + ' — bobot <strong>' +
+      u.bobot.toFixed(2) + '<\/strong>, rating <strong>' + u.rating +
+      '<\/strong>' + (u.alasan ? ' <span class="samar">(' + aman(u.alasan) + ')<\/span>' : '') + '<\/p>';
+  }));
+  h += '<\/div><button class="tb tb-sekunder" id="bobot-pakai">Pakai saran ini<\/button> ' +
+    '<span class="samar" style="font-size:12px">bobot dinormalkan aplikasi supaya total IFAS & EFAS pas 1,00.<\/span><\/div>';
+  w.innerHTML = h;
+  el('bobot-pakai').addEventListener('click', () => {
+    [['S', 'W'], ['O', 'T']].forEach(grup => {
+      const anggota = [];
+      grup.forEach(k => perKel[k].forEach((o, j) =>
+        anggota.push({i: o.i, u: usul[k + (j + 1)]})));
+      let jumlah = anggota.reduce((a, o) => a + o.u.bobot, 0);
+      if (!(jumlah > 0)) { anggota.forEach(o => o.u.bobot = 1); jumlah = anggota.length; }
+      let sisa = 1;
+      anggota.forEach((o, idx) => {
+        let b = idx === anggota.length - 1 ? sisa
+          : Math.round((o.u.bobot / jumlah) * 100) / 100;
+        b = Math.max(0.01, Math.round(b * 100) / 100);
+        sisa = Math.round((sisa - b) * 100) / 100;
+        KUAL.swot.faktor[o.i].bobot = b;
+        KUAL.swot.faktor[o.i].rating = o.u.rating;
+      });
+    });
+    simpan(); gambarIFAS();
+    el('bobot-pakai').textContent = 'Sudah dipakai ✓ — cek tabel IFAS/EFAS di bawah';
+  });
+}
+/* ── Gambaran umum & profil informan ── */
+function gambarGambaran() {
+  const t = el('gambaran-teks');
+  if (t && document.activeElement !== t) t.value = KUAL.tematik.gambaran || '';
+}
+el('gambaran-teks').addEventListener('input', () => {
+  KUAL.tematik.gambaran = el('gambaran-teks').value;
+  simpan();
+});
+el('gambaran-ai').addEventListener('click', async () => {
+  const infs = KUAL.tematik.informan;
+  if (!infs.length) { alert('Belum ada informan. Tambahkan informan dulu di Langkah 2.'); return; }
+  if ((el('gambaran-teks').value || '').trim() &&
+      !confirm('Kolom gambaran umum sudah terisi. Timpa dengan draf AI?')) return;
+  const seg = KUAL.tematik.segmen.filter(x => x.kode && x.tema);
+  const paket = infs.map(nf => {
+    const d = seg.filter(x => x.informan === nf.nama);
+    return '- ' + nf.nama + ' (' + (nf.jenis || 'internal') + ', ' +
+      nf.teknik + '): ' + d.length + ' kutipan berkode, tema: ' +
+      ([...new Set(d.map(x => x.tema))].join(', ') || '—');
+  }).join('\n');
+  const p = konteksPenelitian() +
+    '\nBerikut informanku:\n' + paket +
+    '\nTotal: ' + infs.length + ' informan, ' + seg.length +
+    ' kutipan berkode, ' + [...new Set(seg.map(x => x.tema))].length + ' tema.\n' +
+    '\nTugasmu: susun draf GAMBARAN UMUM objek penelitian dan PROFIL ' +
+    'INFORMAN untuk awal Bab 4-ku dari data di atas.';
+  const btn = el('gambaran-ai');
+  btn.innerHTML = 'AI sedang menyusun…';
+  try {
+    const teks = await mintaTeksAI(p, 'gambaran');
+    el('gambaran-teks').value = teks;
+    KUAL.tematik.gambaran = teks;
+    simpan();
+  } catch (e) {
+    alert('AI belum bisa membantu: ' + (e.message || 'coba lagi.'));
+  }
+  btn.innerHTML = 'Susun draf dari AI';
+});
 async function unduhQDA(jenis) {
   const terkode = KUAL.tematik.segmen.filter(s => (s.kode || '').trim() && (s.tema || '').trim());
   if (!terkode.length) {
@@ -2419,15 +2626,18 @@ el('tafsir-unduh').addEventListener('click', () => {
     '> Berkas ini adalah hasil **Olah Data Analisis Kualitatif**: ' +
     'kode, tema, hasil triangulasi, tafsir per tema, dan draf ' +
     'pembahasan (bila kamu menyusunnya) dari data yang kamu masukkan.\n' +
-    '> Berkas ini **bukan Bab 4 yang utuh**. Agar lengkap, kamu masih ' +
-    'perlu menulis sendiri: (1) **Gambaran umum** objek penelitian, ' +
-    '(2) **Profil informan** — siapa saja informanmu dan latar ' +
-    'belakangnya. Draf pembahasan di berkas ini juga masih perlu kamu ' +
-    'kembangkan dengan penelitian terdahulu.\n\n';
+    '> Berkas ini **belum menjadi Bab 4 yang utuh**: draf-draf di ' +
+    'dalamnya (gambaran umum, profil informan, pembahasan) masih ' +
+    'perlu kamu kembangkan dengan bahasamu sendiri dan perbandingan ' +
+    'penelitian terdahulu.\n\n';
   md += '## Rumusan Masalah\n\n' + (k.rumusan || '_[belum diisi]_') + '\n\n';
   if ((k.fokus || []).length) {
     md += '## Fokus Penelitian\n\n' +
       k.fokus.map(f => '- ' + f).join('\n') + '\n\n';
+  }
+  if ((KUAL.tematik.gambaran || '').trim()) {
+    md += '## Gambaran Umum & Profil Informan\n\n' +
+      KUAL.tematik.gambaran.trim() + '\n\n';
   }
   md += '## Codebook\n\n| Kode | Tema | Informan | Teknik |\n|---|---|---|---|\n';
   seg.forEach(s => { md += '| ' + s.kode + ' | ' + s.tema + ' | ' +
@@ -2938,6 +3148,10 @@ function temuanUntuk(jenis, n) {
           label: 'Minta AI membaca hasil ini', go: picuAI('tri-ai', 'tri-saran')}); });
     }
     if (n === 4) {
+      if (KUAL.tematik.informan.length && !(KUAL.tematik.gambaran || '').trim())
+        items.push({kunci: 'gambaran', teks: 'Draf <strong>gambaran umum & ' +
+          'profil informan<\/strong> untuk awal Bab 4-mu belum disusun.',
+          label: 'Susun draf dari AI', go: picuAI('gambaran-ai', 'gambaran-teks')});
       if (temas.length && !(KUAL.tematik.teori || '').trim())
         items.push({kunci: 'teori', teks: 'Tempel <strong>ringkasan teori ' +
           'Bab II<\/strong>-mu di blok Pembahasan bawah — tanpa itu AI tidak ' +
@@ -2989,7 +3203,9 @@ function temuanUntuk(jenis, n) {
       else if (!r.siap && (r.ba !== undefined))
         items.push({kunci: 'bobot', teks: 'Kuadran belum bisa ditentukan — total ' +
           'bobot IFAS baru ' + r.ba.toFixed(2) + ', EFAS ' + r.bb.toFixed(2) +
-          ' (harus tepat 1,00). Lengkapi bobot & rating di tabel atas.'});
+          ' (harus tepat 1,00). Minta AI mengusulkan bobot & ratingnya.',
+          label: 'Minta saran bobot & rating AI',
+          go: picuAI('sw-ai-bobot', 'sw-saran-bobot')});
       else if (r.siap)
         items.push({kunci: 'kuadran', teks: 'Posisimu di <strong>kuadran ' +
           aman(r.kuadran) + '<\/strong> (IFAS ' + r.ifas.toFixed(2) + ', EFAS ' +
