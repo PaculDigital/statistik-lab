@@ -1118,6 +1118,18 @@ def buat_data_jalur(model: str, n: int, params: dict, nama: dict,
 # lama, hanya untuk klien tanpa cookie).
 _TERAKHIR_PER_SESI = {}
 _SWEEP = {'waktu': 0.0}
+_BATAS_BERKAS_SESI = 300     # jumlah berkas sesi terbanyak yang disimpan
+_BATAS_CACHE_SESI = 100      # entri terbanyak di cache memori cadangan
+
+
+def _tampung(k, d) -> None:
+    """Taruh ke cache memori DENGAN batas (BUG-4 review 22Okt26: dulu
+    dict ini tidak pernah dibersihkan — tumbuh selama container hidup.
+    Cache hanya cadangan bila berkas gagal dibaca, jadi membuang yang
+    paling lama aman.)"""
+    _TERAKHIR_PER_SESI[k] = d
+    while len(_TERAKHIR_PER_SESI) > _BATAS_CACHE_SESI:
+        _TERAKHIR_PER_SESI.pop(next(iter(_TERAKHIR_PER_SESI)), None)
 
 
 def _kunci_sesi(sesi) -> str:
@@ -1152,13 +1164,27 @@ def _sapu_sesi_lama(folder) -> None:
                 pass
     except OSError:
         pass
+    # Batas JUMLAH (BUG-3 review agen Bos 22Okt26): umur saja tidak cukup
+    # — 1.000 mahasiswa dalam 7 hari berarti 1.000 berkas menumpuk.
+    # Sisakan yang terbaru; entri cache memorinya ikut dibuang.
+    try:
+        sisa = sorted(folder.glob('terakhir_*.pkl'),
+                      key=lambda f: f.stat().st_mtime, reverse=True)
+        for f in sisa[_BATAS_BERKAS_SESI:]:
+            try:
+                f.unlink()
+                _TERAKHIR_PER_SESI.pop(f.name[len('terakhir_'):-len('.pkl')], None)
+            except OSError:
+                pass
+    except OSError:
+        pass
 
 
 def simpan_terakhir(d: dict, sesi=None) -> None:
     import os
     import pickle
     k = _kunci_sesi(sesi) or '__bersama'
-    _TERAKHIR_PER_SESI[k] = d
+    _tampung(k, d)
     berkas = _berkas_terakhir(sesi)
     # Tulis atomik (berkas sementara lalu ganti nama): unduhan yang datang
     # bersamaan dengan generate tidak membaca berkas setengah tertulis.
@@ -1185,7 +1211,7 @@ def ambil_terakhir(sesi=None) -> dict:
     if p.exists():
         try:
             with open(p, 'rb') as f:
-                _TERAKHIR_PER_SESI[k] = pickle.load(f)
+                _tampung(k, pickle.load(f))
             return _TERAKHIR_PER_SESI[k]
         except Exception:                      # noqa: BLE001
             pass

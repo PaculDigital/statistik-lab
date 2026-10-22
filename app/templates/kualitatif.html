@@ -77,6 +77,7 @@
     <div class="baris renggang">
       <button type="button" class="tb tb-utama" id="berkas-simpan">{{ ikon('download', 14) }} Simpan Berkas</button>
       <button type="button" class="tb tb-sekunder" id="berkas-buka">{{ ikon('file-text', 14) }} Buka Berkas…</button>
+      <button type="button" class="tb tb-sekunder sembunyi" id="berkas-pulih">{{ ikon('refresh-cw', 14) }} Pulihkan data sebelumnya</button>
       <input type="file" id="berkas-input" accept=".json,application/json" class="sembunyi">
     </div>
     <div id="berkas-status" style="font-size:13px;margin-top:6px"></div>
@@ -647,9 +648,49 @@ el('berkas-input').addEventListener('change', async () => {
 });
 gambarInfoBerkas();
 
+/* ── PULIHKAN CADANGAN (BUG-5 review agen Bos 22Okt26) ────────────────
+   Impor berkas menyimpan data lama ke localStorage 'kualitatif_cadangan',
+   tapi dulu TIDAK ADA jalan memanggilnya kembali dari layar — cadangan
+   yang tak terjangkau sama saja tidak ada. Tombol ini hanya tampil bila
+   cadangan memang ada; pemulihan bersifat TUKAR (data sekarang menjadi
+   cadangan baru), jadi bisa dibatalkan dengan tombol yang sama. */
+function segarkanTombolPulih() {
+  const t = el('berkas-pulih');
+  if (!t) return;
+  let ada = false;
+  try { ada = !!localStorage.getItem('kualitatif_cadangan'); } catch (e) {}
+  t.classList.toggle('sembunyi', !ada);
+}
+el('berkas-pulih').addEventListener('click', () => {
+  const status = el('berkas-status');
+  let mentah = null;
+  try { mentah = localStorage.getItem('kualitatif_cadangan'); } catch (e) {}
+  if (!mentah) { segarkanTombolPulih(); return; }
+  let data = null;
+  try { data = JSON.parse(mentah); } catch (e) {}
+  if (!data || typeof data.tematik !== 'object' || typeof data.swot !== 'object') {
+    status.innerHTML = '<span style="color:#B3261E"><strong>Cadangan rusak<\/strong> ' +
+      '— isinya tidak bisa dibaca, jadi tidak dipulihkan. Datamu yang sekarang TIDAK berubah.<\/span>';
+    return;
+  }
+  const judul = (data.tematik.konteks && data.tematik.konteks.judul) || 'penelitian sebelumnya';
+  if (!confirm('Pulihkan data "' + judul + '"?\n\nData yang sekarang tampil akan ' +
+      'DIGANTI, dan data sekarang disimpan sebagai cadangan baru — jadi langkah ' +
+      'ini bisa dibatalkan lagi dengan tombol yang sama.')) return;
+  try {
+    localStorage.setItem('kualitatif_cadangan',
+                         localStorage.getItem(KUNCI_SIMPAN) || '');
+  } catch (e) {}
+  KUAL = rapikanDataKual(data, false);
+  simpan();
+  location.reload();
+});
+segarkanTombolPulih();
+
 /* ── Pintu & navigasi langkah ── */
 function tampilPintu(nama) {
   if (!nama && typeof gambarInfoBerkas === 'function') gambarInfoBerkas();
+  if (!nama && typeof segarkanTombolPulih === 'function') segarkanTombolPulih();
   el('kual-pintu').classList.toggle('sembunyi', !!nama);
   el('panel-tematik').classList.toggle('sembunyi', nama !== 'tematik');
   el('panel-swot').classList.toggle('sembunyi', nama !== 'swot');

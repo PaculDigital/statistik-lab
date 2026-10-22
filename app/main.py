@@ -45,17 +45,24 @@ async def _pasang_sesi(request: Request, call_next):
     import uuid
     sesi = request.cookies.get('sl_sesi', '')
     disajikan = bool(re.fullmatch(r'[a-f0-9]{32}', sesi or ''))
-    # Hanya sesi yang DISAJIKAN browser yang dipakai memisahkan simpanan.
-    # Klien tanpa cookie (menolak cookie / akses API langsung) jatuh ke
-    # slot bersama seperti perilaku lama — tidak lebih buruk dari dulu.
-    request.state.sesi = sesi if disajikan else None
+    if disajikan:
+        request.state.sesi = sesi
+        return await call_next(request)
+    # ⚠️ BUG-1 (review agen Bos 22Okt26, TERBUKTI): dulu sesi baru hanya
+    # dipasang di COOKIE respons, sedangkan request PERTAMA ini sendiri
+    # berjalan dengan state.sesi = None → generate pertama masuk slot
+    # BERSAMA, unduhan pertama (sudah membawa cookie) mencari berkas sesi
+    # yang belum ada → 404 "Belum ada data". Mahasiswa harus generate
+    # DUA kali. Sekarang sesi baru langsung dipakai request ini juga.
+    # Klien yang tak pernah mengembalikan cookie membuat satu berkas sesi
+    # yatim per generate — dibersihkan penyapu berkas sesi (umur dan jumlah).
+    sesi = uuid.uuid4().hex
+    request.state.sesi = sesi
     response = await call_next(request)
-    if not disajikan:
-        sesi = uuid.uuid4().hex
-        proto = request.headers.get('x-forwarded-proto', request.url.scheme)
-        response.set_cookie(
-            'sl_sesi', sesi, max_age=30 * 24 * 3600, path='/',
-            httponly=True, samesite='lax', secure=(proto == 'https'))
+    proto = request.headers.get('x-forwarded-proto', request.url.scheme)
+    response.set_cookie(
+        'sl_sesi', sesi, max_age=30 * 24 * 3600, path='/',
+        httponly=True, samesite='lax', secure=(proto == 'https'))
     return response
 app.mount('/static', StaticFiles(directory=str(STATIC)), name='static')
 
