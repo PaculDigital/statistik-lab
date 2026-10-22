@@ -81,10 +81,12 @@
       </p>
       <div class="medan"><label>Judul penelitian</label>
         <input type="text" id="tp-judul" style="width:100%" value="Makna Ulasan TikTok dalam Keputusan Pembelian Skintific di Kalangan Mahasiswa"></div>
-      <div class="medan"><label>Rumusan masalah <span class="petunjuk">satu kalimat pernyataan</span></label>
-        <input type="text" id="tp-rumusan" style="width:100%" value="Bagaimana mahasiswa memaknai ulasan TikTok ketika memutuskan membeli Skintific?"></div>
-      <div class="medan"><label>Fokus yang mau digali <span class="petunjuk">pisahkan dengan koma</span></label>
-        <input type="text" id="tp-indikator" style="width:100%" value="pengalaman mencari informasi, pertimbangan sebelum membeli, makna kepercayaan pada pengulas"></div>
+      <div class="medan"><label>Rumusan masalah <span class="petunjuk">satu kalimat pernyataan — ceritakan apa yang mau kamu ketahui, jangan berbentuk pertanyaan</span></label>
+        <input type="text" id="tp-rumusan" style="width:100%" value="Penelitian ini mengkaji makna ulasan TikTok dalam keputusan pembelian Skintific di kalangan mahasiswa."></div>
+      <div class="medan"><label>Fokus penelitian <span class="petunjuk">hal-hal konkret yang mau kamu gali dari informan — panduan wawancara dibuat per fokus ini, satu baris satu fokus</span></label>
+        <div id="tp-fokus-daftar"></div>
+        <button type="button" class="tb tb-sekunder" id="tp-fokus-tambah" style="margin-top:6px">+ Tambah fokus</button>
+        <input type="hidden" id="tp-indikator"></div>
       <div class="medan"><label>Jenis informan <span class="petunjuk">triangulasi sumber butuh keduanya</span></label>
         <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="internal" checked> Internal <span class="petunjuk">pelaku di dalam (pemilik, karyawan)</span></label><br>
         <label style="font-weight:normal"><input type="checkbox" class="tp-jenis" value="eksternal" checked> Eksternal <span class="petunjuk">pelanggan, pemasok, pengamat luar</span></label></div>
@@ -94,10 +96,14 @@
       </div>
     </div>
     <div id="tp-hasil"></div>
+    <div class="baris renggang" style="margin-top:10px">
+      <button type="button" class="tb tb-utama" data-lanjut="2">Lanjut ke Langkah 2 · Koding →</button>
+    </div>
   </div>
 
   {# ── Langkah 2: Koding ── #}
   <div class="langkah-tematik sembunyi" data-langkah="2">
+    <div id="konteks-2"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('split', 13) }} Langkah 2 — Koding</span>
       <h3 style="margin:8px 0 4px">Beri kode pada tiap kutipan cerita</h3>
@@ -225,10 +231,14 @@
         <div id="kj-segmen"></div>
       </div>
     </div>
+    <div class="baris renggang" style="margin-top:10px">
+      <button type="button" class="tb tb-utama" data-lanjut="3">Lanjut ke Langkah 3 · Triangulasi →</button>
+    </div>
   </div>
 
   {# ── Langkah 3: Triangulasi ── #}
   <div class="langkah-tematik sembunyi" data-langkah="3">
+    <div id="konteks-3"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('shield-check', 13) }} Langkah 3 — Triangulasi</span>
       <h3 style="margin:8px 0 4px">Apakah temuanmu kuat dari banyak sisi?</h3>
@@ -249,10 +259,14 @@
       <div id="tri-saran"></div>
       <div id="tri-hasil"></div>
     </div>
+    <div class="baris renggang" style="margin-top:10px">
+      <button type="button" class="tb tb-utama" data-lanjut="4">Lanjut ke Langkah 4 · Tafsir &amp; Unduh →</button>
+    </div>
   </div>
 
   {# ── Langkah 4: Tafsir ── #}
   <div class="langkah-tematik sembunyi" data-langkah="4">
+    <div id="konteks-4"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('book-marked', 13) }} Langkah 4 — Tafsir &amp; unduh</span>
       <h3 style="margin:8px 0 4px">Ubah tema jadi cerita temuan</h3>
@@ -403,8 +417,22 @@ try {
    supaya galeri tidak error di HP mahasiswa yang datanya tersimpan lama. */
 if (!Array.isArray(KUAL.tematik.foto)) KUAL.tematik.foto = [];
 if (!Array.isArray(KUAL.swot.foto)) KUAL.swot.foto = [];
+/* Benang merah (Bos 22Okt26): konteks penelitian DISIMPAN — dulu judul/
+   rumusan/fokus hanya dibaca dari form dan hilang saat refresh (kembali
+   ke contoh). Sekarang jadi satu paket konteks yang mengikuti mahasiswa. */
+const KONTEKS_CONTOH = {
+  judul: 'Makna Ulasan TikTok dalam Keputusan Pembelian Skintific di Kalangan Mahasiswa',
+  rumusan: 'Penelitian ini mengkaji makna ulasan TikTok dalam keputusan pembelian Skintific di kalangan mahasiswa.',
+  fokus: ['pengalaman mencari informasi', 'pertimbangan sebelum membeli',
+          'makna kepercayaan pada pengulas'],
+  jenis: ['internal', 'eksternal'],
+};
+if (!KUAL.tematik.konteks || typeof KUAL.tematik.konteks !== 'object') {
+  KUAL.tematik.konteks = JSON.parse(JSON.stringify(KONTEKS_CONTOH));
+}
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
+  if (typeof segarNavTematik === 'function') segarNavTematik();
 }
 
 /* ── Pintu & navigasi langkah ── */
@@ -426,6 +454,13 @@ function aturLangkah(jenis, n) {
   document.querySelectorAll((jenis === 'tematik' ? '#tematik-nav' : '#swot-nav') + ' [data-langkah]')
     .forEach(q => q.classList.toggle('tb-utama', q.dataset.langkah === String(n)));
   if (jenis === 'tematik' && String(n) === '3') gambarTriangulasi();
+  if (jenis === 'tematik') {
+    if (String(n) === '3' && !KUAL.tematik.kunjungi3) {
+      KUAL.tematik.kunjungi3 = true;
+      simpan();
+    }
+    segarNavTematik();
+  }
 }
 document.querySelectorAll('#tematik-nav [data-langkah]').forEach(q =>
   q.addEventListener('click', () => aturLangkah('tematik', q.dataset.langkah)));
@@ -513,6 +548,155 @@ function konteksUsaha() {
   if (usaha.trim()) k += '- Objek/usaha: ' + usaha.trim() + '\n';
   return k;
 }
+
+/* ── BENANG MERAH: konteks tersimpan + selalu terlihat (Bos 22Okt26) ── */
+function simpanKonteksDariForm() {
+  const k = KUAL.tematik.konteks;
+  k.judul = el('tp-judul').value;
+  k.rumusan = el('tp-rumusan').value;
+  k.jenis = [...document.querySelectorAll('.tp-jenis:checked')]
+    .map(c => c.value);
+  k.fokus = [...document.querySelectorAll('[data-fokus]')]
+    .map(i => i.value.trim()).filter(Boolean);
+  /* Input tersembunyi menjaga pembaca lama (panduanManual &
+     konteksPenelitian) tetap bekerja dari daftar butir yang sama. */
+  el('tp-indikator').value = k.fokus.join(', ');
+  simpan();
+  segarKartuKonteks();
+}
+function gambarFokusDaftar() {
+  const w = el('tp-fokus-daftar');
+  if (!w) return;
+  const k = KUAL.tematik.konteks;
+  w.innerHTML = k.fokus.length ? k.fokus.map((f, i) =>
+    '<div class="baris" style="gap:6px;margin-top:6px">' +
+    '<input type="text" data-fokus="' + i + '" value="' + aman(f) + '" ' +
+    'style="flex:1" placeholder="cth: pengalaman mencari informasi">' +
+    '<button type="button" class="tb tb-sekunder" data-fokus-hapus="' + i +
+    '" style="padding:6px 8px" title="Hapus fokus">' + ikonKecil('trash-2', 14) +
+    '<\/button><\/div>').join('')
+    : '<p class="samar" style="font-size:12.5px;margin:6px 0 0">Belum ada ' +
+      'fokus — tambah dengan tombol di bawah (maksimal 6).<\/p>';
+  w.querySelectorAll('[data-fokus]').forEach(inp =>
+    inp.addEventListener('input', simpanKonteksDariForm));
+  w.querySelectorAll('[data-fokus-hapus]').forEach(b =>
+    b.addEventListener('click', () => {
+      KUAL.tematik.konteks.fokus.splice(Number(b.dataset.fokusHapus), 1);
+      gambarFokusDaftar();
+      simpanKonteksDariForm();
+    }));
+  const t = el('tp-fokus-tambah');
+  if (t) t.disabled = k.fokus.length >= 6;
+}
+function pulihkanKonteks() {
+  const k = KUAL.tematik.konteks;
+  el('tp-judul').value = k.judul || '';
+  el('tp-rumusan').value = k.rumusan || '';
+  document.querySelectorAll('.tp-jenis').forEach(c => {
+    c.checked = (k.jenis || []).includes(c.value);
+  });
+  el('tp-indikator').value = (k.fokus || []).join(', ');
+  gambarFokusDaftar();
+  segarKartuKonteks();
+}
+['tp-judul', 'tp-rumusan'].forEach(id =>
+  el(id).addEventListener('input', simpanKonteksDariForm));
+document.querySelectorAll('.tp-jenis').forEach(c =>
+  c.addEventListener('change', simpanKonteksDariForm));
+el('tp-fokus-tambah').addEventListener('click', () => {
+  KUAL.tematik.konteks.fokus.push('');
+  gambarFokusDaftar();
+  const inputs = document.querySelectorAll('[data-fokus]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+});
+
+/* Kartu Penelitianku: tampil di Langkah 2/3/4 supaya mahasiswa selalu
+   melihat apa yang sedang ia kerjakan (keluhan Bos: konteks hilang). */
+let konteksTerbuka = true;
+function htmlKartuKonteks(mode) {
+  const k = KUAL.tematik.konteks;
+  const masihContoh = k.judul === KONTEKS_CONTOH.judul &&
+    k.rumusan === KONTEKS_CONTOH.rumusan;
+  const garis = {
+    koding: 'Kompas kodingmu: potongan yang berharga adalah yang menyentuh ' +
+      'fokus-fokus ini. Beri kode & tema pada potongan itu.',
+    triangulasi: 'Tema-temamu diuji kekuatannya di sini — tema yang kuat ' +
+      'adalah yang menjawab rumusan ini dari banyak sisi.',
+    tafsir: 'Tafsirmu di langkah ini menjawab rumusan masalah di atas — ' +
+      'ceritakan bagaimana tiap tema menjawabnya.',
+  }[mode] || '';
+  let h = '<div class="kartu" style="border-left:6px solid var(--teal,#0e7c86)">' +
+    '<div class="baris" style="justify-content:space-between;align-items:center">' +
+    '<span class="eyebrow">' + ikonKecil('book-open', 13) + ' Penelitianku<\/span>' +
+    '<span><button type="button" class="tb tb-sekunder" data-konteks-ubah ' +
+    'style="padding:4px 10px;font-size:12px">Ubah<\/button> ' +
+    '<button type="button" class="tb tb-sekunder" data-konteks-toggle ' +
+    'style="padding:4px 10px;font-size:12px">' +
+    (konteksTerbuka ? 'Tutup' : 'Buka') + '<\/button><\/span><\/div>';
+  if (konteksTerbuka) {
+    h += '<div style="margin-top:8px"><strong style="font-size:15px">' +
+      aman(k.judul || '(judul belum diisi)') + '<\/strong>' +
+      '<div style="font-size:13.5px;margin-top:3px"><em>' +
+      aman(k.rumusan || '(rumusan masalah belum diisi)') + '<\/em><\/div>' +
+      '<div style="margin-top:8px">' +
+      (k.fokus || []).map(f => '<span style="display:inline-block;background:' +
+        '#eef4f4;border:1px solid var(--garis);border-radius:99px;' +
+        'padding:3px 10px;font-size:12px;margin:0 5px 5px 0">' + aman(f) +
+        '<\/span>').join('') + '<\/div>' +
+      (garis ? '<p class="samar" style="font-size:12.5px;margin:6px 0 0">' +
+        garis + '<\/p>' : '') +
+      (masihContoh
+        ? '<div class="catatan merah renggang" style="margin-top:10px"><div>' +
+          'Ini masih <strong>contoh bawaan<\/strong> (Skintific) — kalau ini ' +
+          'bukan penelitianmu, ganti dulu di Langkah 1 supaya semua saran ' +
+          'dan hasilmu nyambung dengan penelitianmu sendiri.<\/div><\/div>'
+        : '') +
+      '<\/div>';
+  }
+  return h + '<\/div>';
+}
+function segarKartuKonteks() {
+  [['konteks-2', 'koding'], ['konteks-3', 'triangulasi'],
+   ['konteks-4', 'tafsir']].forEach(([id, mode]) => {
+    const w = el(id);
+    if (w) w.innerHTML = htmlKartuKonteks(mode);
+  });
+  document.querySelectorAll('[data-konteks-toggle]').forEach(b =>
+    b.addEventListener('click', () => {
+      konteksTerbuka = !konteksTerbuka;
+      segarKartuKonteks();
+    }));
+  document.querySelectorAll('[data-konteks-ubah]').forEach(b =>
+    b.addEventListener('click', () => aturLangkah('tematik', 1)));
+}
+
+/* Penanda kemajuan di navigasi: ✓ bila langkah sudah punya isi. */
+function statusLangkah() {
+  const t = KUAL.tematik;
+  const lengkap = t.segmen.filter(x => x.kode && x.tema);
+  return {
+    1: !!(t.panduan && t.panduan.trim()),
+    2: lengkap.length > 0,
+    3: !!t.kunjungi3 && lengkap.length > 0,
+    4: Object.values(t.tafsir || {}).some(v => (v || '').trim()),
+  };
+}
+function segarNavTematik() {
+  const st = statusLangkah();
+  const nama = {1: 'Panduan', 2: 'Koding', 3: 'Triangulasi', 4: 'Tafsir & Unduh'};
+  document.querySelectorAll('#tematik-nav [data-langkah]').forEach(b => {
+    const n = b.dataset.langkah;
+    b.textContent = n + ' · ' + nama[n] + (st[n] ? ' ✓' : '');
+  });
+}
+
+/* Tombol Lanjut antar-langkah */
+document.querySelectorAll('[data-lanjut]').forEach(b =>
+  b.addEventListener('click', () => {
+    aturLangkah('tematik', b.dataset.lanjut);
+    const nav = el('tematik-nav');
+    if (nav) nav.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }));
 
 /* ═══════════ TEMATIK — Langkah 1: Panduan ═══════════ */
 function panduanManual() {
@@ -1667,6 +1851,8 @@ async function bantuKodeAI(i, btn) {
 }
 gambarInforman();
 gambarSegmen();
+pulihkanKonteks();
+segarNavTematik();
 
 /* ═══════════ TEMATIK — Langkah 3: Triangulasi ═══════════ */
 
@@ -1966,12 +2152,31 @@ function unduhMD(namaBerkas, isi) {
 }
 el('tafsir-unduh').addEventListener('click', () => {
   gambarTafsir();
+  const k = KUAL.tematik.konteks || {};
   const seg = KUAL.tematik.segmen.filter(s => s.kode && s.tema);
   const temas = [...new Set(seg.map(s => s.tema))];
-  let md = '# Temuan Penelitian Kualitatif\n\n';
+  let md = '# ' + (k.judul || 'Temuan Penelitian Kualitatif') + '\n\n';
+  md += '## Rumusan Masalah\n\n' + (k.rumusan || '_[belum diisi]_') + '\n\n';
+  if ((k.fokus || []).length) {
+    md += '## Fokus Penelitian\n\n' +
+      k.fokus.map(f => '- ' + f).join('\n') + '\n\n';
+  }
   md += '## Codebook\n\n| Kode | Tema | Informan | Teknik |\n|---|---|---|---|\n';
   seg.forEach(s => { md += '| ' + s.kode + ' | ' + s.tema + ' | ' +
     s.informan + ' | ' + s.teknik + ' |\n'; });
+  md += '\n## Hasil Triangulasi\n\n';
+  temas.forEach(t => {
+    const d = seg.filter(s => s.tema === t);
+    const infs = [...new Set(d.map(x => x.informan))];
+    const teks = [...new Set(d.map(x => x.teknik))];
+    const jens = [...new Set(d.map(x => x.jenis || 'internal'))];
+    /* Aturan status SAMA dengan Kesimpulan Triangulasi di Langkah 3. */
+    const kuat = infs.length >= 3 || (infs.length >= 2 && teks.length >= 2);
+    md += '- **' + t + '** — ' + (kuat ? 'KUAT' : 'PERLU DIPERKUAT') +
+      ' (' + d.length + ' kutipan, ' + infs.length + ' informan: ' +
+      infs.join(', ') + '; ' + teks.length + ' teknik: ' + teks.join(', ') +
+      '; ' + jens.length + ' sisi: ' + jens.join(', ') + ')\n';
+  });
   md += '\n## Tafsir per Tema\n\n';
   temas.forEach(t => {
     const d = seg.filter(s => s.tema === t);
