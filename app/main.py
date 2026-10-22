@@ -585,6 +585,31 @@ BENTUK = {
     ),
     #  Bacakan foto (22Okt26): foto dokumen/bukti dibaca model vision
     #  (pool "Vision — Images" 9router — terbukti di EduAi 27Sep26).
+    'kembangkan': (
+        'SUSUNAN WAJIB untuk saran pengembangan tema (patuhi persis):\n'
+        'Tulis 3 arah pengembangan. Tiap arah diawali baris "ARAH: '
+        '<judul singkat arahnya>", lalu 2 sampai 3 kalimat isi: makna '
+        'yang bisa diperdalam dari data seperti ini, dan contoh '
+        'pertanyaan pendalaman (dalam tanda kutip) untuk informan '
+        'berikutnya.\n'
+        'Antar arah beri SATU baris kosong. JANGAN beri pengantar '
+        'atau penutup.\n'
+        'Hanya memakai data tema yang dikirim mahasiswa — dilarang '
+        'mengarang kutipan, nama, angka, atau fakta baru. Sebut nama '
+        'temanya persis seperti di pesan mahasiswa.'
+    ),
+    'swot_baca': (
+        'SUSUNAN WAJIB untuk bacaan hasil SWOT (patuhi persis):\n'
+        'Tulis paragraf mengalir (bukan butir-butir): (1) arti posisi '
+        'kuadran bagi usaha ini, sebut skor IFAS/EFAS PERSIS seperti '
+        'yang dikirim; (2) faktor penentu yang paling berpengaruh — '
+        'sebut teks faktornya; (3) penilaian strategi mahasiswa: '
+        'sudah cocok dengan kuadrannya atau belum, dan kenapa; '
+        '(4) tutup dengan 2 sampai 3 prioritas tindakan paling '
+        'penting.\n'
+        'DILARANG mengubah atau mengarang angka dan faktor di luar '
+        'yang dikirim. Bahasa sederhana untuk mahasiswa.'
+    ),
     'foto': (
         'SUSUNAN WAJIB untuk menganalisa foto dokumen/bukti (patuhi persis):\n'
         'Pecah isi foto menjadi poin-poin: satu poin = satu kutipan yang '

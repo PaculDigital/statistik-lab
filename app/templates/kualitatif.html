@@ -32,7 +32,14 @@
 
 <div id="kual-pintu" style="display:grid;grid-template-columns:1fr;gap:14px">
 <style>@media(min-width:640px){ div[id="kual-pintu"]{grid-template-columns:1fr 1fr} }
-@media(max-width:639px){ .kepala-judul{flex-direction:column;gap:8px} }</style>
+@media(max-width:639px){ .kepala-judul{flex-direction:column;gap:8px} }
+.rekom{background:linear-gradient(135deg,#FFF8E7,#FFEFCC);border:1px solid #EDD9A3;border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.rekom .rk-kepala{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:#8A5E0B;text-transform:uppercase;letter-spacing:.4px}
+.rekom .rk-item{background:rgba(255,255,255,.72);border:1px solid rgba(206,166,72,.45);border-radius:10px;padding:9px 11px;margin-top:8px}
+.rekom .rk-isi{font-size:13.5px;margin:1px 0 7px}
+.rekom .rk-hening{font-size:13.5px;margin-top:6px;color:#6D5A26}
+.rekom .rk-hasil{font-size:13.5px;background:#fff;border-radius:8px;padding:8px 10px;margin-top:8px;white-space:pre-wrap}
+</style>
   <button class="kartu" id="pintu-tematik" style="text-align:left;cursor:pointer;position:relative;padding-bottom:44px">
     <span class="eyebrow">{{ ikon('users', 13) }} Analisis Tematik</span>
     <h3 style="margin:8px 0 4px">Wawancara → Tema</h3>
@@ -72,6 +79,7 @@
 
   {# ── Langkah 1: Panduan ── #}
   <div class="langkah-tematik" data-langkah="1">
+    <div id="rekom-t1"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('clipboard-list', 13) }} Langkah 1 — Panduan pertanyaan</span>
       <h3 style="margin:8px 0 4px">Mau bertanya apa ke informanmu?</h3>
@@ -104,6 +112,7 @@
   {# ── Langkah 2: Koding ── #}
   <div class="langkah-tematik sembunyi" data-langkah="2">
     <div id="konteks-2"></div>
+    <div id="rekom-t2"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('split', 13) }} Langkah 2 — Koding</span>
       <h3 style="margin:8px 0 4px">Beri kode pada tiap kutipan cerita</h3>
@@ -239,6 +248,7 @@
   {# ── Langkah 3: Triangulasi ── #}
   <div class="langkah-tematik sembunyi" data-langkah="3">
     <div id="konteks-3"></div>
+    <div id="rekom-t3"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('shield-check', 13) }} Langkah 3 — Triangulasi</span>
       <h3 style="margin:8px 0 4px">Apakah temuanmu kuat dari banyak sisi?</h3>
@@ -267,6 +277,7 @@
   {# ── Langkah 4: Tafsir ── #}
   <div class="langkah-tematik sembunyi" data-langkah="4">
     <div id="konteks-4"></div>
+    <div id="rekom-t4"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('book-marked', 13) }} Langkah 4 — Tafsir &amp; unduh</span>
       <h3 style="margin:8px 0 4px">Ubah tema jadi cerita temuan</h3>
@@ -310,6 +321,7 @@
   </div>
 
   <div class="langkah-swot" data-langkah="1">
+    <div id="rekom-sw1"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('list', 13) }} Langkah 1 — Daftarkan faktor</span>
       <h3 style="margin:8px 0 4px">Apa saja kekuatan, kelemahan, peluang, ancamannya?</h3>
@@ -344,6 +356,7 @@
   </div>
 
   <div class="langkah-swot sembunyi" data-langkah="2">
+    <div id="rekom-sw2"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('grid-3x3', 13) }} Langkah 2 — Matriks &amp; strategi</span>
       <h3 style="margin:8px 0 4px">Pasangkan: kekuatan × peluang jadi strategi</h3>
@@ -370,6 +383,7 @@
   </div>
 
   <div class="langkah-swot sembunyi" data-langkah="3">
+    <div id="rekom-sw3"></div>
     <div class="kartu">
       <span class="eyebrow">{{ ikon('calculator', 13) }} Langkah 3 — Skor IFAS/EFAS</span>
       <h3 style="margin:8px 0 4px">Seberapa kuat posisimu? (dihitung otomatis)</h3>
@@ -433,6 +447,11 @@ if (!KUAL.tematik.konteks || typeof KUAL.tematik.konteks !== 'object') {
 function simpan() {
   try { localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(KUAL)); } catch (e) {}
   if (typeof segarNavTematik === 'function') segarNavTematik();
+  /* Section rekomendasi ikut segar tiap data berubah (temuan hidup),
+     kecuali fokus sedang di dalam section itu sendiri. */
+  if (typeof gambarRekomendasi === 'function' &&
+      !(document.activeElement && document.activeElement.closest &&
+        document.activeElement.closest('.rekom'))) gambarRekomendasi();
 }
 
 /* ── Pintu & navigasi langkah ── */
@@ -459,6 +478,7 @@ function aturLangkah(jenis, n) {
      yang baru selesai koding melihat 'Belum ada tema' dan tidak bisa
      menulis tafsir (temuan uji manual 22Okt26). */
   if (jenis === 'tematik' && String(n) === '4') gambarTafsir();
+  if (typeof gambarRekomendasi === 'function') gambarRekomendasi();
   if (jenis === 'tematik') {
     if (String(n) === '3' && !KUAL.tematik.kunjungi3) {
       KUAL.tematik.kunjungi3 = true;
@@ -2595,7 +2615,260 @@ el('sw-unduh').addEventListener('click', () => {
 });
 
 /* ── init ── */
-gambarFaktor(); gambarMatriks(); gambarIFAS(); gambarTafsir(); gambarFotoSwot();
+
+/* ═══════ REKOMENDASI — pancingan AI (perintah Bos 22Okt26) ═══════
+   Satu section berlatar lembut di TIAP langkah, isinya TEMUAN yang
+   dihitung kode dari keadaan data mahasiswa (gratis, tanpa AI).
+   Teks rekomendasi & prompt AI disusun dari temuan yang SAMA (satu
+   sumber kebenaran); AI tidak boleh mengganti diagnosis kode.
+   Tombol tiap temuan: AI terikat (prompt dari temuan + data terkait,
+   dicek ulang saat klik) atau picu AI lama / lompat ke tempat kerja. */
+function statsTemaKu(t) {
+  const d = KUAL.tematik.segmen.filter(x => x.kode && x.tema === t);
+  const infs = [...new Set(d.map(x => x.informan))];
+  const tek = [...new Set(d.map(x => x.teknik))];
+  return {kutipan: d.length, infs: infs, tek: tek,
+    kodes: [...new Set(d.map(x => x.kode))], seg: d,
+    kuat: infs.length >= 3 || (infs.length >= 2 && tek.length >= 2)};
+}
+function ringkasKuadranKu() {
+  /* Cermin htmlKuadran() — angka & gerbangnya harus selalu sama. */
+  const f = KUAL.swot.faktor;
+  const dalam = f.filter(x => x.k === 'S' || x.k === 'W');
+  const luar = f.filter(x => x.k === 'O' || x.k === 'T');
+  if (!dalam.length || !luar.length) return {siap: false};
+  const tot = d => d.reduce((a, x) => a + (x.bobot || 0) * (x.rating || 0), 0);
+  const bob = d => d.reduce((a, x) => a + (x.bobot || 0), 0);
+  const ba = bob(dalam), bb = bob(luar);
+  if (Math.abs(ba - 1) > 0.01 || Math.abs(bb - 1) > 0.01)
+    return {siap: false, ba: ba, bb: bb};
+  const a = tot(dalam), b = tot(luar), x = a - 2.5, y = b - 2.5;
+  const k = x >= 0 && y >= 0 ? 'I (agresif — kembangkan)'
+    : x < 0 && y >= 0 ? 'II (diversifikasi)'
+    : x >= 0 && y < 0 ? 'III (putar haluan)' : 'IV (bertahan)';
+  return {siap: true, ifas: a, efas: b, kuadran: k};
+}
+function picuAI(idTombol, idHasil) {
+  return () => {
+    const b = el(idTombol);
+    if (b) b.click();
+    setTimeout(() => {
+      const h = el(idHasil);
+      if (h) h.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }, 350);
+  };
+}
+function tulisHasilRekom(idWadah, kunci, html) {
+  const w = el(idWadah);
+  if (!w) return;
+  const sel = w.querySelector('[data-rk-kunci="' + kunci + '"] [data-rk-hasil]');
+  if (sel) sel.innerHTML = html;
+}
+async function aiKembangkanTema(idWadah, kunci, tema, mode) {
+  const hasil = '<div class="rk-hasil">';
+  const st = statsTemaKu(tema);
+  /* Cek ulang saat klik: masalahnya masih ada? */
+  if (!st.kutipan) {
+    tulisHasilRekom(idWadah, kunci, hasil + 'Tema ini sudah tidak ada di datamu.<\/div>');
+    return;
+  }
+  if (mode === 'sempit' && st.kutipan > 2 && st.infs.length > 1) {
+    tulisHasilRekom(idWadah, kunci, hasil +
+      'Tema ini sudah berkembang sekarang — rekomendasi ini selesai.<\/div>');
+    return;
+  }
+  tulisHasilRekom(idWadah, kunci, hasil + 'AI sedang berpikir…<\/div>');
+  const diagnosis = mode === 'pecah'
+    ? 'tema "' + tema + '" menampung SEMUA ' + st.kutipan +
+      ' kutipan berkodeku dari ' + st.infs.length + ' informan — ' +
+      'penelitianku baru punya 1 tema, padahal skripsi kualitatif ' +
+      'biasanya punya 3 sampai 5 tema.'
+    : 'tema "' + tema + '" masih SEMPIT — baru ' + st.kutipan +
+      ' kutipan dari ' + st.infs.length + ' informan (' +
+      st.infs.join(', ') + '), teknik: ' + st.tek.join(', ') + '.';
+  const p = konteksPenelitian() +
+    '\nAda temuan dari dataku: ' + diagnosis + '\n' +
+    'Kode di tema ini: ' + st.kodes.join('; ') + '\nKutipannya:\n' +
+    st.seg.slice(0, 6).map(x => '- "' +
+      x.teks.replace(/\s+/g, ' ').slice(0, 200) + '" (' + x.informan +
+      ')').join('\n') +
+    '\n\nTugasmu: beri arah pengembangan tema ini supaya lebih ' +
+    'bermakna dan tajam. Jangan mengarang data atau kutipan baru.';
+  try {
+    const teks = await mintaTeksAI(p, 'kembangkan');
+    tulisHasilRekom(idWadah, kunci, hasil + aman(teks) + '<\/div>');
+  } catch (e) {
+    tulisHasilRekom(idWadah, kunci, hasil + 'AI belum bisa membantu: ' +
+      aman(e.message || 'coba lagi.') + '<\/div>');
+  }
+}
+async function aiBacaKuadran(idWadah, kunci) {
+  const hasil = '<div class="rk-hasil">';
+  const r = ringkasKuadranKu();
+  if (!r.siap) {
+    tulisHasilRekom(idWadah, kunci, hasil +
+      'Kuadrannya belum bisa ditentukan — lengkapi bobotnya dulu sampai total 1,00.<\/div>');
+    return;
+  }
+  tulisHasilRekom(idWadah, kunci, hasil + 'AI sedang membaca hasilmu…<\/div>');
+  const perKel = ['S', 'W', 'O', 'T'].map(k =>
+    KUAL.swot.faktor.filter(x => x.k === k)
+      .map(x => k + ': ' + x.teks + ' (bobot ' + (x.bobot || 0) +
+        ', rating ' + (x.rating || 0) + ')').join('\n')).join('\n');
+  const st = KUAL.swot.strategi;
+  const p = konteksUsaha() +
+    '\nBerikut hasil IFAS/EFAS dan kuadran usahaku (dihitung aplikasi):\n' +
+    perKel + '\nTotal IFAS: ' + r.ifas.toFixed(2) + '. Total EFAS: ' +
+    r.efas.toFixed(2) + '. Posisi: kuadran ' + r.kuadran + '.\n' +
+    'Strategi yang sudah kutulis:\n' +
+    'SO: ' + (st.so || '(belum ditulis)') + '\nWO: ' + (st.wo || '(belum ditulis)') +
+    '\nST: ' + (st.st || '(belum ditulis)') + '\nWT: ' + (st.wt || '(belum ditulis)') +
+    '\n\nTugasmu: bacakan hasil ini untukku. Jangan mengubah angka di atas.';
+  try {
+    const teks = await mintaTeksAI(p, 'swot_baca');
+    tulisHasilRekom(idWadah, kunci, hasil + aman(teks) + '<\/div>');
+  } catch (e) {
+    tulisHasilRekom(idWadah, kunci, hasil + 'AI belum bisa membantu: ' +
+      aman(e.message || 'coba lagi.') + '<\/div>');
+  }
+}
+function temuanUntuk(jenis, n) {
+  const items = [];
+  if (jenis === 'tematik') {
+    const k = KUAL.tematik.konteks || {};
+    const seg = KUAL.tematik.segmen;
+    const terkode = seg.filter(x => x.kode && x.tema);
+    const temas = [...new Set(terkode.map(x => x.tema))];
+    if (n === 1) {
+      if (k.judul === KONTEKS_CONTOH.judul && k.rumusan === KONTEKS_CONTOH.rumusan)
+        items.push({kunci: 'contoh', teks: 'Konteksmu masih memakai ' +
+          '<strong>contoh<\/strong> (Skintific). Ganti judul, rumusan, dan fokusnya dengan penelitianmu sendiri supaya semua langkah mengikuti datamu.',
+          label: 'Ubah di form atas', go: () => el('tp-judul').focus()});
+      if (!(k.rumusan || '').trim())
+        items.push({kunci: 'rumusan', teks: 'Rumusan masalahmu masih kosong — isi dulu dengan satu kalimat pernyataan.',
+          label: 'Isi rumusan', go: () => el('tp-rumusan').focus()});
+      if ((k.fokus || []).length < 3)
+        items.push({kunci: 'fokus', teks: 'Fokus penelitianmu baru <strong>' +
+          (k.fokus || []).length + '<\/strong> — penelitian kualitatif biasanya menggali 3 sampai 5 fokus supaya datanya kaya.',
+          label: 'Tambah fokus', go: () => el('tp-fokus-tambah').click()});
+      if (!(KUAL.tematik.panduan || '').trim() && (k.fokus || []).length)
+        items.push({kunci: 'panduan', teks: 'Panduan wawancaramu belum dibuat — panduan itu bekalmu turun ke lapangan.',
+          label: 'Minta panduan dari AI', go: picuAI('tp-ai', 'tp-hasil')});
+    }
+    if (n === 2) {
+      if (!KUAL.tematik.informan.length)
+        items.push({kunci: 'informan', teks: 'Belum ada informan — tambahkan informan pertamamu di Meja Kerja, lalu tempel transkripnya.',
+          label: 'Ke Meja Kerja', go: () => {
+            document.querySelector('[data-tabkoding="kerja"]').click();
+            setTimeout(() => el('kj-informan').focus(), 200); }});
+      const mentah = seg.filter(x => !x.kode || !x.tema).length;
+      if (mentah)
+        items.push({kunci: 'mentah', teks: 'Ada <strong>' + mentah +
+          ' kutipan<\/strong> yang belum tuntas dikoding (kode/temanya masih kosong).',
+          label: 'Selesaikan di Meja Kerja', go: () =>
+            document.querySelector('[data-tabkoding="kerja"]').click()});
+      temas.filter(t => { const st = statsTemaKu(t);
+          return st.kutipan <= 2 || st.infs.length <= 1; }).slice(0, 3)
+        .forEach(t => { const st = statsTemaKu(t);
+          items.push({kunci: 'sempit:' + t, teks: 'Tema <strong>' + aman(t) +
+            '<\/strong> masih sempit — baru ' + st.kutipan + ' kutipan dari ' +
+            st.infs.length + ' informan. Kembangkan maknanya supaya layak jadi temuan.',
+            label: 'Kembangkan tema ini dengan AI',
+            go: h => aiKembangkanTema('rekom-t2', 'sempit:' + t, t, 'sempit')}); });
+      if (temas.length === 1 && terkode.length >= 6)
+        items.push({kunci: 'pecah:' + temas[0], teks: 'Baru <strong>1 tema<\/strong> ' +
+          'dari ' + terkode.length + ' kutipan berkode — skripsi kualitatif biasanya punya 3 sampai 5 tema. Tema besarmu ini mungkin bisa dipecah lebih tajam.',
+          label: 'Minta AI mengusulkan pecahan tema',
+          go: h => aiKembangkanTema('rekom-t2', 'pecah:' + temas[0], temas[0], 'pecah')});
+    }
+    if (n === 3) {
+      if (!terkode.length)
+        items.push({kunci: 'kosong', teks: 'Belum ada tema yang bisa ditriangulasi — selesaikan koding di Langkah 2 dulu.',
+          label: 'Ke Langkah 2', go: () => aturLangkah('tematik', 2)});
+      temas.filter(t => !statsTemaKu(t).kuat).slice(0, 3).forEach(t => {
+        const st = statsTemaKu(t);
+        items.push({kunci: 'lemah:' + t, teks: 'Tema <strong>' + aman(t) +
+          '<\/strong> perlu diperkuat — baru ' + st.infs.length + ' informan, ' +
+          st.tek.length + ' teknik. Minta AI membacakan saran penguatannya.',
+          label: 'Minta AI membaca hasil ini', go: picuAI('tri-ai', 'tri-saran')}); });
+    }
+    if (n === 4) {
+      temas.filter(t => !(KUAL.tematik.tafsir[t] || '').trim()).slice(0, 4)
+        .forEach(t => items.push({kunci: 'tafsir:' + t, teks: 'Tafsir untuk tema ' +
+          '<strong>' + aman(t) + '<\/strong> masih kosong.',
+          label: 'Minta contoh tafsir AI (data penuh)',
+          go: picuAI('tafsir-ai', 'tafsir-saran')}));
+    }
+  } else {
+    const f = KUAL.swot.faktor, st = KUAL.swot.strategi;
+    if (n === 1) {
+      if (!(((el('sw-konteks') || {}).value) || '').trim())
+        items.push({kunci: 'konteks', teks: 'Deskripsi usaha/objekmu masih kosong — AI butuh konteks itu supaya sarannya spesifik, bukan umum.',
+          label: 'Isi deskripsi usaha', go: () => el('sw-konteks').focus()});
+      ['S', 'W', 'O', 'T'].forEach(k => {
+        if (!f.filter(x => x.k === k).length)
+          items.push({kunci: 'kel:' + k, teks: 'Belum ada faktor kelompok <strong>' +
+            k + '<\/strong> (' + SW_LABEL[k].split('—')[0].trim() + ').',
+            label: 'Minta saran faktor AI', go: picuAI('sw-ai-faktor', 'sw-saran')});
+      });
+      if (f.length > 0 && f.length < 8)
+        items.push({kunci: 'sedikit', teks: 'Faktormu baru <strong>' + f.length +
+          '<\/strong> — SWOT yang kaya biasanya 3 sampai 4 faktor per kelompok.',
+          label: 'Minta saran faktor AI', go: picuAI('sw-ai-faktor', 'sw-saran')});
+    }
+    if (n === 2) {
+      [['so', 'SO'], ['wo', 'WO'], ['st', 'ST'], ['wt', 'WT']].forEach(([k, L]) => {
+        if (!(st[k] || '').trim())
+          items.push({kunci: 'strat:' + k, teks: 'Strategi <strong>' + L +
+            '<\/strong> belum ditulis.',
+            label: 'Minta saran strategi AI', go: picuAI('sw-ai-strategi', 'sw-saran-strategi')});
+      });
+    }
+    if (n === 3) {
+      const r = ringkasKuadranKu();
+      if (!f.length)
+        items.push({kunci: 'kosong', teks: 'Belum ada faktor — isi dulu di Langkah 1.',
+          label: 'Ke Langkah 1', go: () => aturLangkah('swot', 1)});
+      else if (!r.siap && (r.ba !== undefined))
+        items.push({kunci: 'bobot', teks: 'Kuadran belum bisa ditentukan — total ' +
+          'bobot IFAS baru ' + r.ba.toFixed(2) + ', EFAS ' + r.bb.toFixed(2) +
+          ' (harus tepat 1,00). Lengkapi bobot & rating di tabel atas.'});
+      else if (r.siap)
+        items.push({kunci: 'kuadran', teks: 'Posisimu di <strong>kuadran ' +
+          aman(r.kuadran) + '<\/strong> (IFAS ' + r.ifas.toFixed(2) + ', EFAS ' +
+          r.efas.toFixed(2) + '). Minta AI membaca artinya dan menilai apakah strategimu sudah cocok.',
+          label: 'Minta AI membaca arti kuadranmu',
+          go: h => aiBacaKuadran('rekom-sw3', 'kuadran')});
+    }
+  }
+  return items;
+}
+function gambarRekomendasi() {
+  [['tematik', 1, 'rekom-t1'], ['tematik', 2, 'rekom-t2'],
+   ['tematik', 3, 'rekom-t3'], ['tematik', 4, 'rekom-t4'],
+   ['swot', 1, 'rekom-sw1'], ['swot', 2, 'rekom-sw2'],
+   ['swot', 3, 'rekom-sw3']].forEach(([j, n, id]) => {
+    const w = el(id);
+    if (!w) return;
+    const items = temuanUntuk(j, n);
+    let h = '<div class="rekom"><div class="rk-kepala">' +
+      ikonKecil('lightbulb', 14) + ' Rekomendasi untukmu<\/div>';
+    if (!items.length)
+      h += '<div class="rk-hening">Belum ada rekomendasi — langkah ini terlihat baik. Lanjutkan.<\/div>';
+    h += items.map(it => '<div class="rk-item" data-rk-kunci="' +
+      aman(it.kunci) + '"><div class="rk-isi">' + it.teks + '<\/div>' +
+      (it.label ? '<button class="tb tb-sekunder" data-rk-aksi>' + it.label +
+        '<\/button>' : '') + '<div data-rk-hasil><\/div><\/div>').join('');
+    h += '<\/div>';
+    w.innerHTML = h;
+    items.forEach((it, i) => {
+      const b = w.querySelectorAll('[data-rk-aksi]')[i];
+      if (b && it.go) b.addEventListener('click', () => it.go());
+    });
+  });
+}
+
+gambarFaktor(); gambarMatriks(); gambarIFAS(); gambarTafsir(); gambarFotoSwot(); gambarRekomendasi();
 aturLangkah('tematik', 1);
 aturLangkah('swot', 1);
 </script>
